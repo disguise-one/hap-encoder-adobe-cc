@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-#include "textureconverter.hpp"
+#include "texture_converter.hpp"
 
 typedef std::array<char, 4> CodecSubType;
 

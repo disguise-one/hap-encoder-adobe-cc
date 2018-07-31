@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "textureconverter.hpp"
+#include "texture_converter.hpp"
 #include "hap.h"
 #include "squish.h"
 
