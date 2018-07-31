@@ -34,6 +34,25 @@ Website
 Place in
     external/adobe/premiere
 
+### FFMpeg
+FFMpeg is included as a submodule to the repository, but its build is not wrapped by the plugin's cmake build process.
+
+The cmake process should be able to locate a prebuilt FFMpeg.
+
+#### win64
+Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
+    https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC
+
+For reference, the FFMpeg build for the win64 plugin was created by
+ * first installing http://www.mingw.org/wiki/msys
+ * launching a visual studio 2017 developer prompt
+ * running the msys shell from within that prompt
+    C:\MinGW\msys\1.0\msys.bat
+ * going to the external/ffmpeg/FFMPeg directory and then
+    ./configure --toolchain=msvc --disable-x86asm
+    make
+This will take a while.
+
 ##  Building
 
 ### win64

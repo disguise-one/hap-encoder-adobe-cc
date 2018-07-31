@@ -28,7 +28,6 @@ target_sources(HapEncoderPlugin
 # source_group(TREE codec PREFIX codec)
 source_group("Source Files\\codec" REGULAR_EXPRESSION codec/*)
 
-
 target_link_libraries(HapEncoderPlugin
     PRIVATE
         Hap
@@ -37,6 +36,13 @@ target_link_libraries(HapEncoderPlugin
         squish
         ycocg
         AdobeSdk
+        ffmpeg::libavformat
+)
+
+# Include the boost headers
+target_include_directories(HapEncoderPlugin
+    PRIVATE
+        ${ffmpeg_INCLUDE_DIRS}
 )
 
 set_target_properties(HapEncoderPlugin

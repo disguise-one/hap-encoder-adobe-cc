@@ -10,9 +10,10 @@ endif()
 add_subdirectory(external/snappy)
 add_subdirectory(external/squish/squish-source)
 add_subdirectory(external/hap)
-add_subdirectory(external/joelQT)
+add_subdirectory(external/ffmpeg)
 add_subdirectory(external/ycocg)
 add_subdirectory(external/adobe)
+
 add_subdirectory(source/premiere_CC2018)
 
 set(CPACK_PACKAGE_NAME "HapEncoder")
