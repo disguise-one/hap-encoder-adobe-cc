@@ -51,6 +51,7 @@ public:
 
 	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef);
 
+    CodecSubType subType() const { return subType_; }
 	std::string getSubTypeAsString() const;
 	size_t getMaxEncodedSize() const;
     void encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;

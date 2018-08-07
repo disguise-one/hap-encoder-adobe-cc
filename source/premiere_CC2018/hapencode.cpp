@@ -48,8 +48,6 @@ prMALError renderAndWriteVideoFrame(const PrTime videoTime, exDoExportRec* expor
 	if (resultS == suiteError_CompilerCompileAbort)
 		return suiteError_CompilerCompileAbort;
 
-	FILE* fp = settings->movFile.prepareToWriteFrame(settings->movCurrentFrame);
-
 	// convert Premiere frame to HAP frame
 	settings->encodeInput.bgraBottomLeftOrigin = (uint8_t *)frameBufferP;
 	settings->encodeInput.stride = rowbytes;
@@ -63,9 +61,7 @@ prMALError renderAndWriteVideoFrame(const PrTime videoTime, exDoExportRec* expor
 	}
 	
 	// write it out
-	fwrite(&settings->encodeOutput.buffer[0], 1, settings->encodeOutput.buffer.size(), fp);
-
-	settings->movFile.endWriteFrame();
+    settings->movieWriter->writeFrame(&settings->encodeOutput.buffer[0], settings->encodeOutput.buffer.size());
 
 	settings->ppixSuite->Dispose(renderResult.outFrame);
 

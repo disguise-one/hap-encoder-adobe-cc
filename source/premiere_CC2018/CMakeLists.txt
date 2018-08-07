@@ -18,25 +18,29 @@ target_sources(HapEncoderPlugin
         targetver.h        
         codec/codec.cpp
         codec/codec.hpp
-        codec/textureconverter.cpp
-        codec/textureconverter.hpp
+        codec/texture_converter.cpp
+        codec/texture_converter.hpp
+        movie_writer/movie_writer.cpp
+        movie_writer/movie_writer.hpp
 )
 
 # make the layout look ok in IDEs
 # !!! this isn't working; probably need to get list added above
 # source_group(TREE . $<TARGET_PROPERTY:HapEncoderPlugin,SOURCES>)
-# source_group(TREE codec PREFIX codec)
 source_group("Source Files\\codec" REGULAR_EXPRESSION codec/*)
+source_group("Source Files\\movie_writer" REGULAR_EXPRESSION movie_writer/*)
 
 target_link_libraries(HapEncoderPlugin
     PRIVATE
         Hap
         snappy
-        joelQT
         squish
         ycocg
         AdobeSdk
         ffmpeg::libavformat
+        ffmpeg::libavcodec
+        ffmpeg::libavutil
+        bcrypt
 )
 
 # Include the boost headers

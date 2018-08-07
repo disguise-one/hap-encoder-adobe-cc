@@ -14,7 +14,7 @@
 #include <PrSDKExportProgressSuite.h>
 #include <PrSDKExportParamSuite.h>
 #include "SDK_Segment_Utils.h"
-#include "../../external/joelQT/movfile.hpp"
+#include "movie_writer/movie_writer.hpp"
 #include "codec/codec.hpp"
 
 typedef struct ExportSettings
@@ -23,7 +23,7 @@ typedef struct ExportSettings
 	~ExportSettings();
 
 	csSDK_int32 fileType;
-	MovFile movFile;
+	std::unique_ptr<MovieWriter> movieWriter;
 	CodecSubType hapSubcodec;
 	std::unique_ptr<Codec> codec;
 	EncodeInput encodeInput;
