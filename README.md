@@ -6,8 +6,8 @@ Development of this plugin was generously sponsored by disguise, makers of the d
     http://disguise.one
 
 Principal authors of the plugin are
-    Greg Bakker (gbakker@gmail.com)
-    Richard Sykes
+ - Greg Bakker (gbakker@gmail.com)
+ - Richard Sykes
 
 Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting that development.
 
@@ -25,13 +25,16 @@ cmake creates the build system for the supported target platforms.
 
 ### NSIS
 NSIS is required for win32 installer builds.
+
     http://nsis.sourceforge.net/Main_Page
 
 ### Adobe CC 2018 SDK
 Website
+
     https://www.adobe.io/apis/creativecloud/premierepro.html
 
 Place in
+
     external/adobe/premiere
 
 ### FFMpeg
@@ -41,15 +44,18 @@ The cmake process should be able to locate a prebuilt FFMpeg.
 
 #### win64
 Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
+
     https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC
 
 For reference, the FFMpeg build for the win64 plugin was created by
  * first installing http://www.mingw.org/wiki/msys
  * launching a visual studio 2017 developer prompt
+ * set visual studio build vars for an x64 build. On my machine this is
+    "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64
  * running the msys shell from within that prompt
     C:\MinGW\msys\1.0\msys.bat
  * going to the external/ffmpeg/FFMPeg directory and then
-    ./configure --toolchain=msvc --disable-x86asm
+    ./configure --toolchain=msvc --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --extra-cflags="-MD"
     make
 This will take a while.
 
