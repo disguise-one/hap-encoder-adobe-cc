@@ -52,21 +52,21 @@ For reference, the FFMpeg build for the win64 plugin was created by
 
 -  first installing
  
-    http://www.mingw.org/wiki/msys
+        http://www.mingw.org/wiki/msys
 
 -  launching a visual studio 2017 developer prompt
 -  set visual studio build vars for an x64 build. Something like
 
-    "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64
+        "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
 -  running the msys shell from within that prompt
 
-    C:\MinGW\msys\1.0\msys.bat
+        C:\MinGW\msys\1.0\msys.bat
  
 -  going to the external/ffmpeg/FFMPeg directory and then
 
-    ./configure --toolchain=msvc --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --extra-cflags="-MD"
-    make
+        ./configure --toolchain=msvc --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --extra-cflags="-MD"
+        make
 
 This will take a while.
 
