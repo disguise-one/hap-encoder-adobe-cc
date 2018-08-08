@@ -2,6 +2,32 @@
 #include "codec/codec.hpp"
 #include "configure.hpp"
 
+Exporter::Exporter(
+    std::unique_ptr<Codec> codec,
+    std::unique_ptr<MovieWriter> writer,
+    int64_t nFrames)
+  : codec_(std::move(codec)), writer_(std::move(writer)), nFrames_(nFrames)
+
+{
+}
+
+Exporter::~Exporter()
+{
+}
+
+// TODO: thread-safe
+void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const
+{
+    // convert Premiere frame to HAP frame
+    input_.bgraBottomLeftOrigin = (uint8_t *)bgra_bottom_left_origin_data;
+    input_.stride = stride;
+
+    codec_->encode(input_, scratchpad_, output_);
+
+    // write it out
+    writer_->writeFrame(&output_.buffer[0], output_.buffer.size());
+}
+
 csSDK_int32 getPixelFormatSize(const PrFourCC subtype)
 {
 	return 4;
@@ -48,21 +74,14 @@ prMALError renderAndWriteVideoFrame(const PrTime videoTime, exDoExportRec* expor
 	if (resultS == suiteError_CompilerCompileAbort)
 		return suiteError_CompilerCompileAbort;
 
-	// convert Premiere frame to HAP frame
-	settings->encodeInput.bgraBottomLeftOrigin = (uint8_t *)frameBufferP;
-	settings->encodeInput.stride = rowbytes;
-
 	try {
-		settings->codec->encode(settings->encodeInput, settings->encodeScratchpad, settings->encodeOutput);
+		settings->exporter->dispatch(settings->movCurrentFrame++, (uint8_t *)frameBufferP, rowbytes);
 	}
 	catch (...)
 	{
 		return malUnknownError;
 	}
 	
-	// write it out
-    settings->movieWriter->writeFrame(&settings->encodeOutput.buffer[0], settings->encodeOutput.buffer.size());
-
 	settings->ppixSuite->Dispose(renderResult.outFrame);
 
 	return resultS;

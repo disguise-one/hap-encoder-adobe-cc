@@ -29,7 +29,7 @@ extern "C" {
     extern AVOutputFormat ff_mov_muxer;
 }
 // =======================================================
-MovieWriter::MovieWriter(const std::string& formatName, VideoFormat videoFormat,
+MovieWriter::MovieWriter(VideoFormat videoFormat,
     int width, int height,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     MovieWriteCallback onWrite,

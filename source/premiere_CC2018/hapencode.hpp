@@ -17,20 +17,39 @@
 #include "movie_writer/movie_writer.hpp"
 #include "codec/codec.hpp"
 
+class Exporter
+{
+public:
+    Exporter(
+        std::unique_ptr<Codec> codec,
+        std::unique_ptr<MovieWriter> writer,
+        int64_t nFrames);
+    ~Exporter();
+    
+    void dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const;
+
+private:
+    std::unique_ptr<Codec> codec_;
+    std::unique_ptr<MovieWriter> writer_;
+    int64_t nFrames_;
+
+    // TODO: these expect dispatch to be called in strict sequence; need to make them pooled for
+    //       multiple simultaneous calls
+    mutable EncodeInput input_;
+    mutable EncodeScratchpad scratchpad_;
+    mutable EncodeOutput output_;
+};
+
 typedef struct ExportSettings
 {
 	ExportSettings();
 	~ExportSettings();
 
 	csSDK_int32 fileType;
-	std::unique_ptr<MovieWriter> movieWriter;
-	CodecSubType hapSubcodec;
-	std::unique_ptr<Codec> codec;
-	EncodeInput encodeInput;
-    EncodeScratchpad encodeScratchpad;
-	EncodeOutput encodeOutput;
-	csSDK_int32 movCurrentFrame;
-	VideoSequenceParser* videoSequenceParser;
+    CodecSubType hapSubcodec;
+    std::unique_ptr<Exporter> exporter;
+    csSDK_int32 movCurrentFrame;
+    VideoSequenceParser* videoSequenceParser;
 	SPBasicSuite* spBasic;
 	PrSDKExportParamSuite* exportParamSuite;
 	PrSDKExportProgressSuite* exportProgressSuite;

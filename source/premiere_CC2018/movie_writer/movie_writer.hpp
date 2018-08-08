@@ -42,7 +42,7 @@ typedef std::unique_ptr<AVIOContext, IOContextDeleter> IOContext;
 class MovieWriter
 {
 public:
-    MovieWriter(const std::string& formatName, VideoFormat videoFormat,
+    MovieWriter(VideoFormat videoFormat,
                 int width, int height,
                 int64_t frameRateNumerator, int64_t frameRateDenominator,
                 MovieWriteCallback onWrite,
