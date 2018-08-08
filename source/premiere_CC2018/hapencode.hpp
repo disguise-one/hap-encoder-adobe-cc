@@ -15,6 +15,7 @@
 #include <PrSDKExportInfoSuite.h>
 #include <PrSDKExportProgressSuite.h>
 #include <PrSDKExportParamSuite.h>
+#include <PrSDKExporterUtilitySuite.h>
 #include "SDK_Segment_Utils.h"
 #include "movie_writer/movie_writer.hpp"
 #include "codec/codec.hpp"
@@ -68,6 +69,7 @@ typedef struct ExportSettings
     csSDK_int32 movCurrentFrame;
     VideoSequenceParser* videoSequenceParser;
 	SPBasicSuite* spBasic;
+    PrSDKExporterUtilitySuite* exporterUtilitySuite;
 	PrSDKExportParamSuite* exportParamSuite;
 	PrSDKExportProgressSuite* exportProgressSuite;
 	PrSDKExportInfoSuite* exportInfoSuite;
@@ -86,4 +88,3 @@ typedef struct ExportSettings
 } ExportSettings;
 
 csSDK_int32 getPixelFormatSize(const PrFourCC subtype);
-prMALError renderAndWriteVideoFrame(const PrTime videoTime, exDoExportRec* exportInfoP, csSDK_uint32& bytesWritten);
