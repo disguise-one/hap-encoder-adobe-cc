@@ -34,8 +34,9 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     MovieWriteCallback onWrite,
     MovieSeekCallback onSeek,
+    MovieCloseCallback onClose,
     MovieErrorCallback onError)
-    : onWrite_(onWrite), onSeek_(onSeek), onError_(onError), iFrame_(0)
+    : onWrite_(onWrite), onSeek_(onSeek), onClose_(onClose), onError_(onError), iFrame_(0)
 {
     /* allocate the output media context */
     AVFormatContext *formatContext = avformat_alloc_context();
@@ -107,6 +108,8 @@ MovieWriter::~MovieWriter()
     * av_write_trailer() may try to use memory that was freed on
     * av_codec_close(). */
     av_write_trailer(formatContext_.get());
+
+    onClose_();
 }
 
 int MovieWriter::c_onWrite(void *context, uint8_t *data, int size)
