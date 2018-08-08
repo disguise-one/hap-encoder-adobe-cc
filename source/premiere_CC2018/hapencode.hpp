@@ -4,8 +4,6 @@
 
 #include <PrSDKTypes.h>
 #include <PrSDKWindowSuite.h>
-#include <PrSDKSequenceRenderSuite.h>
-#include <PrSDKSequenceAudioSuite.h>
 #include <PrSDKMemoryManagerSuite.h>
 #include <PrSDKPPixSuite.h>
 #include <PrSDKMarkerSuite.h>
@@ -16,6 +14,7 @@
 #include <PrSDKExportProgressSuite.h>
 #include <PrSDKExportParamSuite.h>
 #include <PrSDKExporterUtilitySuite.h>
+#include <PrSDKThreadedWorkSuite.h>
 #include "SDK_Segment_Utils.h"
 #include "movie_writer/movie_writer.hpp"
 #include "codec/codec.hpp"
@@ -67,7 +66,6 @@ typedef struct ExportSettings
     CodecSubType hapSubcodec;
     std::unique_ptr<Exporter> exporter;
     csSDK_int32 movCurrentFrame;
-    VideoSequenceParser* videoSequenceParser;
 	SPBasicSuite* spBasic;
     PrSDKExporterUtilitySuite* exporterUtilitySuite;
 	PrSDKExportParamSuite* exportParamSuite;
@@ -79,11 +77,9 @@ typedef struct ExportSettings
 	PrSDKMarkerSuite* markerSuite;
 	PrSDKPPixSuite* ppixSuite;
 	PrSDKTimeSuite* timeSuite;
-	PrSDKMemoryManagerSuite* memorySuite;
-	PrSDKSequenceAudioSuite1* sequenceAudioSuite;
-	PrSDKSequenceRenderSuite* sequenceRenderSuite;
+    PrSDKThreadedWorkSuite* threadedWorkSuite;
+    PrSDKMemoryManagerSuite* memorySuite;
 	PrSDKWindowSuite* windowSuite;
-	csSDK_uint32 videoRenderID;
 	prFieldType sourceFieldType;
 } ExportSettings;
 
