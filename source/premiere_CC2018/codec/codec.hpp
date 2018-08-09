@@ -54,7 +54,10 @@ public:
     CodecSubType subType() const { return subType_; }
 	std::string getSubTypeAsString() const;
 	size_t getMaxEncodedSize() const;
-    void encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;
+
+    void copyExternalToLocal(
+        const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;
+    void encode(EncodeScratchpad& scratchpad, EncodeOutput& out) const;
 
 private:
     CodecSubType subType_;

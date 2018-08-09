@@ -89,7 +89,8 @@ static void swizzleBGRA2RGBAFlipAndUnstride(const uint8_t* in, size_t stride, si
     }
 }
 
-void Codec::encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const
+void Codec::copyExternalToLocal(
+    const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const
 {
     // convert adobe format (bgra bottom left) to (rgba top left) for squish
     scratchpad.rgbaTopLeftOrigin.resize(frameDef_.width * frameDef_.height * 4);
@@ -98,7 +99,10 @@ void Codec::encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOu
         in.bgraBottomLeftOrigin, in.stride,
         frameDef_.width, frameDef_.height,
         &scratchpad.rgbaTopLeftOrigin[0]);
+}
 
+void Codec::encode(EncodeScratchpad& scratchpad, EncodeOutput& out) const
+{
     // convert input texture from rgba to <subcodec defined> dxt [+ dxt]
     for (unsigned int i = 0; i < count_; ++i)
     {
