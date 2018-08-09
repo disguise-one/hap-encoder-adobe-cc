@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 project(HapEncoder)
 
+set (CMAKE_CXX_STANDARD 17)
+
 if(MSVC)
     # add_compile_options(/arch:AVX2)
     # may want to use this for specific source files
