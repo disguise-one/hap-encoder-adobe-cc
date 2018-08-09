@@ -36,29 +36,12 @@ Exporter::Exporter(
 
 Exporter::~Exporter()
 {
-    int64_t nFramesDispatchedSnapshot;
-    {
-        std::lock_guard<std::mutex> guard(encodeQueueMutex_);  // TODO: use an atomic, get rid of this
-        nFramesDispatchedSnapshot = nFramesDispatched_;
-    }
-
     // if the number of frames dispatched was _all_ of them, wait for the final renders to exit the door
-    if (nFramesDispatchedSnapshot == nFrames_)
+    if (nFramesDispatched_ == nFrames_)
     {
         // wait for completion - nonintrusive
         while (nextFrameToWrite_ < nFrames_)
         {
-            std::this_thread::sleep_for(10ms);
-        }
-
-        // wait for completion - intrusive
-        while (true)
-        {
-            {
-                std::lock_guard<std::mutex> guard(writeQueueMutex_);
-                if (nextFrameToWrite_ == nFrames_)  // taking care re: read/write ordering
-                    break;
-            }
             std::this_thread::sleep_for(10ms);
         }
     }
@@ -89,20 +72,20 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     codec_->copyExternalToLocal(
         job->second.input, job->second.scratchpad, job->second.output);
 
-    size_t nDecodeJobs;
+    size_t nEncodeJobs;
     {
         std::lock_guard<std::mutex> guard(encodeQueueMutex_);
         encodeQueue_.push_back(std::move(job));
-        nDecodeJobs = encodeQueue_.size();
+        nEncodeJobs = encodeQueue_.size();
         nFramesDispatched_++;
     }
 
     // throttle - if the queue is getting too long we should wait
-    while (nDecodeJobs > concurrentThreadsSupported_)
+    while (nEncodeJobs > concurrentThreadsSupported_)
     {
         std::this_thread::sleep_for(10ms);
         std::lock_guard<std::mutex> guard(encodeQueueMutex_);
-        nDecodeJobs = encodeQueue_.size();
+        nEncodeJobs = encodeQueue_.size();
     }
 }
 
@@ -115,7 +98,7 @@ void Exporter::workerFunction(
     ExportJobQueue& encodeQueue,
     std::mutex& writeQueueMutex,
     ExportJobQueue& writeQueue,
-    int64_t& nextFrameToWrite,
+    std::atomic<int64_t>& nextFrameToWrite,
     std::unique_ptr<MovieWriter>& writer,
     int64_t nFrames)
 {

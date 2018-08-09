@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <list>
 #include <mutex>
 #include <thread>
@@ -55,7 +56,7 @@ private:
         ExportJobQueue& encodeQueue,
         std::mutex& writeQueueMutex,
         ExportJobQueue& writeQueue,
-        int64_t &nextFrameToWrite,
+        std::atomic<int64_t> &nextFrameToWrite,
         std::unique_ptr<MovieWriter>& writer,
         int64_t nFrames);
     std::list<std::thread> workers_;
@@ -64,7 +65,7 @@ private:
 
     std::unique_ptr<Codec> codec_;
     int64_t nFrames_;
-    mutable int64_t nFramesDispatched_;  // TODO: use an atomic
+    mutable int64_t nFramesDispatched_;
 
     mutable std::mutex freeListMutex_;
     mutable ExportJobQueue freeList_;
@@ -74,8 +75,9 @@ private:
 
     mutable std::mutex writeQueueMutex_;
     mutable ExportJobQueue writeQueue_;
-    mutable int64_t nextFrameToWrite_;             // protected with writeQueueMutex_ too
     mutable std::unique_ptr<MovieWriter> writer_;  // protected with writeQueueMutex_ too
+
+    mutable std::atomic<int64_t>  nextFrameToWrite_;
 };
 
 typedef struct ExportSettings
