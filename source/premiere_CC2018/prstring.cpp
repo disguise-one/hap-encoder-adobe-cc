@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "prstring.hpp"
 
 void copyConvertStringLiteralIntoUTF16(const wchar_t* inputString, prUTF16Char* destination)
@@ -7,7 +9,7 @@ void copyConvertStringLiteralIntoUTF16(const wchar_t* inputString, prUTF16Char* 
     CFRange	range = { 0, kPrMaxPath };
     range.length = length;
     CFStringRef inputStringCFSR = CFStringCreateWithBytes(kCFAllocatorDefault,
-        reinterpret_cast<const UInt8 *>(inputString),
+        reinterpret_cast<const uint8_t *>(inputString),
         length * sizeof(wchar_t),
         kCFStringEncodingUTF32LE,
         kPrFalse);
@@ -16,7 +18,7 @@ void copyConvertStringLiteralIntoUTF16(const wchar_t* inputString, prUTF16Char* 
         kCFStringEncodingUTF16,
         0,
         kPrFalse,
-        reinterpret_cast<UInt8 *>(destination),
+        reinterpret_cast<uint8_t *>(destination),
         length * (sizeof(prUTF16Char)),
         NULL);
     destination[length] = 0;
