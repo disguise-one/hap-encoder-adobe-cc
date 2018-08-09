@@ -15,6 +15,7 @@ extern"C"
 typedef std::array<char, 4> VideoFormat;
 typedef std::function<size_t (const uint8_t*, int size)> MovieWriteCallback;
 typedef std::function<int (int64_t offset, int whence)> MovieSeekCallback;
+typedef std::function<void()> MovieCloseCallback;
 typedef std::function<void (const char *)> MovieErrorCallback;
 
 // wrappers for libav-* objects
@@ -42,11 +43,12 @@ typedef std::unique_ptr<AVIOContext, IOContextDeleter> IOContext;
 class MovieWriter
 {
 public:
-    MovieWriter(const std::string& formatName, VideoFormat videoFormat,
+    MovieWriter(VideoFormat videoFormat,
                 int width, int height,
                 int64_t frameRateNumerator, int64_t frameRateDenominator,
                 MovieWriteCallback onWrite,
                 MovieSeekCallback onSeek,
+                MovieCloseCallback onClose,
                 MovieErrorCallback onError);
     ~MovieWriter();
 
@@ -55,6 +57,7 @@ public:
 private:
     MovieWriteCallback onWrite_;
     MovieSeekCallback onSeek_;
+    MovieCloseCallback onClose_;
     MovieErrorCallback onError_;
 
     // adapt writers that throw exceptions

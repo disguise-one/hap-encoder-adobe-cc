@@ -7,8 +7,8 @@ add_library(HapEncoderPlugin MODULE)
 target_sources(HapEncoderPlugin
     PRIVATE
         configure.hpp
-        hapencode.cpp
-        hapencode.hpp
+        export_settings.cpp
+        export_settings.hpp
         main.cpp
         main.hpp
         premiereParams.cpp
@@ -20,6 +20,8 @@ target_sources(HapEncoderPlugin
         codec/codec.hpp
         codec/texture_converter.cpp
         codec/texture_converter.hpp
+        exporter/exporter.cpp
+        exporter/exporter.hpp
         movie_writer/movie_writer.cpp
         movie_writer/movie_writer.hpp
 )
@@ -28,6 +30,7 @@ target_sources(HapEncoderPlugin
 # !!! this isn't working; probably need to get list added above
 # source_group(TREE . $<TARGET_PROPERTY:HapEncoderPlugin,SOURCES>)
 source_group("Source Files\\codec" REGULAR_EXPRESSION codec/*)
+source_group("Source Files\\exporter" REGULAR_EXPRESSION exporter/*)
 source_group("Source Files\\movie_writer" REGULAR_EXPRESSION movie_writer/*)
 
 target_link_libraries(HapEncoderPlugin

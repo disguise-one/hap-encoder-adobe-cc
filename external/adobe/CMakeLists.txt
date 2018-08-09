@@ -10,6 +10,7 @@ target_sources(AdobeSdk
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKEntry.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKExport.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKExportFileSuite.h
+        ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKExporterUtilitySuite.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKImport.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKMALErrors.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKMarkerSuite.h
