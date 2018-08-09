@@ -266,20 +266,34 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 	if (malNoError != error)
 		return error;
 
-	CW2A utf8(outPlatformPath, CP_UTF8);
-	const char* filename = utf8.m_psz;
+    error = settings->exportFileSuite->Open(exportInfoP->fileObject);
+    if (malNoError != error)
+        throw std::runtime_error(std::string("couldn't open output file"));
 
-    FILE *fp;
-    if (0 != fopen_s(&fp, filename, "wb"))
-        throw std::runtime_error(std::string("couldn't open ") + filename);
+    // cache some things
+    auto file = exportInfoP->fileObject;
+    auto Write = settings->exportFileSuite->Write;
+    auto Seek = settings->exportFileSuite->Seek;
+    auto Close = settings->exportFileSuite->Close;
 
     std::unique_ptr<MovieWriter> movieWriter = std::make_unique<MovieWriter>(
         codec->subType(),
         width.value.intValue, height.value.intValue,
         frameRateNumerator, frameRateDenominator,
-        [&](const uint8_t* buffer, size_t size) { return fwrite(buffer, 1, size, fp);  },
-        [&](int64_t offset, int whence) { return _fseeki64(fp, offset, whence); },
-        [&]() { fclose(fp);  },
+        [&](const uint8_t* buffer, size_t size) { return Write(file, (void *)buffer, (int32_t)size);  },
+        [&](int64_t offset, int whence) {
+            int64_t newPosition;
+            ExFileSuite_SeekMode seekMode;
+            if (whence == SEEK_SET)
+                seekMode = fileSeekMode_Begin;
+            else if (whence == SEEK_END)
+                seekMode = fileSeekMode_End;
+            else if (whence == SEEK_CUR)
+                seekMode = fileSeekMode_Current;
+            else
+                throw std::runtime_error("unhandled file seek mode");
+            return (malNoError==Seek(file, offset, newPosition, seekMode)) ? 0 : -1; },
+        [&]() { Close(file);  },
         [&](const char *msg) { /* !!! log it */ });
 
     int64_t nFrames = (exportInfoP->endTime - exportInfoP->startTime) / ticksPerFrame.value.timeValue;
