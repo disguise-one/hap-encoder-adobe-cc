@@ -1,6 +1,8 @@
 #pragma once
 
+#include <list>
 #include <mutex>
+#include <thread>
 
 #include <PrSDKTypes.h>
 #include <PrSDKWindowSuite.h>
@@ -14,7 +16,6 @@
 #include <PrSDKExportProgressSuite.h>
 #include <PrSDKExportParamSuite.h>
 #include <PrSDKExporterUtilitySuite.h>
-#include <PrSDKThreadedWorkSuite.h>
 #include "SDK_Segment_Utils.h"
 #include "movie_writer/movie_writer.hpp"
 #include "codec/codec.hpp"
@@ -25,6 +26,10 @@ struct ExporterEncodeBuffers
     EncodeScratchpad scratchpad;
     EncodeOutput output;
 };
+
+typedef std::pair<int64_t, ExporterEncodeBuffers> ExportFrameAndBuffers;
+typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or write, depending on the queue its in
+typedef std::vector<ExportJob> ExportJobQueue;
 
 class Exporter
 {
@@ -39,22 +44,38 @@ public:
     void dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const;
 
 private:
-    std::unique_ptr<ExporterEncodeBuffers> getEncodeBuffers() const;
-    void recycleEncodeBuffers(std::unique_ptr<ExporterEncodeBuffers> toRecycle) const;
+    size_t concurrentThreadsSupported_;
+    bool quit_;
+    static void workerFunction(
+        bool& quit,
+        std::unique_ptr<Codec>& codec,
+        std::mutex& freeListMutex,
+        ExportJobQueue& freeList,
+        std::mutex& encodeQueueMutex,
+        ExportJobQueue& encodeQueue,
+        std::mutex& writeQueueMutex,
+        ExportJobQueue& writeQueue,
+        int64_t &nextFrameToWrite,
+        std::unique_ptr<MovieWriter>& writer,
+        int64_t nFrames);
+    std::list<std::thread> workers_;
 
-    void writeInSequence(int64_t iFrame, std::unique_ptr<ExporterEncodeBuffers> buffers) const;
+    ExportJob getFreeJob() const;
 
     std::unique_ptr<Codec> codec_;
-    mutable std::unique_ptr<MovieWriter> writer_;
     int64_t nFrames_;
-
+    mutable int64_t nFramesDispatched_;  // TODO: use an atomic
 
     mutable std::mutex freeListMutex_;
-    mutable std::vector<std::unique_ptr<ExporterEncodeBuffers> > freeList_;
+    mutable ExportJobQueue freeList_;
+
+    mutable std::mutex encodeQueueMutex_;
+    mutable ExportJobQueue encodeQueue_;
 
     mutable std::mutex writeQueueMutex_;
-    mutable std::vector<std::pair<int64_t, std::unique_ptr<ExporterEncodeBuffers> > > writeQueue_;
-    mutable int32_t nextFrameToWrite_; // protected with writeQueueMutex_ too
+    mutable ExportJobQueue writeQueue_;
+    mutable int64_t nextFrameToWrite_;             // protected with writeQueueMutex_ too
+    mutable std::unique_ptr<MovieWriter> writer_;  // protected with writeQueueMutex_ too
 };
 
 typedef struct ExportSettings
@@ -65,7 +86,6 @@ typedef struct ExportSettings
 	csSDK_int32 fileType;
     CodecSubType hapSubcodec;
     std::unique_ptr<Exporter> exporter;
-    csSDK_int32 movCurrentFrame;
 	SPBasicSuite* spBasic;
     PrSDKExporterUtilitySuite* exporterUtilitySuite;
 	PrSDKExportParamSuite* exportParamSuite;
@@ -77,7 +97,6 @@ typedef struct ExportSettings
 	PrSDKMarkerSuite* markerSuite;
 	PrSDKPPixSuite* ppixSuite;
 	PrSDKTimeSuite* timeSuite;
-    PrSDKThreadedWorkSuite* threadedWorkSuite;
     PrSDKMemoryManagerSuite* memorySuite;
 	PrSDKWindowSuite* windowSuite;
 	prFieldType sourceFieldType;
