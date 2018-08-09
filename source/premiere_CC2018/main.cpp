@@ -7,10 +7,6 @@
 #include "configure.hpp"
 #include <vector>
 
-// utf16 to utf8
-#include <AtlBase.h>
-#include <AtlConv.h>
-
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
 {
 	prMALError result = exportReturn_Unsupported;
