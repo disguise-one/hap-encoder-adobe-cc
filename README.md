@@ -18,6 +18,12 @@ Please see license.txt for the licenses of this plugin and the components that w
 
 ## Prerequisites
 
+### compiler toolchain
+
+You'll need a compiler environment appropriate to your operating system. The current plugin has been developed on
+-  win64 with Microsoft Visual Studio 2017 Professional.
+-  macosx with XCode
+
 ### cmake
 cmake creates the build system for the supported target platforms.
 
@@ -39,9 +45,14 @@ Place in
     external/adobe/premiere
 
 ### FFMpeg
-FFMpeg is included as a submodule to the repository, but its build is not wrapped by the plugin's cmake build process.
+FFmpeg 4.0 is used for output of the .mov format.
 
-The cmake process should be able to locate a prebuilt FFMpeg.
+It is referenced as a submodule of this repository. Fetch the source for building with
+
+    git submodule init
+    git submodule update
+
+The FFMpeg build is not wrapped by the plugin's cmake build process, and must be made in a platform specific process as descibed below.
 
 #### win64
 Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
@@ -69,6 +80,10 @@ For reference, the FFMpeg build for the win64 plugin was created by
         make
 
 This will take a while.
+
+#### macosx
+
+
 
 ##  Building
 
