@@ -1,5 +1,5 @@
 #include "premiereParams.hpp"
-#include "hapencode.hpp"
+#include "export_settings.hpp"
 #include "prstring.hpp"
 #include "configure.hpp"
 

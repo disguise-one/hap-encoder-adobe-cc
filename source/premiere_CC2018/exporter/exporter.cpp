@@ -1,9 +1,7 @@
 #include <chrono>
 #include <thread>
 
-#include "hapencode.hpp"
-#include "codec/codec.hpp"
-#include "configure.hpp"
+#include "exporter.hpp"
 
 using namespace std::chrono_literals;
 
@@ -175,11 +173,3 @@ ExportJob Exporter::getFreeJob() const
     else
         return std::make_unique<ExportFrameAndBuffers>();
 }
-
-
-csSDK_int32 getPixelFormatSize(const PrFourCC subtype)
-{
-    // !!! wrong.
-	return 4;
-}
-

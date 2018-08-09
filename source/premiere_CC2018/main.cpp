@@ -2,7 +2,8 @@
 #include "configure.hpp"
 #include "premiereParams.hpp"
 #include "prstring.hpp"
-#include "hapencode.hpp"
+#include "export_settings.hpp"
+#include "exporter/exporter.hpp"
 #include "configure.hpp"
 #include <vector>
 
@@ -93,16 +94,6 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
     }
 
     return exportReturn_IterateExporterDone;
-}
-
-ExportSettings::ExportSettings()
-{
-
-}
-
-ExportSettings::~ExportSettings()
-{
-
 }
 
 prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanceRecP)
