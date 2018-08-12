@@ -82,8 +82,10 @@ For reference, the FFMpeg build for the win64 plugin was created by
 This will take a while.
 
 #### macosx
+Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg. Then
 
-
+    ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --disable-zlib --disable-iconv
+    make
 
 ##  Building
 
@@ -104,3 +106,23 @@ This should create HapEncoder.sln in the current directory. Open it in Visual St
 
 The encoder plugin (.prm) is created by building all.
 The installer executable is made by building the PACKAGE target, which is excluded from the regular build.
+
+### macosx
+
+(under construction)
+
+First create a build directory at the top level, and move into it
+
+    mkdir Release
+    cd Release
+
+Invoke cmake to create makefiles etc for a Release build
+
+    cmake -DCMAKE_BUILD_TYPE_RELEASE ..
+
+Then do a build with
+
+    make -j
+
+(this creates an .so at present; we need to make a bundle of a specific type for the plugin - need to readup the Adobe SDK docs)
+
