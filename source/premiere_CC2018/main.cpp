@@ -343,9 +343,6 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 
 prMALError doExport(exportStdParms* stdParmsP, exDoExportRec* exportInfoP)
 {
-	PrTime exportDuration = exportInfoP->endTime - exportInfoP->startTime;
-	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
-
 	if (exportInfoP->exportVideo)
 		return renderAndWriteAllVideo(exportInfoP);
 
