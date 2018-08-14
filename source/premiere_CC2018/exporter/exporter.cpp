@@ -87,6 +87,18 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     }
 }
 
+ExportJob waitAndPopNext(std::mutex& lock, ExportJobQueue& queue)
+{
+    ExportJob retval;
+    std::lock_guard<std::mutex> guard(lock);
+    auto earliest = std::min_element(queue.begin(), queue.end(), [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
+    if (earliest != queue.end()) {
+        retval = std::move(*earliest);
+        queue.erase(earliest);
+    }
+    return retval;
+}
+
 void Exporter::workerFunction(
     bool& quit,
     std::unique_ptr<Codec>& codec,
@@ -102,18 +114,11 @@ void Exporter::workerFunction(
 {
     while (!quit)
     {
-        ExportJob job;
-
-        // wait on work even
-        {
-            std::lock_guard<std::mutex> guard(encodeQueueMutex);
-            if (!encodeQueue.empty())
-            {
-                job = std::move(encodeQueue.back());
-                encodeQueue.pop_back();
-            }
-        }
-
+        // we assume the exporter delivers frames in sequence; we can't
+        // buffer unlimited frames for writing until we're give frame 1
+        // at the end, for example.
+        ExportJob job = waitAndPopNext(encodeQueueMutex, encodeQueue);
+        
         if (!job)
         {
             std::this_thread::sleep_for(2ms);
@@ -123,40 +128,47 @@ void Exporter::workerFunction(
             codec->encode(job->second.scratchpad, job->second.output);
 
             // submit it to be written (frame may be out of order)
-            std::lock_guard<std::mutex> guard(writeQueueMutex);
-            writeQueue.push_back(std::move(job));
+            {
+                std::lock_guard<std::mutex> guard(writeQueueMutex);
+                writeQueue.push_back(std::move(job));
+            }
 
             // dequeue any in-order writes
             // NOTE: other threads may be blocked here, even though they could get on with encoding
             //       this is ultimately not a problem as they'll be rate limited by how much can be
             //       written out - we don't want encoding to get too far ahead of writing, as that's
             //       a liveleak of the encode buffers
-            bool written;
+            //       each job that is written, we release one decode thread
+            //       each job must do one write
+            bool written(false);
             do
             {
-                written = false;
-                for (auto i = writeQueue.begin(); i != writeQueue.end(); ++i)
+                std::unique_lock<std::mutex> try_guard(writeQueueMutex, std::try_to_lock);
+
+                if (try_guard.owns_lock())
                 {
-                    if ((*i)->first == nextFrameToWrite)
-                    {
-                        ExportJob job = std::move((*i));
-                        writer->writeFrame(&job->second.output.buffer[0], job->second.output.buffer.size());
+                    auto earliest = std::min_element(writeQueue.begin(), writeQueue.end(), [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
+                    if (earliest != writeQueue.end() && (*earliest)->first == nextFrameToWrite) {
+                        writer->writeFrame(&(*earliest)->second.output.buffer[0], (*earliest)->second.output.buffer.size());
                         nextFrameToWrite++;
-                        writeQueue.erase(i);
                         {
                             std::lock_guard<std::mutex> freeListGuard(freeListMutex);
-                            freeList.push_back(std::move(job));
+                            freeList.push_back(std::move(*earliest));
                         }
-                        written = true;
-                        break;
-                    }
-                }
-            } while (written);
+                        writeQueue.erase(earliest);
 
-            if (nextFrameToWrite > nFrames)
-            {
-                writer.reset(nullptr);
-            }
+                        if (nextFrameToWrite > nFrames)
+                        {
+                            writer.reset(nullptr);
+                        }
+
+                        written = true;
+                    }
+
+                    try_guard.unlock();
+                }
+                std::this_thread::sleep_for(1ms);
+            } while (!written);
         }
     }
 }
