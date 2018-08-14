@@ -152,7 +152,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime ticksPerSecond = 0;
 	exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
-	exOneParamValueRec tempPAR;
 	csSDK_int32	PARs[][2] = { { 1, 1 }, { 10, 11 }, { 40, 33 }, { 768, 702 }, { 1024, 702 }, { 2, 1 }, { 4, 3 }, { 3, 2 } };
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
@@ -163,7 +162,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
 	const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
-	const wchar_t* PARStrings[] = { STR_PAR_10, STR_PAR_09, STR_PAR_12, STR_PAR_11, STR_PAR_144, STR_PAR_20, STR_PAR_13, STR_PAR_15 };
 
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
@@ -189,9 +187,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 	copyConvertStringLiteralIntoUTF16(STR_HAP_SUBCODEC, tempString);
 	settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoCodec, tempString);
 
-    copyConvertStringLiteralIntoUTF16(STR_PAR, tempString);
-    settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoAspect, tempString);
-
     copyConvertStringLiteralIntoUTF16(STR_FRAME_RATE, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoFPS, tempString);
 
@@ -202,15 +197,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 		copyConvertStringLiteralIntoUTF16(hapSubcodecStrings[i], tempString);
 		settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoCodec, &tempHapSubcodec, tempString);
 	}
-
-    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoAspect);
-    for (csSDK_int32 i = 0; i < sizeof(PARs) / sizeof(PARs[0]); i++)
-    {
-        tempPAR.ratioValue.numerator = PARs[i][0];
-        tempPAR.ratioValue.denominator = PARs[i][1];
-        copyConvertStringLiteralIntoUTF16(PARStrings[i], tempString);
-        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoAspect, &tempPAR, tempString);
-    }
 
     settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoFPS);
 

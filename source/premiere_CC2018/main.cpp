@@ -206,9 +206,8 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		outputSettingsP->outVideoFrameRate = frameRate.value.timeValue;
 		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
 		privateData->hapSubcodec = reinterpret_cast<CodecSubType &>(hapSubcodec.value.intValue);
-		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoAspect, &pixelAspectRatio);
-		outputSettingsP->outVideoAspectNum = pixelAspectRatio.value.ratioValue.numerator;
-		outputSettingsP->outVideoAspectDen = pixelAspectRatio.value.ratioValue.denominator;
+		outputSettingsP->outVideoAspectNum = 1;
+		outputSettingsP->outVideoAspectDen = 1;
 		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
 		outputSettingsP->outVideoFieldType = fieldType.value.intValue;
 	}
@@ -242,14 +241,13 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 	prMALError result = malNoError;
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, hapSubcodec, pixelAspectRatio;
+	exParamValues ticksPerFrame, width, height, hapSubcodec;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoAspect, &pixelAspectRatio);
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
