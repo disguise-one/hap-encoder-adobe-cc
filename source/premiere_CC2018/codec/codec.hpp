@@ -16,6 +16,8 @@ typedef std::array<char, 4> CodecSubType;
 #define kHapYCoCgACodecSubType CodecSubType({'H', 'a', 'p', 'M'})
 #define kHapAOnlyCodecSubType CodecSubType({'H', 'a', 'p', 'A'})
 
+typedef std::array<unsigned int, 2> HapChunkCounts;
+
 // Placeholders for inputs, processing and outputs for encode process
 
 struct EncodeInput
@@ -46,10 +48,11 @@ public:
 	Codec(
         CodecSubType subType,
 		const FrameDef& frameDef,
+        HapChunkCounts chunkCounts,
 		const std::vector<unsigned int>& textureFormats);
 	~Codec();
 
-	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef);
+	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef, HapChunkCounts chunkCounts);
 
     CodecSubType subType() const { return subType_; }
 	std::string getSubTypeAsString() const;
@@ -64,7 +67,7 @@ private:
 	FrameDef frameDef_;
 	unsigned int count_;
 	std::array<unsigned long, 2> sizes_;
-	std::array<unsigned int, 2> chunkCounts_;
+	HapChunkCounts chunkCounts_;
 	std::array<unsigned int, 2> textureFormats_;
 	std::array<unsigned int, 2> compressors_;
 	std::array<std::unique_ptr<TextureConverter>, 2> converters_;

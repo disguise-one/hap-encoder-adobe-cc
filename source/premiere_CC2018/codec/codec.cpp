@@ -13,11 +13,12 @@ int roundUpToMultipleOf4(int n)
 Codec::Codec(
     CodecSubType subType,
     const FrameDef& frameDef,
+    HapChunkCounts chunkCounts,
     const std::vector<unsigned int>& textureFormats)
     : subType_(subType),
       frameDef_(frameDef),
       count_((int)textureFormats.size()),
-      chunkCounts_({ 1, 1 }),
+      chunkCounts_(chunkCounts),
       compressors_({ HapCompressorSnappy, HapCompressorSnappy })
 {
     for (size_t i = 0; i < count_; ++i)
@@ -34,9 +35,13 @@ Codec::~Codec()
 }
 
 
-std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& frameDef)
+std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& frameDef, HapChunkCounts chunkCounts)
 {
     std::vector<unsigned int> textureFormats;
+
+    // auto represented as 0, 0
+    if (chunkCounts == HapChunkCounts({ 0, 0 }))
+        chunkCounts = HapChunkCounts({ 1, 1 });
 
     if (codecType == kHapCodecSubType) {
         textureFormats = { HapTextureFormat_RGB_DXT1 };
@@ -56,7 +61,7 @@ std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& fra
     else
         throw std::runtime_error("unknown codec");
 
-    return std::make_unique<Codec>(codecType, frameDef, textureFormats);
+    return std::make_unique<Codec>(codecType, frameDef, chunkCounts, textureFormats);
 }
 
 std::string Codec::getSubTypeAsString() const

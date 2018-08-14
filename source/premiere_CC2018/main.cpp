@@ -251,10 +251,12 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
+    HapChunkCounts chunkCounts{ 1, 1 };
 
 	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
         Codec::create(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue),
-					  FrameDef(width.value.intValue, height.value.intValue)));
+					  FrameDef(width.value.intValue, height.value.intValue),
+                      chunkCounts));
 
 	// get the filename
 	csSDK_int32 outPathLength=1024;
