@@ -152,7 +152,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime ticksPerSecond = 0;
 	exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
-	csSDK_int32	PARs[][2] = { { 1, 1 }, { 10, 11 }, { 40, 33 }, { 768, 702 }, { 1024, 702 }, { 2, 1 }, { 4, 3 }, { 3, 2 } };
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };

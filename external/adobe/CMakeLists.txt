@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
-project(AdobeSdk)
+project(AdobeSdk LANGUAGES CXX)
 
-add_library(AdobeSdk STATIC)
+add_library(AdobeSdk INTERFACE)
 target_sources(AdobeSdk
-    PRIVATE
-        premiere/Utils/SDK_Segment_Utils.cpp
-    PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/premiere/Utils/SDK_Segment_Utils.h
+    INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKEntry.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKExport.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKExportFileSuite.h
@@ -21,4 +18,4 @@ target_sources(AdobeSdk
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKTypes.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/SPBasic.h
 )
-target_include_directories(AdobeSdk PUBLIC premiere/Headers premiere/Utils/)
+target_include_directories(AdobeSdk INTERFACE premiere/Headers premiere/Utils/)

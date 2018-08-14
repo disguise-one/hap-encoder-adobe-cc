@@ -190,7 +190,7 @@ prMALError endInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanc
 prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsRec *outputSettingsP)
 {
 	const csSDK_uint32 exID = outputSettingsP->exporterPluginID;
-	exParamValues width, height, frameRate, hapSubcodec, pixelAspectRatio, fieldType;
+	exParamValues width, height, frameRate, hapSubcodec, fieldType;
 	ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
 	PrSDKExportParamSuite* paramSuite = privateData->exportParamSuite;
 	const csSDK_int32 mgroupIndex = 0;
