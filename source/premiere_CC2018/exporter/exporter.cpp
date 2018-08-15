@@ -157,6 +157,7 @@ void Exporter::workerFunction(
                         }
                         writeQueue.erase(earliest);
 
+                        // last frame triggers close etc
                         if (nextFrameToWrite > nFrames)
                         {
                             writer.reset(nullptr);
@@ -168,7 +169,7 @@ void Exporter::workerFunction(
                     try_guard.unlock();
                 }
                 std::this_thread::sleep_for(1ms);
-            } while (!written);
+            } while (!written && !quit);
         }
     }
 }
