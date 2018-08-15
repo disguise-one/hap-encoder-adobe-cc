@@ -97,22 +97,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
 		hapSubcodecParam.paramValues = hapSubcodecValues;
 		exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &hapSubcodecParam);
 
-		exNewParamInfo PARParam;
-		exParamValues PARValues;
-		safeStrCpy(PARParam.identifier, 256, ADBEVideoAspect);
-		PARParam.paramType = exParamType_ratio;
-		PARParam.flags = exParamFlag_none;
-		PARValues.rangeMin.ratioValue.numerator = 10;
-		PARValues.rangeMin.ratioValue.denominator = 11;
-		PARValues.rangeMax.ratioValue.numerator = 2;
-		PARValues.rangeMax.ratioValue.denominator = 1;
-		PARValues.value.ratioValue.numerator = seqPARNum.mInt32;
-		PARValues.value.ratioValue.denominator = seqPARDen.mInt32;
-		PARValues.disabled = kPrFalse;
-		PARValues.hidden = kPrFalse;
-		PARParam.paramValues = PARValues;
-		exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &PARParam);
-
 		exNewParamInfo frameRateParam;
         exParamValues frameRateValues;
         safeStrCpy(frameRateParam.identifier, 256, ADBEVideoFPS);
