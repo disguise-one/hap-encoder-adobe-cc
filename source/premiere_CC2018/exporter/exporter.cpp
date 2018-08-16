@@ -27,7 +27,7 @@ void ExporterJobFreeList::free_job(ExportJob job)
 
 
 ExporterJobEncoder::ExporterJobEncoder(Codec& codec)
-    : codec_(codec)
+    : codec_(codec), nEncodeJobs_(0)
 {
 }
 
@@ -41,22 +41,28 @@ void ExporterJobEncoder::push(ExportJob job)
 ExportJob ExporterJobEncoder::encode()
 {
     ExportJob job;
-    std::lock_guard<std::mutex> guard(mutex_);
-    auto earliest = std::min_element(queue_.begin(), queue_.end(),
-                                     [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
-    if (earliest != queue_.end()) {
-        job = std::move(*earliest);
-        queue_.erase(earliest);
 
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        auto earliest = std::min_element(queue_.begin(), queue_.end(),
+                                         [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
+        if (earliest != queue_.end()) {
+            job = std::move(*earliest);
+            queue_.erase(earliest);
+            nEncodeJobs_--;
+        }
+    }
+
+    if (job)
         codec_.encode(job->second.scratchpad, job->second.output);
 
-        nEncodeJobs_--;
-    }
+
     return job;
 }
 
 ExporterJobWriter::ExporterJobWriter(std::unique_ptr<MovieWriter> writer, int64_t nFrames)
-    : writer_(std::move(writer)), nFrames_(nFrames), nextFrameToWrite_(0)
+    : writer_(std::move(writer)), nFrames_(nFrames), nextFrameToWrite_(0),
+      utilisation_(1.)
 {
 }
 
@@ -78,7 +84,24 @@ ExportJob ExporterJobWriter::write()
             ExportJob job = std::move(*earliest);
             queue_.erase(earliest);
 
+            // start idle timer first time we try to write to avoid false including setup time
+            if (idleStart_ == std::chrono::high_resolution_clock::time_point())
+                idleStart_ = std::chrono::high_resolution_clock::now();
+
+            writeStart_ = std::chrono::high_resolution_clock::now();
             writer_->writeFrame(&job->second.output.buffer[0], job->second.output.buffer.size());
+            auto writeEnd = std::chrono::high_resolution_clock::now();
+ 
+            // filtered update of utilisation_
+            if (writeEnd != idleStart_)
+            {
+                auto totalTime = (writeEnd - idleStart_).count();
+                auto writeTime = (writeEnd - writeStart_).count();
+                const double alpha = 0.9;
+                utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)writeTime / totalTime);
+            }
+            idleStart_ = writeEnd;
+
             nextFrameToWrite_++;
 
             // last frame triggers close etc
@@ -173,10 +196,13 @@ Exporter::Exporter(
   : codec_(std::move(codec)), encoder_(*codec_), writer_(std::move(movieWriter), nFrames), nFrames_(nFrames), nFramesDispatched_(0),
     quit_(false)
 {
-    concurrentThreadsSupported_ = std::thread::hardware_concurrency();
-    for (size_t i=0; i<concurrentThreadsSupported_; ++i)
+    concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write
+
+    // assume 4 threads + 1 writing will not tax the system too much before we figure out its limits
+    size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
+    for (size_t i=0; i<startingThreads; ++i)
     {
-        workers_.push_back(ExporterWorker(quit_, freeList_, encoder_, writer_));
+        workers_.push_back(std::make_unique<ExporterWorker>(quit_, freeList_, encoder_, writer_));
     }
 }
 
@@ -194,6 +220,14 @@ Exporter::~Exporter()
 
 void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const
 {
+    // throttle the caller - if the queue is getting too long we should wait
+    while ( (encoder_.nEncodeJobs() >= workers_.size()-1)
+            && !expandWorkerPoolToCapacity()) // if we can, expand the pool
+    {
+        // otherwise wait for an opening
+        std::this_thread::sleep_for(2ms);
+    }
+
     ExportJob job = freeList_.allocate_job();
 
     job->first = iFrame;
@@ -211,10 +245,18 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
 
     encoder_.push(std::move(job));
     nFramesDispatched_++;
+}
 
-    // throttle - if the queue is getting too long we should wait
-    while (encoder_.nEncodeJobs() > concurrentThreadsSupported_)
-    {
-        std::this_thread::sleep_for(2ms);
+// returns true if pool was expanded
+bool Exporter::expandWorkerPoolToCapacity() const
+{
+    bool isNotThreadLimited = workers_.size() < concurrentThreadsSupported_;
+    bool isNotOutputLimited = writer_.utilisation() < 0.99;
+    bool isNotBufferLimited = true;  // TODO: get memoryUsed < maxMemoryCapacity from Adobe API
+
+    if (isNotThreadLimited && isNotOutputLimited && isNotBufferLimited) {
+        workers_.push_back(std::make_unique<ExporterWorker>(quit_, freeList_, encoder_, writer_));
+        return true;
     }
+    return false;
 }

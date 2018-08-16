@@ -40,7 +40,7 @@ public:
     void push(ExportJob job);
     ExportJob encode();
 
-    int64_t nEncodeJobs() const { return nEncodeJobs_;  }
+    uint64_t nEncodeJobs() const { return nEncodeJobs_;  }
 
 private:
     Codec& codec_;  // must have thread-safe processing functions
@@ -48,7 +48,7 @@ private:
     std::mutex mutex_;
     ExportJobQueue queue_;
 
-    std::atomic<int64_t> nEncodeJobs_;
+    std::atomic<uint64_t> nEncodeJobs_;
 };
 
 // thread-safe writer of ExportJob
@@ -60,16 +60,21 @@ public:
     void push(ExportJob job);
     ExportJob write();  // returns the job that was written
 
+    double utilisation() { return utilisation_; }
+
     void waitForLastWrite(); // finish up
 
 private:
-    std::unique_ptr<MovieWriter> writer_;
     int64_t nFrames_;
 
     std::mutex mutex_;
     ExportJobQueue queue_;
     std::atomic<int64_t> nextFrameToWrite_;
     std::unique_ptr<MovieWriter> writer_;
+    std::chrono::high_resolution_clock::time_point idleStart_;
+    std::chrono::high_resolution_clock::time_point writeStart_;
+
+    std::atomic<double> utilisation_;
 };
 
 class ExporterWorker
@@ -104,10 +109,10 @@ public:
     void dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const;
 
 private:
+    bool expandWorkerPoolToCapacity() const;
     size_t concurrentThreadsSupported_;
-    bool quit_;
-    std::list<ExporterWorker> workers_;
 
+    mutable bool quit_;
     std::unique_ptr<Codec> codec_;
     int64_t nFrames_;
     mutable int64_t nFramesDispatched_;
@@ -115,4 +120,7 @@ private:
     mutable ExporterJobFreeList freeList_;
     mutable ExporterJobEncoder encoder_;
     mutable ExporterJobWriter writer_;
+
+    // must be last to ensure they're joined before their dependents are destructed
+    mutable std::list<std::unique_ptr<ExporterWorker> > workers_;
 };
