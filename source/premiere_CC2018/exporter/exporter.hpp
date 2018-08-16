@@ -19,6 +19,78 @@ typedef std::pair<int64_t, ExporterEncodeBuffers> ExportFrameAndBuffers;
 typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or write, depending on the queue its in
 typedef std::vector<ExportJob> ExportJobQueue;
 
+// thread-safe freelist of ExportJob
+class ExporterJobFreeList
+{
+public:
+    ExportJob allocate_job();
+    void free_job(ExportJob job);
+
+private:
+    std::mutex mutex_;
+    ExportJobQueue jobs_;
+};
+
+// thread-safe encoder of ExportJob
+class ExporterJobEncoder
+{
+public:
+    ExporterJobEncoder(Codec& codec);
+
+    void push(ExportJob job);
+    ExportJob encode();
+
+    int64_t nEncodeJobs() const { return nEncodeJobs_;  }
+
+private:
+    Codec& codec_;  // must have thread-safe processing functions
+
+    std::mutex mutex_;
+    ExportJobQueue queue_;
+
+    std::atomic<int64_t> nEncodeJobs_;
+};
+
+// thread-safe writer of ExportJob
+class ExporterJobWriter
+{
+public:
+    ExporterJobWriter(std::unique_ptr<MovieWriter> writer, int64_t nFrames);
+
+    void push(ExportJob job);
+    ExportJob write();  // returns the job that was written
+
+    void waitForLastWrite(); // finish up
+
+private:
+    std::unique_ptr<MovieWriter> writer_;
+    int64_t nFrames_;
+
+    std::mutex mutex_;
+    ExportJobQueue queue_;
+    std::atomic<int64_t> nextFrameToWrite_;
+    std::unique_ptr<MovieWriter> writer_;
+};
+
+class ExporterWorker
+{
+public:
+    ExporterWorker(bool& quit, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer);
+    ~ExporterWorker();
+
+    static void worker_start(ExporterWorker& worker);
+
+private:
+    std::thread worker_;
+    void run();
+
+    bool& quit_;
+    ExporterJobFreeList& freeList_;
+    ExporterJobEncoder& encoder_;
+    ExporterJobWriter& writer_;
+};
+
+
 class Exporter
 {
 public:
@@ -34,35 +106,13 @@ public:
 private:
     size_t concurrentThreadsSupported_;
     bool quit_;
-    static void workerFunction(
-        bool& quit,
-        std::unique_ptr<Codec>& codec,
-        std::mutex& freeListMutex,
-        ExportJobQueue& freeList,
-        std::mutex& encodeQueueMutex,
-        ExportJobQueue& encodeQueue,
-        std::mutex& writeQueueMutex,
-        ExportJobQueue& writeQueue,
-        std::atomic<int64_t> &nextFrameToWrite,
-        std::unique_ptr<MovieWriter>& writer,
-        int64_t nFrames);
-    std::list<std::thread> workers_;
-
-    ExportJob getFreeJob() const;
+    std::list<ExporterWorker> workers_;
 
     std::unique_ptr<Codec> codec_;
     int64_t nFrames_;
     mutable int64_t nFramesDispatched_;
 
-    mutable std::mutex freeListMutex_;
-    mutable ExportJobQueue freeList_;
-
-    mutable std::mutex encodeQueueMutex_;
-    mutable ExportJobQueue encodeQueue_;
-
-    mutable std::mutex writeQueueMutex_;
-    mutable ExportJobQueue writeQueue_;
-    mutable std::unique_ptr<MovieWriter> writer_;  // protected with writeQueueMutex_ too
-
-    mutable std::atomic<int64_t>  nextFrameToWrite_;
+    mutable ExporterJobFreeList freeList_;
+    mutable ExporterJobEncoder encoder_;
+    mutable ExporterJobWriter writer_;
 };
