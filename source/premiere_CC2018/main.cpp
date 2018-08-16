@@ -83,11 +83,11 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         infoRec->canExportVideo = kPrTrue;
         infoRec->canExportAudio = kPrFalse;
         infoRec->canEmbedCaptions = kPrFalse;
+        infoRec->canConformToMatchParams = kPrTrue;
         infoRec->singleFrameOnly = kPrFalse;
         infoRec->wantsNoProgressBar = kPrFalse;
         infoRec->doesNotSupportAudioOnly = kPrTrue;
         infoRec->interfaceVersion = EXPORTMOD_VERSION;
-
         copyConvertStringLiteralIntoUTF16(HAP_VIDEO_FILE_NAME, infoRec->fileTypeName);
         copyConvertStringLiteralIntoUTF16(HAP_VIDEOFILEEXT, infoRec->fileTypeDefaultExtension);
         return exportReturn_IterateExporter;
