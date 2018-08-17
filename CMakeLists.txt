@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
+
+# modules
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
+
+# project
+
 project(HapEncoder)
 
 set (CMAKE_CXX_STANDARD 17)
@@ -10,6 +16,7 @@ else()
     add_compile_options(-msse4.1)
 endif()
 
+# library dependencies
 add_subdirectory(external/snappy)
 add_subdirectory(external/squish/squish-source)
 add_subdirectory(external/hap)
@@ -17,9 +24,14 @@ add_subdirectory(external/ffmpeg)
 add_subdirectory(external/ycocg)
 add_subdirectory(external/adobe)
 
+# documentation
+add_subdirectory(doc)
+
+# plugin
 add_subdirectory(source/premiere_CC2018)
 
-# win64
+# win64 installer
+
 set(CPACK_PACKAGE_NAME "HapEncoder")
 set(CPACK_PACKAGE_VENDOR "HapCommunity")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HapEncoder - Hap encoding plugin for Adobe CC 2018")
@@ -39,9 +51,10 @@ set(CPACK_COMPONENTS_ALL plugin)
 # override modules path so we can change the nsis template
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
 
+# macosx installer
 
-# macosx
+# TODO
 
-
+# generic installer framework
 # This must always be last!
 include(CPack)
