@@ -190,7 +190,7 @@ prMALError endInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanc
 prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsRec *outputSettingsP)
 {
 	const csSDK_uint32 exID = outputSettingsP->exporterPluginID;
-	exParamValues width, height, frameRate, hapSubcodec, fieldType;
+    exParamValues width, height, frameRate, hapSubcodec; // , fieldType;
 	ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
 	PrSDKExportParamSuite* paramSuite = privateData->exportParamSuite;
 	const csSDK_int32 mgroupIndex = 0;
@@ -208,8 +208,8 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		privateData->hapSubcodec = reinterpret_cast<CodecSubType &>(hapSubcodec.value.intValue);
 		outputSettingsP->outVideoAspectNum = 1;
 		outputSettingsP->outVideoAspectDen = 1;
-		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
-		outputSettingsP->outVideoFieldType = fieldType.value.intValue;
+		// paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
+		outputSettingsP->outVideoFieldType = prFieldsNone;
 	}
 
 	// Calculate bitrate
