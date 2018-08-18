@@ -36,9 +36,13 @@ source_group("Source Files\\movie_writer" REGULAR_EXPRESSION movie_writer/*)
 find_library(CoreFoundation CoreFoundation)
 find_library(CoreVideo CoreVideo)
 find_library(Accelerate Accelerate)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules (GLIB2   glib-2.0)
-include(findZLIB)
+
+if (MSVC)
+else (MSVC)
+   find_package(PkgConfig REQUIRED)
+   pkg_check_modules (GLIB2   glib-2.0)
+   include(findZLIB)
+endif(MSVC)
 
 target_link_libraries(HapEncoderPlugin
     PRIVATE
