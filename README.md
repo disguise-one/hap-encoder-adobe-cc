@@ -1,8 +1,9 @@
 # Hap Exporter for Adobe CC 2018
 
-This is the community-supplied Hap and HapQ exporter plugin for Adobe CC 2018.
+This is the community-supplied Hap and Hap Q exporter plugin for Adobe CC 2018.
 
-Development of this plugin was generously sponsored by disguise, makers of the disguise show production software and hardware
+Development of this plugin was sponsored by disguise, makers of the disguise show production software and hardware
+
     http://disguise.one
 
 Principal authors of the plugin are
@@ -13,6 +14,10 @@ Principal authors of the plugin are
 Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting that development.
 
 Please see license.txt for the licenses of this plugin and the components that were used to create it.
+
+# User Guide
+
+The User Guide can be found [here](doc/user_guide/README.md)
 
 # Development
 
@@ -87,6 +92,16 @@ Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg.
     ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --disable-zlib --disable-iconv
     make
 
+### Pandoc
+Pandoc is required to build the documentation, which is bundled by the installer.
+
+    https://pandoc.org/
+
+#### macos
+For macos, the homebrew installation is recommended.
+
+    brew install pandocology
+
 ##  Building
 
 ### win64
@@ -109,8 +124,6 @@ The installer executable is made by building the PACKAGE target, which is exclud
 
 ### macosx
 
-(under construction)
-
 First create a build directory at the top level, and move into it
 
     mkdir Release
@@ -118,11 +131,16 @@ First create a build directory at the top level, and move into it
 
 Invoke cmake to create makefiles etc for a Release build
 
-    cmake -DCMAKE_BUILD_TYPE_RELEASE ..
+    cmake -DCMAKE_BUILD_TYPE_RELEASE -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
 
 Then do a build with
 
     make -j
 
-(this creates an .so at present; we need to make a bundle of a specific type for the plugin - need to readup the Adobe SDK docs)
+This will create a plugin at
 
+    Release/source/premiere_CC2018/HapEncoderPlugin.bundle
+
+This plugin needs to be copied to /Library/Application\ Support/Adobe/Common/Plug-ins/<version>
+
+TODO: create an installer which figures out the right paths to copy plugin+presets to from Adobe's .plist file
