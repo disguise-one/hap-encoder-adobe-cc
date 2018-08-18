@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 project(HapEncoder)
 
+set (CMAKE_CXX_STANDARD 17)
+
 if(MSVC)
     # add_compile_options(/arch:AVX2)
     # may want to use this for specific source files
@@ -17,8 +19,9 @@ add_subdirectory(external/adobe)
 
 add_subdirectory(source/premiere_CC2018)
 
+# win64
 set(CPACK_PACKAGE_NAME "HapEncoder")
-set(CPACK_PACKAGE_VENDOR "notadobe.org")
+set(CPACK_PACKAGE_VENDOR "HapCommunity")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HapEncoder - Hap encoding plugin for Adobe CC 2018")
 set(CPACK_PACKAGE_VERSION "1.0.7")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
@@ -35,6 +38,10 @@ set(CPACK_COMPONENTS_ALL plugin)
 
 # override modules path so we can change the nsis template
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
+
+
+# macosx
+
 
 # This must always be last!
 include(CPack)

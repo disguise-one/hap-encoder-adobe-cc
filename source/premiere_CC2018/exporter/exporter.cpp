@@ -193,7 +193,8 @@ Exporter::Exporter(
     std::unique_ptr<Codec> codec,
     std::unique_ptr<MovieWriter> movieWriter,
     int64_t nFrames)
-  : codec_(std::move(codec)), encoder_(*codec_), writer_(std::move(movieWriter), nFrames), nFrames_(nFrames), nFramesDispatched_(0),
+  : codec_(std::move(codec)), encoder_(*codec_), nFrames_(nFrames),
+            writer_(std::move(movieWriter), nFrames), nFramesDispatched_(0),
     quit_(false)
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write

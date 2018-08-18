@@ -45,8 +45,6 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
         throw std::runtime_error("Could not allocate format context");
     formatContext_.reset(formatContext); // and own it
 
-    AVOutputFormat *fmt = formatContext_->oformat;
-
     double frameRateFrac = (double)frameRateNumerator / frameRateDenominator;
     streamTimebase_.num = 100;
     streamTimebase_.den = (int)(frameRateFrac*100.0 + 0.5);

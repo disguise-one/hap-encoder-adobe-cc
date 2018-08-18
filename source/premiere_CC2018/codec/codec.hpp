@@ -10,11 +10,11 @@
 
 typedef std::array<char, 4> CodecSubType;
 
-#define kHapCodecSubType CodecSubType({'H' , 'a', 'p', '1'})
-#define kHapAlphaCodecSubType CodecSubType({'H', 'a', 'p', '5'})
-#define kHapYCoCgCodecSubType CodecSubType({'H', 'a', 'p', 'Y'})
-#define kHapYCoCgACodecSubType CodecSubType({'H', 'a', 'p', 'M'})
-#define kHapAOnlyCodecSubType CodecSubType({'H', 'a', 'p', 'A'})
+#define kHapCodecSubType CodecSubType{'H' , 'a', 'p', '1'}
+#define kHapAlphaCodecSubType CodecSubType{'H', 'a', 'p', '5'}
+#define kHapYCoCgCodecSubType CodecSubType{'H', 'a', 'p', 'Y'}
+#define kHapYCoCgACodecSubType CodecSubType{'H', 'a', 'p', 'M'}
+#define kHapAOnlyCodecSubType CodecSubType{'H', 'a', 'p', 'A'}
 
 typedef std::array<unsigned int, 2> HapChunkCounts;
 

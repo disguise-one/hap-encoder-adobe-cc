@@ -33,6 +33,17 @@ source_group("Source Files\\codec" REGULAR_EXPRESSION codec/*)
 source_group("Source Files\\exporter" REGULAR_EXPRESSION exporter/*)
 source_group("Source Files\\movie_writer" REGULAR_EXPRESSION movie_writer/*)
 
+find_library(CoreFoundation CoreFoundation)
+find_library(CoreVideo CoreVideo)
+find_library(Accelerate Accelerate)
+
+if (MSVC)
+else (MSVC)
+   find_package(PkgConfig REQUIRED)
+   pkg_check_modules (GLIB2   glib-2.0)
+   include(findZLIB)
+endif(MSVC)
+
 target_link_libraries(HapEncoderPlugin
     PRIVATE
         Hap
@@ -43,10 +54,16 @@ target_link_libraries(HapEncoderPlugin
         ffmpeg::libavformat
         ffmpeg::libavcodec
         ffmpeg::libavutil
-        bcrypt
+	# need this for ffmpeg on windows; TODO: get rid of it
+        $<$<PLATFORM_ID:Windows>:bcrypt>
+        $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
+        $<$<PLATFORM_ID:Darwin>:${CoreVideo}>
+        $<$<PLATFORM_ID:Darwin>:${Accelerate}>
+        $<$<PLATFORM_ID:Darwin>:${GLIB2}>
+        $<$<PLATFORM_ID:Darwin>:${ZLIB}>
 )
 
-# Include the boost headers
+# Include the ffmpeg headers
 target_include_directories(HapEncoderPlugin
     PRIVATE
         ${ffmpeg_INCLUDE_DIRS}
@@ -54,7 +71,12 @@ target_include_directories(HapEncoderPlugin
 
 set_target_properties(HapEncoderPlugin
     PROPERTIES
-        SUFFIX .prm
+        $<$<PLATFORM_ID:Windows>:SUFFIX .prm>
+	FRAMEWORK TRUE
+	FRAMEWORK_VERSION C
+        MACOSX_FRAMEWORK_IDENTIFIER org.hapcommunity.HapEncoderPlugin>
+	BUNDLE TRUE
+        # MACOSX_FRAMEWORK_INFO_PLIST Info.plist
 )
 
 # hack because squish CMakeLists.txt predates v3.4
@@ -62,8 +84,10 @@ set_target_properties(HapEncoderPlugin
 list(APPEND INCLUDE_DIRS ${squish_SOURCE_DIR})
 include_directories(${INCLUDE_DIRS})
 
-install(TARGETS HapEncoderPlugin
+install(
+  TARGETS HapEncoderPlugin
   RUNTIME
+  BUNDLE DESTINATION .
   LIBRARY DESTINATION .
   COMPONENT plugin
 )

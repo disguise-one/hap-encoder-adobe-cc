@@ -37,7 +37,6 @@ typedef struct ExportSettings
 	PrSDKTimeSuite* timeSuite;
     PrSDKMemoryManagerSuite* memorySuite;
 	PrSDKWindowSuite* windowSuite;
-	prFieldType sourceFieldType;
 } ExportSettings;
 
 csSDK_int32 getPixelFormatSize(const PrFourCC subtype);

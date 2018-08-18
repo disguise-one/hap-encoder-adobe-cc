@@ -18,6 +18,12 @@ Please see license.txt for the licenses of this plugin and the components that w
 
 ## Prerequisites
 
+### compiler toolchain
+
+You'll need a compiler environment appropriate to your operating system. The current plugin has been developed on
+-  win64 with Microsoft Visual Studio 2017 Professional.
+-  macosx with XCode
+
 ### cmake
 cmake creates the build system for the supported target platforms.
 
@@ -39,9 +45,14 @@ Place in
     external/adobe/premiere
 
 ### FFMpeg
-FFMpeg is included as a submodule to the repository, but its build is not wrapped by the plugin's cmake build process.
+FFmpeg 4.0 is used for output of the .mov format.
 
-The cmake process should be able to locate a prebuilt FFMpeg.
+It is referenced as a submodule of this repository. Fetch the source for building with
+
+    git submodule init
+    git submodule update
+
+The FFMpeg build is not wrapped by the plugin's cmake build process, and must be made in a platform specific process as descibed below.
 
 #### win64
 Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
@@ -70,6 +81,12 @@ For reference, the FFMpeg build for the win64 plugin was created by
 
 This will take a while.
 
+#### macosx
+Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg. Then
+
+    ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --disable-zlib --disable-iconv
+    make
+
 ##  Building
 
 ### win64
@@ -89,3 +106,23 @@ This should create HapEncoder.sln in the current directory. Open it in Visual St
 
 The encoder plugin (.prm) is created by building all.
 The installer executable is made by building the PACKAGE target, which is excluded from the regular build.
+
+### macosx
+
+(under construction)
+
+First create a build directory at the top level, and move into it
+
+    mkdir Release
+    cd Release
+
+Invoke cmake to create makefiles etc for a Release build
+
+    cmake -DCMAKE_BUILD_TYPE_RELEASE ..
+
+Then do a build with
+
+    make -j
+
+(this creates an .so at present; we need to make a bundle of a specific type for the plugin - need to readup the Adobe SDK docs)
+

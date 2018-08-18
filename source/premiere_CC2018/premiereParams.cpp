@@ -16,10 +16,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         hasAudio,
         seqWidth,
         seqHeight,
-        seqPARNum,
-        seqPARDen,
         seqFrameRate,
-        seqFieldOrder,
         seqChannelType,
         seqSampleRate;
     prUTF16Char tempString[256];
@@ -38,13 +35,8 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
             seqHeight.mInt32 = 1080;
 
         exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_VideoFrameRate, &seqFrameRate);
-        exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_PixelAspectNumerator, &seqPARNum);
-		exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_PixelAspectDenominator, &seqPARDen);
-        exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_VideoFieldType, &seqFieldOrder);
         exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_AudioChannelsType, &seqChannelType);
         exportInfoSuite->GetExportSourceInfo(exporterPluginID, kExportInfo_AudioSampleRate, &seqSampleRate);
-
-        settings->sourceFieldType = seqFieldOrder.mInt32;
     }
 
     if (exportParamSuite)
@@ -110,19 +102,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
-        // exNewParamInfo compParam;
-        // exParamValues compValues;
-        // safeStrCpy(compParam.identifier, 256, ADBECompressionLevel);
-        // compParam.paramType = exParamType_int;
-        // compParam.flags = exParamFlag_none;
-        // compValues.rangeMin.intValue = 0;
-        // compValues.rangeMax.intValue = 0;
-        // compValues.value.intValue = 11;
-        // compValues.disabled = kPrFalse;
-        // compValues.hidden = kPrFalse;
-        // compParam.paramValues = compValues;
-		// exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &compParam);
-
         exportParamSuite->SetParamsVersion(exporterPluginID, 3);
     }
 
@@ -140,7 +119,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
     //exOneParamValueRec tempComp;
-    csSDK_int32 compLevel[] = { 3, 9, 11, 12 };
+    //csSDK_int32 compLevel[] = { 3, 9, 11, 12 };
 
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
@@ -169,20 +148,17 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 
 	copyConvertStringLiteralIntoUTF16(STR_HAP_SUBCODEC, tempString);
 	settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoCodec, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoCodec);
+    for (csSDK_int32 i = 0; i < sizeof(HAPsubcodecs) / sizeof(HAPsubcodecs[0]); i++)
+    {
+        tempHapSubcodec.intValue = reinterpret_cast<int32_t &>(HAPsubcodecs[i][0]);
+        copyConvertStringLiteralIntoUTF16(hapSubcodecStrings[i], tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoCodec, &tempHapSubcodec, tempString);
+    }
 
     copyConvertStringLiteralIntoUTF16(STR_FRAME_RATE, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoFPS, tempString);
-
-    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoCodec);
-	for (csSDK_int32 i = 0; i < sizeof(HAPsubcodecs) / sizeof(HAPsubcodecs[0]); i++)
-	{
-		tempHapSubcodec.intValue = reinterpret_cast<int32_t &>(HAPsubcodecs[i][0]);
-		copyConvertStringLiteralIntoUTF16(hapSubcodecStrings[i], tempString);
-		settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoCodec, &tempHapSubcodec, tempString);
-	}
-
     settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoFPS);
-
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
     {
         tempFrameRate.timeValue = frameRates[i];
@@ -196,7 +172,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256];
-    exParamValues width, height, frameRate, hapSubcodec, pixelAspectRatio;
+    exParamValues width, height, frameRate, hapSubcodec;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -211,7 +187,6 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoHeight, &height);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoFPS, &frameRate);
 	paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
-    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoAspect, &pixelAspectRatio);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
     swprintf(videoSummary, 256, L"%ix%i, %.2f fps", width.value.intValue, height.value.intValue, static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
