@@ -19,7 +19,10 @@ OPTION(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 OPTION(BUILD_SQUISH_EXTRA "Build extra source code." OFF)
 
 IF (CMAKE_GENERATOR STREQUAL "Xcode")
-    SET(CMAKE_OSX_ARCHITECTURES "i386;ppc")
+    #!!! ----BEGIN----
+    #!!! SET(CMAKE_OSX_ARCHITECTURES "i386;ppc")
+    SET(CMAKE_OSX_ARCHITECTURES "x86_64")
+    #!!! ----END----
 ELSE (CMAKE_GENERATOR STREQUAL "Xcode")
     #!!! ----BEGIN----
     #!!! previously relied on BUILD_SQUISH_WITH_SSE2=2 being set in non-generated .vcprojs
