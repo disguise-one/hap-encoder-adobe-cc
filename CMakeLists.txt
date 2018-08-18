@@ -41,15 +41,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
 
 
 # macosx
-# !!! set(CPACK_DMG_VOLUME_NAME "HapEncoder")
-# !!! set(CPACK_DMG_DISABLE_APPLICATIONS_SYMLINK ON)
-
-set(CPACK_BUNDLE_NAME "HapEncoder")
-set(CPACK_BUNDLE_PLIST "installer/Info.plist"???)
-set(CPACK_BUNDLE_ICON ???)
-# set(CPACK_BUNDLE_STARTUP_COMMAND Path to a startup script. This is a path to an executable or script that will be run whenever an end-user double-clicks the generated bundle in the OSX Finder. Optional.
-# CPACK_BUNDLE_APPLE_CERT_APP The name of your Apple supplied code signing certificate for the application. The name usually takes the form “Developer ID Application: [Name]” or “3rd Party Mac Developer Application: [Name]”. If this variable is not set the application will not be signed.
-
 
 
 # This must always be last!

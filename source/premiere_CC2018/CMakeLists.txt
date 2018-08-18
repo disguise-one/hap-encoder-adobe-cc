@@ -2,16 +2,7 @@ cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 project(HapEncoderPlugin)
 
 # this is the one we will install
-add_library(HapEncoderPlugin
-    $<$<PLATFORM_ID:Windows>:MODULE>
-    $<$<PLATFORM_ID:Darwin>:SHARED>
-)
-
-set_target_properties(HapEncoderPlugin PROPERTIES
-  $<$<PLATFORM_ID:Darwin>:FRAMEWORK TRUE>
-  $<$<PLATFORM_ID:Darwin>:FRAMEWORK_VERSION A>
-  $<$<PLATFORM_ID:Darwin>:MACOSX_FRAMEWORK_IDENTIFIER org.hapcommunity.HapEncoderPlugin>
-)
+add_library(HapEncoderPlugin MODULE)
 
 target_sources(HapEncoderPlugin
     PRIVATE
@@ -77,6 +68,11 @@ target_include_directories(HapEncoderPlugin
 set_target_properties(HapEncoderPlugin
     PROPERTIES
         $<$<PLATFORM_ID:Windows>:SUFFIX .prm>
+	FRAMEWORK TRUE
+	FRAMEWORK_VERSION C
+        MACOSX_FRAMEWORK_IDENTIFIER org.hapcommunity.HapEncoderPlugin>
+	BUNDLE TRUE
+        # MACOSX_FRAMEWORK_INFO_PLIST Info.plist
 )
 
 # hack because squish CMakeLists.txt predates v3.4
@@ -84,8 +80,10 @@ set_target_properties(HapEncoderPlugin
 list(APPEND INCLUDE_DIRS ${squish_SOURCE_DIR})
 include_directories(${INCLUDE_DIRS})
 
-install(TARGETS HapEncoderPlugin
+install(
+  TARGETS HapEncoderPlugin
   RUNTIME
+  BUNDLE DESTINATION .
   LIBRARY DESTINATION .
   COMPONENT plugin
 )
