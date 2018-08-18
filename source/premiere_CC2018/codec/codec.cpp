@@ -20,7 +20,7 @@ Codec::Codec(
       frameDef_(frameDef),
       count_((int)textureFormats.size()),
       chunkCounts_(chunkCounts),
-      compressors_({ HapCompressorSnappy, HapCompressorSnappy })
+      compressors_{ HapCompressorSnappy, HapCompressorSnappy }
 {
     for (size_t i = 0; i < count_; ++i)
     {
@@ -41,8 +41,8 @@ std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& fra
     std::vector<unsigned int> textureFormats;
 
     // auto represented as 0, 0
-    if (chunkCounts == HapChunkCounts({ 0, 0 }))
-        chunkCounts = HapChunkCounts({ 1, 1 });
+    if (chunkCounts == HapChunkCounts{0, 0})
+        chunkCounts = HapChunkCounts{ 1, 1 };
 
     if (codecType == kHapCodecSubType) {
         textureFormats = { HapTextureFormat_RGB_DXT1 };
