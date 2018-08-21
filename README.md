@@ -100,7 +100,7 @@ Pandoc is required to build the documentation, which is bundled by the installer
 #### macos
 For macos, the homebrew installation is recommended.
 
-    brew install pandocology
+    brew install pandoc
 
 ##  Building
 
@@ -131,7 +131,7 @@ First create a build directory at the top level, and move into it
 
 Invoke cmake to create makefiles etc for a Release build
 
-    cmake -DCMAKE_BUILD_TYPE_RELEASE -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
 
 Then do a build with
 
