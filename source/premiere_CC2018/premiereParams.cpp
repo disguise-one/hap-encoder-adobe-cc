@@ -48,7 +48,8 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBEVideoTabGroup, ADBEVideoCodecGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
         copyConvertStringLiteralIntoUTF16(BASIC_VIDEO_PARAM_GROUP_NAME, tempString);
         exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBEVideoTabGroup, ADBEBasicVideoGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
-
+        copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
+        exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBEVideoTabGroup, HAPSpecificCodecGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
         exNewParamInfo widthParam;
         exParamValues widthValues;
         safeStrCpy(widthParam.identifier, 256, ADBEVideoWidth);
@@ -102,7 +103,33 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
-        exportParamSuite->SetParamsVersion(exporterPluginID, 3);
+        exNewParamInfo chunkCountT0Param;
+        exParamValues chunkCountT0Values;
+        safeStrCpy(chunkCountT0Param.identifier, 256, HAPChunkCountT0);
+        chunkCountT0Param.paramType = exParamType_int;
+        chunkCountT0Param.flags = exParamFlag_none;
+        chunkCountT0Values.rangeMin.intValue = 0;
+        chunkCountT0Values.rangeMax.intValue = 64;
+        chunkCountT0Values.value.intValue = 0;
+        chunkCountT0Values.disabled = kPrFalse;
+        chunkCountT0Values.hidden = kPrFalse;
+        chunkCountT0Param.paramValues = chunkCountT0Values;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountT0Param);
+
+        exNewParamInfo chunkCountT1Param;
+        exParamValues chunkCountT1Values;
+        safeStrCpy(chunkCountT1Param.identifier, 256, HAPChunkCountT1);
+        chunkCountT1Param.paramType = exParamType_int;
+        chunkCountT1Param.flags = exParamFlag_none;
+        chunkCountT1Values.rangeMin.intValue = 0;
+        chunkCountT1Values.rangeMax.intValue = 64;
+        chunkCountT1Values.value.intValue = 0;
+        chunkCountT1Values.disabled = kPrFalse;
+        chunkCountT1Values.hidden = kPrFalse;
+        chunkCountT1Param.paramValues = chunkCountT1Values;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountT1Param);
+
+        exportParamSuite->SetParamsVersion(exporterPluginID, 4);
     }
 
     return result;
@@ -118,8 +145,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
-    //exOneParamValueRec tempComp;
-    //csSDK_int32 compLevel[] = { 3, 9, 11, 12 };
+    exOneParamValueRec tempHapChunkCount;
 
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
@@ -164,6 +190,26 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         tempFrameRate.timeValue = frameRates[i];
         copyConvertStringLiteralIntoUTF16(frameRateStrings[i], tempString);
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoFPS, &tempFrameRate, tempString);
+    }
+
+    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING_T0, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCountT0, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, HAPChunkCountT0);
+    for (csSDK_int32 i = 0; i <= 64; i++)
+    {
+        tempHapChunkCount.intValue = i;
+        copyConvertStringLiteralIntoUTF16((i == 0) ? STR_HAP_CHUNKS_AUTO : std::to_wstring(i).c_str(), tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, HAPChunkCountT0, &tempHapChunkCount, tempString);
+    }
+
+    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING_T1, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCountT1, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, HAPChunkCountT1);
+    for (csSDK_int32 i = 0; i <= 64; i++)
+    {
+        tempHapChunkCount.intValue = i;
+        copyConvertStringLiteralIntoUTF16((i == 0) ? STR_HAP_CHUNKS_AUTO : std::to_wstring(i).c_str(), tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, HAPChunkCountT1, &tempHapChunkCount, tempString);
     }
 
     return malNoError;

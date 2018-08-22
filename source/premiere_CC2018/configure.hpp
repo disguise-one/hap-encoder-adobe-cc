@@ -1,27 +1,20 @@
 #pragma once
 
-#define ADBEStillSequence               "ADBEStillSequence"
-#define ADBECompressionLevel            "ADBECompressionLevel"
+#define HAPSpecificCodecGroup           "HAPSpecificCodecGroup"
+#define HAPChunkCountT0                 "HAPChunkCountT0"
+#define HAPChunkCountT1                 "HAPChunkCountT1"
 
 #define HAP_VIDEOFILETYPE				'hap'
 #define HAP_VIDEOFILEEXT				L"mov"
 #define HAP_FILE_NAME					L"HAP"
 #define HAP_VIDEO_FILE_NAME				L"HAP Video"
-#define HAP_8_BIT_NAME  				L"HQ 8-bit (YUVA8)"
-#define HAP_10_BIT_NAME					L"HQ 10-bit (YUV10A2)"
-#define HAP_10_BIT_RGB_NAME				L"Lossless 10-bit (RGB10A2)"
-#define HAP_10_BIT_YUV_NAME				L"HQ 10-bit (YUV10A2)"
-#define HAP_10_BIT_RAW_NAME				L"RAW 10-bit (RGB10A2)"
-#define HAP_16_BIT_NAME					L"HQ 16-bit (YUVA16)"
-#define HAP_8_BIT_RGB_NAME				L"Lossless 8-bit (RGBA8)"
-#define HAP_16_BIT_RGB_NAME				L"Lossless 16-bit (RGBA16)"
-#define	HAP_NAME						"PREMIERE D3V_FILE "
 #define	HAP_VIDEOCLSS					'HAPY'
 #define EXPORTER_NAME					"HAP Exporter"
 #define SETTING_STRING					"Turn on marker export and warnings? (Don't turn this on for rendering preview files)"
 #define TOP_VIDEO_PARAM_GROUP_NAME		L"Video parameters"
 #define VIDEO_CODEC_PARAM_GROUP_NAME	L"Video"
 #define BASIC_VIDEO_PARAM_GROUP_NAME	L"Basic video"
+#define CODEC_SPECIFIC_PARAM_GROUP_NAME L"Advanced video"
 #define BASIC_AUDIO_PARAM_GROUP_NAME	L"Basic audio"
 #define STR_CODEC						L"Codec"
 #define STR_CODEC_TOOLTIP				L"The video codec to be used for encode."
@@ -44,3 +37,6 @@
 #define STR_HAP_SUBCODEC_2              L"Hap Q"
 #define STR_HAP_SUBCODEC_3              L"Hap Q Alpha"
 #define STR_HAP_SUBCODEC_4              L"Hap Alpha-Only"
+#define STR_HAP_CHUNKING_T0             L"Texture 0 chunks"
+#define STR_HAP_CHUNKING_T1             L"Texture 1 chunks"
+#define STR_HAP_CHUNKS_AUTO             L"Auto"

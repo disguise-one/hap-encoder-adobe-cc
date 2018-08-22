@@ -237,17 +237,22 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 	prMALError result = malNoError;
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, hapSubcodec;
+	exParamValues ticksPerFrame, width, height, hapSubcodec, chunkCountT0, chunkCountT1;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
-	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
+    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCountT0, &chunkCountT0);
+    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCountT1, &chunkCountT1);
+    settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
-    HapChunkCounts chunkCounts{ 1, 1 };
+
+    // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
+    HapChunkCounts chunkCounts{ std::max(1, chunkCountT0.value.intValue),
+                                std::max(1, chunkCountT1.value.intValue) };
 
 	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
         Codec::create(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue),
