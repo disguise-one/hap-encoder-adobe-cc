@@ -30,17 +30,17 @@ Obtain the installer executable and run it.
 
 ## Usage
 
-After installation, the encoders will be available under the HAP format in Adobe Media Encoder CC 2018 and in Adobe Premiere CC 2018.
+After installation, the encoders will be available as the 'HAP Video' format when creating a new preset in Adobe Media Encoder CC 2018 or when exporting in Adobe Premiere CC 2018.
 
-TODO - format pic
+![HAP format](format-option.png)
 
-Presets are supplied
+After choosing the format, codec options may be chosen.
 
-TODO - presets pic
+![HAP codec options](codec-options.png)
 
-or you can also setup your own customisations.
+Default presets are supplied and are available in Adobe Media Encoder.
 
-TODO - customised pic
+![HAP presets](media-encoder-presets.png)
 
 Movies that are encoded with the plugin are exported into .mov files.
 
@@ -67,7 +67,11 @@ Hap Q Alpha
 
 ### Codec parameters
 
-An optional specified 'chunk' size may be specified to optimize for ultra high resolution video on a particular hardware system. This setting should typically only be used if you are reaching a CPU performance bottleneck during playback. As a general guide, for HD footage or smaller you can set the chunk size to 1 and for 4k or larger footage the number of chunks should never exceed the number of CPU cores on the computer used for playback.
+An optional specified number of chunks size may be specified to optimize for ultra high resolution video on a particular hardware system. This setting should typically only be used if you are reaching a CPU performance bottleneck during playback. As a general guide, for HD footage or smaller you can set the chunk size to 1 and for 4k or larger footage the number of chunks should never exceed the number of CPU cores on the computer used for playback.
+
+![HAP chunk counts](chunk-counts.png)
+
+At present, 'auto' corresponds to choosing 1 chunk per texture; this may change in the future.
 
 ### Playback
 
@@ -106,7 +110,7 @@ Development of this plugin was sponsored by disguise, makers of the disguise sho
 
 The Hap codec was developed by Tom Butterworth with the support of VIDVOX.
 
-Many thanks to Tom Butterworth, Dave Lublin, Nick Wilkinson, Ruben Garcia and the disguise QA team for their assistance.
+Many thanks to Tom Butterworth, David Lublin, Nick Wilkinson, Ruben Garcia and the disguise QA team for their assistance.
 
 
 
