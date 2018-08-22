@@ -27,7 +27,7 @@
 		<CropState>false</CropState>
 		<TimeInterpolationType>0</TimeInterpolationType>
 	</StandardFilters>
-	<FolderDisplayPath></FolderDisplayPath>
+	<FolderDisplayPath>System Presets/Other/HAP</FolderDisplayPath>
 	<DoEmulation>false</DoEmulation>
 	<DoVideo>true</DoVideo>
 	<DoAudio>false</DoAudio>
