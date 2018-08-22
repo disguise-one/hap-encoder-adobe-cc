@@ -237,22 +237,21 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 	prMALError result = malNoError;
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, hapSubcodec, chunkCountT0, chunkCountT1;
+	exParamValues ticksPerFrame, width, height, hapSubcodec, chunkCount;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCountT0, &chunkCountT0);
-    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCountT1, &chunkCountT1);
+    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCount, &chunkCount);
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
     // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
-    HapChunkCounts chunkCounts{ std::max(1, chunkCountT0.value.intValue),
-                                std::max(1, chunkCountT1.value.intValue) };
+    int32_t chunkCountAfterAutoApplied = std::max(1, chunkCount.value.intValue);
+    HapChunkCounts chunkCounts{ chunkCountAfterAutoApplied, chunkCountAfterAutoApplied };
 
 	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
         Codec::create(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue),

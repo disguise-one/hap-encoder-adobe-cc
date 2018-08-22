@@ -1,8 +1,7 @@
 #pragma once
 
 #define HAPSpecificCodecGroup           "HAPSpecificCodecGroup"
-#define HAPChunkCountT0                 "HAPChunkCountT0"
-#define HAPChunkCountT1                 "HAPChunkCountT1"
+#define HAPChunkCount                   "HAPChunkCount"
 
 #define HAP_VIDEOFILETYPE				'hap'
 #define HAP_VIDEOFILEEXT				L"mov"
@@ -37,6 +36,5 @@
 #define STR_HAP_SUBCODEC_2              L"Hap Q"
 #define STR_HAP_SUBCODEC_3              L"Hap Q Alpha"
 #define STR_HAP_SUBCODEC_4              L"Hap Alpha-Only"
-#define STR_HAP_CHUNKING_T0             L"Texture 0 chunks"
-#define STR_HAP_CHUNKING_T1             L"Texture 1 chunks"
+#define STR_HAP_CHUNKING                L"Chunk count"
 #define STR_HAP_CHUNKS_AUTO             L"Auto"

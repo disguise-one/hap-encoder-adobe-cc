@@ -103,31 +103,18 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
-        exNewParamInfo chunkCountT0Param;
-        exParamValues chunkCountT0Values;
-        safeStrCpy(chunkCountT0Param.identifier, 256, HAPChunkCountT0);
-        chunkCountT0Param.paramType = exParamType_int;
-        chunkCountT0Param.flags = exParamFlag_none;
-        chunkCountT0Values.rangeMin.intValue = 0;
-        chunkCountT0Values.rangeMax.intValue = 64;
-        chunkCountT0Values.value.intValue = 0;
-        chunkCountT0Values.disabled = kPrFalse;
-        chunkCountT0Values.hidden = kPrFalse;
-        chunkCountT0Param.paramValues = chunkCountT0Values;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountT0Param);
-
-        exNewParamInfo chunkCountT1Param;
-        exParamValues chunkCountT1Values;
-        safeStrCpy(chunkCountT1Param.identifier, 256, HAPChunkCountT1);
-        chunkCountT1Param.paramType = exParamType_int;
-        chunkCountT1Param.flags = exParamFlag_none;
-        chunkCountT1Values.rangeMin.intValue = 0;
-        chunkCountT1Values.rangeMax.intValue = 64;
-        chunkCountT1Values.value.intValue = 0;
-        chunkCountT1Values.disabled = kPrFalse;
-        chunkCountT1Values.hidden = kPrFalse;
-        chunkCountT1Param.paramValues = chunkCountT1Values;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountT1Param);
+        exNewParamInfo chunkCountParam;
+        exParamValues chunkCountValues;
+        safeStrCpy(chunkCountParam.identifier, 256, HAPChunkCount);
+        chunkCountParam.paramType = exParamType_int;
+        chunkCountParam.flags = exParamFlag_none;
+        chunkCountValues.rangeMin.intValue = 0;
+        chunkCountValues.rangeMax.intValue = 64;
+        chunkCountValues.value.intValue = 0;
+        chunkCountValues.disabled = kPrFalse;
+        chunkCountValues.hidden = kPrFalse;
+        chunkCountParam.paramValues = chunkCountValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountParam);
 
         exportParamSuite->SetParamsVersion(exporterPluginID, 4);
     }
@@ -192,24 +179,14 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoFPS, &tempFrameRate, tempString);
     }
 
-    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING_T0, tempString);
-    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCountT0, tempString);
-    settings->exportParamSuite->ClearConstrainedValues(exID, 0, HAPChunkCountT0);
+    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCount, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, HAPChunkCount);
     for (csSDK_int32 i = 0; i <= 64; i++)
     {
         tempHapChunkCount.intValue = i;
         copyConvertStringLiteralIntoUTF16((i == 0) ? STR_HAP_CHUNKS_AUTO : std::to_wstring(i).c_str(), tempString);
-        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, HAPChunkCountT0, &tempHapChunkCount, tempString);
-    }
-
-    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING_T1, tempString);
-    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCountT1, tempString);
-    settings->exportParamSuite->ClearConstrainedValues(exID, 0, HAPChunkCountT1);
-    for (csSDK_int32 i = 0; i <= 64; i++)
-    {
-        tempHapChunkCount.intValue = i;
-        copyConvertStringLiteralIntoUTF16((i == 0) ? STR_HAP_CHUNKS_AUTO : std::to_wstring(i).c_str(), tempString);
-        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, HAPChunkCountT1, &tempHapChunkCount, tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, HAPChunkCount, &tempHapChunkCount, tempString);
     }
 
     return malNoError;
