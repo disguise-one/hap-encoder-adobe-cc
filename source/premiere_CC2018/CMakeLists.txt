@@ -72,11 +72,8 @@ target_include_directories(HapEncoderPlugin
 set_target_properties(HapEncoderPlugin
     PROPERTIES
         $<$<PLATFORM_ID:Windows>:SUFFIX .prm>
-	FRAMEWORK TRUE
-	FRAMEWORK_VERSION C
-        MACOSX_FRAMEWORK_IDENTIFIER org.hapcommunity.HapEncoderPlugin>
 	BUNDLE TRUE
-        # MACOSX_FRAMEWORK_INFO_PLIST Info.plist
+	MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapEncoderPlugin
 )
 
 # hack because squish CMakeLists.txt predates v3.4
