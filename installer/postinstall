@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+PRESETS_PREFIX="$HOME/Documents/Adobe/Adobe Media Encoder"
+
+for VERSION in 12.0 13.0 14.0; do
+    if [ -d "$PRESETS_PREFIX/$VERSION" ]; then
+        mkdir -p "$PRESETS_PREFIX/$VERSION/Presets"
+        cp -R "Presets/" "$PRESETS_PREFIX/$VERSION/Presets/"
+    fi
+done
+
+exit 0

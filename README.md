@@ -141,6 +141,9 @@ This will create a plugin at
 
     Release/source/premiere_CC2018/HapEncoderPlugin.bundle
 
-This plugin needs to be copied to /Library/Application\ Support/Adobe/Common/Plug-ins/<version>
+To create an installer (requires Apple Developer Program membership for signing)
 
-TODO: create an installer which figures out the right paths to copy plugin+presets to from Adobe's .plist file
+    cd installer
+    ./make_mac_installer.sh
+
+TODO: have the installer figure out the right paths to copy plugin+presets to from Adobe's .plist file

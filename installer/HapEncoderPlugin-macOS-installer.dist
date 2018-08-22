@@ -12,5 +12,5 @@
     <choice id="org.hapcommunity.HapEncoderPlugin" visible="false">
         <pkg-ref id="org.hapcommunity.HapEncoderPlugin"/>
     </choice>
-    <pkg-ref id="org.hapcommunity.HapEncoderPlugin" version="1" onConclusion="none">HapEncoderPlugin.pkg</pkg-ref>
+    <pkg-ref id="org.hapcommunity.HapEncoderPlugin" version="2" onConclusion="none">HapEncoderPlugin.pkg</pkg-ref>
 </installer-gui-script>
