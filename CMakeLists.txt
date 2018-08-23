@@ -45,7 +45,7 @@ set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/license.txt)
 
 set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
 
-set(CPACK_COMPONENTS_ALL plugin)
+# set(CPACK_COMPONENTS_ALL plugin user_guide)
 
 # set(CPACK_INSTALL_COMMANDS, "magic command to get plugin directory and copy to it")
 
