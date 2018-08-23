@@ -1,6 +1,6 @@
 <header>
 <div position="absolute" left="0" top="0" style="background-color:#33272C;">
-<a href="http://hap.video"><img src="../../asset/hap-logo.svg" width="20%" height="auto"></a>
+<a href="http://hap.video"><img src="hap-logo.svg" width="20%" height="auto"></a>
 </div>
 </header>
 
