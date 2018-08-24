@@ -37,4 +37,3 @@
 #define STR_HAP_SUBCODEC_3              L"Hap Q Alpha"
 #define STR_HAP_SUBCODEC_4              L"Hap Alpha-Only"
 #define STR_HAP_CHUNKING                L"Chunk count"
-#define STR_HAP_CHUNKS_AUTO             L"Auto"

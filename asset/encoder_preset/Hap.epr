@@ -31,7 +31,7 @@
 	<DoEmulation>false</DoEmulation>
 	<DoVideo>true</DoVideo>
 	<DoAudio>false</DoAudio>
-	<PresetID>66d25f35-1bb2-45e9-bfe4-94eecd018dc6</PresetID>
+	<PresetID>7d29d91b-4cb9-43ca-8840-88346cb40f15</PresetID>
 	<CaptionParamContainer ObjectRef="233"/>
 	<ExportParamContainer ObjectRef="1"/>
 	<ExporterFileType>6840688</ExporterFileType>
@@ -294,7 +294,7 @@
 		<ParamConstrainedListIsOptional>false</ParamConstrainedListIsOptional>
 		<IsFilePathString>false</IsFilePathString>
 		<IsOptionalParamEnabled>false</IsOptionalParamEnabled>
-		<IsOptionalParam>false</IsOptionalParam>
+		<IsOptionalParam>true</IsOptionalParam>
 		<IsParamPairGroup>false</IsParamPairGroup>
 		<ParamIsPassword>false</ParamIsPassword>
 		<ParamIsMultiLine>false</ParamIsMultiLine>
@@ -305,7 +305,7 @@
 		<ParamDontSerializeValue>false</ParamDontSerializeValue>
 		<ParamOrdinalValue>0</ParamOrdinalValue>
 		<ParamType>2</ParamType>
-		<ParamValue>0</ParamValue>
+		<ParamValue>1</ParamValue>
 	</ExporterParam>
 	<ExporterParam ObjectID="17" ClassID="9f049ab7-d48f-43e9-a8ca-4d7f21233625" Version="1">
 		<ParamAuxType></ParamAuxType>

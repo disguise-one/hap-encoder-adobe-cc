@@ -250,7 +250,9 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
     // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
-    unsigned int chunkCountAfterAutoApplied = std::max(1, chunkCount.value.intValue);
+    unsigned int chunkCountAfterAutoApplied = (chunkCount.optionalParamEnabled == 1) ?
+                                              std::min(1, chunkCount.value.intValue)  // force old param to 1
+                                              : 1;
     HapChunkCounts chunkCounts{ chunkCountAfterAutoApplied, chunkCountAfterAutoApplied };
 
 	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
