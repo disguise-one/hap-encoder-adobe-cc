@@ -10,6 +10,7 @@ Principal authors of the plugin are
 
 -  Greg Bakker (gbakker@gmail.com)
 -  Richard Sykes
+-  Tom Butterworth (http://kriss.cx/tom)
 
 Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting that development.
 

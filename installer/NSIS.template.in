@@ -20,16 +20,17 @@
   Var INSTALL_DESKTOP
   Var IS_DEFAULT_INSTALLDIR
 
-;!!! for retrieving adobe installation directory from registry
+;!!!
   Var RegInstDir
 
+
 ;--------------------------------
-;Include MoRegInstDirdern UI
+;Include Modern UI
 
   !include "MUI.nsh"
 
   ;Default installation folder
-  InstallDir $RegInstDir
+  InstallDir "@CPACK_NSIS_INSTALL_ROOT@\@CPACK_PACKAGE_INSTALL_DIRECTORY@"
 
 ;--------------------------------
 ;General
@@ -645,24 +646,23 @@ Section "-Core installation"
   ;Store installation folder
   WriteRegStr SHCTX "Software\@CPACK_PACKAGE_VENDOR@\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
 
-;!!! no uninstaller for now
-;  ;Create uninstaller
-;  WriteUninstaller "$INSTDIR\Uninstall.exe"
-;  Push "DisplayName"
-;  Push "@CPACK_NSIS_DISPLAY_NAME@"
-;  Call ConditionalAddToRegisty
-;  Push "DisplayVersion"
-;  Push "@CPACK_PACKAGE_VERSION@"
-;  Call ConditionalAddToRegisty
-;  Push "Publisher"
-;  Push "@CPACK_PACKAGE_VENDOR@"
-;  Call ConditionalAddToRegisty
-;  Push "UninstallString"
-;  Push "$INSTDIR\Uninstall.exe"
-;  Call ConditionalAddToRegisty
-;  Push "NoRepair"
-;  Push "1"
-;  Call ConditionalAddToRegisty
+  ;Create uninstaller
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  Push "DisplayName"
+  Push "@CPACK_NSIS_DISPLAY_NAME@"
+  Call ConditionalAddToRegisty
+  Push "DisplayVersion"
+  Push "@CPACK_PACKAGE_VERSION@"
+  Call ConditionalAddToRegisty
+  Push "Publisher"
+  Push "@CPACK_PACKAGE_VENDOR@"
+  Call ConditionalAddToRegisty
+  Push "UninstallString"
+  Push "$INSTDIR\Uninstall.exe"
+  Call ConditionalAddToRegisty
+  Push "NoRepair"
+  Push "1"
+  Call ConditionalAddToRegisty
 
   !ifdef CPACK_NSIS_ADD_REMOVE
   ;Create add/remove functionality
@@ -903,8 +903,9 @@ SectionEnd
 ; "Program Files" for AllUsers, "My Documents" for JustMe...
 
 Function .onInit
-   ;!!!
+  ;!!!
   SetRegView 64
+  ;!!! for retrieving adobe installation directory from registry
   ReadRegStr $RegInstDir HKLM "SOFTWARE\Adobe\Premiere Pro\12.0" "CommonPluginInstallPath"
   StrCmp $RegInstDir "" noadobe haveadobe
 
@@ -913,7 +914,8 @@ noadobe:
   Abort
 
 haveadobe:
-  StrCpy $INSTDIR $RegInstDir
+  ;!!!StrCpy $INSTDIR $RegInstDir
+
   StrCmp "@CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@" "ON" 0 inst
 
   ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "UninstallString"

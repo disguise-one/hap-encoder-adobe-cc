@@ -69,11 +69,17 @@ target_include_directories(HapEncoderPlugin
         ${ffmpeg_INCLUDE_DIRS}
 )
 
+if (MSVC)
+    set_target_properties(HapEncoderPlugin
+        PROPERTIES
+            SUFFIX ".prm"
+    )
+endif(MSVC)
+
 set_target_properties(HapEncoderPlugin
     PROPERTIES
-        $<$<PLATFORM_ID:Windows>:SUFFIX .prm>
-	BUNDLE TRUE
-	MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapEncoderPlugin
+	    BUNDLE TRUE
+	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapEncoderPlugin
 )
 
 # hack because squish CMakeLists.txt predates v3.4
