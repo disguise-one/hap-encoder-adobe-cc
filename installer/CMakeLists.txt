@@ -1,6 +1,39 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 
+# presets asset files
+
+install(
+    FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha-Only.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap.epr
+    DESTINATION
+        "Presets"
+    COMPONENT
+        presets
+)
+
 # win64 installer
+
+#   as of publication, details of where to place installed files comes
+#   from emailed advice; SDK docs are for previous versions.
+#
+#   Win64
+#       Nov 17 CC SDK reads:
+#
+#       look at registry 
+#           Computer\HKEY_LOCAL_MACHINE\SOFTWARE\Adobe\Premiere Pro\12.0
+#           Key:CommonExporterPresetsPath
+#       which will say
+#           [User folder]\AppData\Roaming\Adobe\Common\AME\[version]\Presets\
+#
+#       but this is out of date, and current advice is to put them in
+#           C:\Users\[USERID]\Documents\Adobe\Adobe Media Encoder\[MAJOR_VERSION.0]\Preseets
+#
+#   TODO: update to use registry keys once this is possible
+#
 
 set(CPACK_PACKAGE_NAME "HapEncoder")
 set(CPACK_PACKAGE_VENDOR "HapCommunity")
@@ -10,10 +43,18 @@ set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "8")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "HapEncoderPlugin")
-set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/../asset\\\\hap-icon.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../license.txt)
+set(CPACK_NSIS_URL_INFO_ABOUT "https://hap.video")
+set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 
 set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
+
+set(CPACK_COMPONENTS_ALL presets user_guide plugin)
+
+set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\")
+set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$RegInstDir")
+
+set(CPACK_NSIS_MENU_LINKS "doc\\\\HapExporterPlugin_for_AdobeCC2018.html;User Guide")
 
 # set(CPACK_INSTALL_COMMANDS, "magic command to get plugin directory and copy to it")
 # currently doing this by overriding template
