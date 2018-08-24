@@ -104,13 +104,14 @@ Principal authors of this plugin are
 
 -  Greg Bakker (gbakker@gmail.com)
 -  Richard Sykes
+-  Tom Butterworth (http://kriss.cx/tom)
 
 Development of this plugin was sponsored by disguise, makers of the disguise show production software and hardware
     http://disguise.one
 
 The Hap codec was developed by Tom Butterworth with the support of VIDVOX.
 
-Many thanks to Tom Butterworth, David Lublin, Nick Wilkinson, Ruben Garcia and the disguise QA team for their assistance.
+Many thanks to Tom Butterworth, David Lublin, Nick Wilkinson, Ruben Garcia and the disguise QA team for their assistance throughout development of this plugin.
 
 
 
