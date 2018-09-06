@@ -36,7 +36,7 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     MovieSeekCallback onSeek,
     MovieCloseCallback onClose,
     MovieErrorCallback onError)
-    : onWrite_(onWrite), onSeek_(onSeek), onClose_(onClose), onError_(onError), iFrame_(0)
+    : onWrite_(onWrite), onSeek_(onSeek), onClose_(onClose), onError_(onError), iFrame_(0), closed_(false)
 {
     /* allocate the output media context */
     AVFormatContext *formatContext = avformat_alloc_context();
@@ -100,14 +100,38 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
 
 MovieWriter::~MovieWriter()
 {
+    try
+    {
+        close();
+    }
+    catch (const std::exception& ex)
+    {
+        onError_(ex.what());
+    }
+    catch (...)
+    {
+        onError_("unhandled error on closing");
+    }
+}
 
-    /* Write the trailer, if any. The trailer must be written before you
-    * close the CodecContexts open when you wrote the header; otherwise
-    * av_write_trailer() may try to use memory that was freed on
-    * av_codec_close(). */
-    av_write_trailer(formatContext_.get());
+void MovieWriter::close()
+{
+    if (!closed_)
+    {
+        /* Write the trailer, if any. The trailer must be written before you
+        * close the CodecContexts open when you wrote the header; otherwise
+        * av_write_trailer() may try to use memory that was freed on
+        * av_codec_close(). */
+        if (av_write_trailer(formatContext_.get()) < 0)
+            throw std::runtime_error("could not write trailer");
 
-    onClose_();
+        if (onClose_() < 0)
+        {
+            throw std::runtime_error("error while closing");
+        }
+
+        closed_ = false;
+    }
 }
 
 int MovieWriter::c_onWrite(void *context, uint8_t *data, int size)
@@ -120,12 +144,12 @@ int MovieWriter::c_onWrite(void *context, uint8_t *data, int size)
     catch (const std::exception &ex)
     {
         writer->onError_(ex.what());
-        return 0;
+        return -1;
     }
     catch (...)
     {
         writer->onError_("unhandled exception while writing");
-        return 0;
+        return -1;
     }
     return size;
 }

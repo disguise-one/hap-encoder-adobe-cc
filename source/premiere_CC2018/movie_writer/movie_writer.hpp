@@ -13,10 +13,10 @@ extern"C"
 }
 
 typedef std::array<char, 4> VideoFormat;
-typedef std::function<size_t (const uint8_t*, int size)> MovieWriteCallback;
-typedef std::function<int (int64_t offset, int whence)> MovieSeekCallback;
-typedef std::function<void()> MovieCloseCallback;
-typedef std::function<void (const char *)> MovieErrorCallback;
+typedef std::function<size_t (const uint8_t*, int size)> MovieWriteCallback;    // return 0 on success, -ve on failure
+typedef std::function<int (int64_t offset, int whence)> MovieSeekCallback;      // return 0 on success, -ve on failure
+typedef std::function<int ()> MovieCloseCallback;                               // return 0 on success, -ve on failure
+typedef std::function<void (const char *)> MovieErrorCallback;                  // must not throw
 
 // wrappers for libav-* objects
 
@@ -54,6 +54,8 @@ public:
 
     void writeFrame(const uint8_t *data, size_t size);
 
+    void close(); // close ahead of destruction. Can throw.
+
 private:
     MovieWriteCallback onWrite_;
     MovieSeekCallback onSeek_;
@@ -75,6 +77,8 @@ private:
     AVStream *videoStream_;
     AVRational streamTimebase_;
     int64_t iFrame_;
+
+    bool closed_;
 };
 
 
