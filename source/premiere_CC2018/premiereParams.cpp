@@ -114,7 +114,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         chunkCountValues.disabled = kPrFalse;
         chunkCountValues.hidden = kPrFalse;
         chunkCountParam.paramValues = chunkCountValues;
-        exportParamSuite->AddParam(exporterPluginID, 0, HAPSpecificCodecGroup, &chunkCountParam);
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountParam);
 
         exportParamSuite->SetParamsVersion(exporterPluginID, 4);
     }
@@ -177,6 +177,9 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         copyConvertStringLiteralIntoUTF16(frameRateStrings[i], tempString);
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoFPS, &tempFrameRate, tempString);
     }
+
+    copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, HAPSpecificCodecGroup, tempString);
 
     copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCount, tempString);
