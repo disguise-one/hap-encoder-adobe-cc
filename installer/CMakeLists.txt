@@ -44,17 +44,19 @@ set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "8")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "HapEncoderPlugin")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../license.txt)
-set(CPACK_NSIS_URL_INFO_ABOUT "https://hap.video")
-set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-
-set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
 
 set(CPACK_COMPONENTS_ALL presets user_guide plugin)
 
-set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\")
-set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$RegInstDir")
-
+# NSIS specific settings
+set(CPACK_NSIS_URL_INFO_ABOUT "https://hap.video")
+set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
 set(CPACK_NSIS_MENU_LINKS "doc\\\\HapExporterPlugin_for_AdobeCC2018.html;User Guide")
+
+# NSIS component specific settings
+set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$RegInstDir")
+set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\")
+
 
 # set(CPACK_INSTALL_COMMANDS, "magic command to get plugin directory and copy to it")
 # currently doing this by overriding template
@@ -68,5 +70,23 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
 # TODO - wrap shell installer here
 
 # generic installer framework
-# This must always be last!
+# This must always be after CPACK settings
 include(CPack)
+
+# components to include to installer
+cpack_add_component(plugin
+    DISPLAY_NAME "Plugin"
+    DESCRIPTION "plugin module"
+    REQUIRED
+)
+cpack_add_component(presets
+    DISPLAY_NAME "Presets"
+    DESCRIPTION "presets"
+    OPTIONAL
+)
+cpack_add_component(user_guide
+    DISPLAY_NAME "User Guide"
+    DESCRIPTION "user guide"
+    OPTIONAL
+)
+
