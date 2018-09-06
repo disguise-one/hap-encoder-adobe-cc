@@ -118,19 +118,12 @@ void MovieWriter::close()
 {
     if (!closed_)
     {
-        /* Write the trailer, if any. The trailer must be written before you
-        * close the CodecContexts open when you wrote the header; otherwise
-        * av_write_trailer() may try to use memory that was freed on
-        * av_codec_close(). */
-        if (av_write_trailer(formatContext_.get()) < 0)
-            throw std::runtime_error("could not write trailer");
-
         if (onClose_() < 0)
         {
             throw std::runtime_error("error while closing");
         }
 
-        closed_ = false;
+        closed_ = true;
     }
 }
 
@@ -187,8 +180,20 @@ void MovieWriter::writeFrame(const uint8_t *data, size_t size)
     pkt.flags = AV_PKT_FLAG_KEY;
 
     /* Write the compressed frame to the media file. */
-    if (av_interleaved_write_frame(formatContext_.get(), &pkt) < 0)
+    int ret = av_interleaved_write_frame(formatContext_.get(), &pkt);
+    if (ret < 0)
     {
-        throw std::runtime_error(std::string("Error while writing video frame: "));
+        throw std::runtime_error(std::string("Error while writing video frame: ") + av_err2str(ret).c_str());
     }
+}
+
+void MovieWriter::writeTrailer()
+{
+    /* Write the trailer, if any. The trailer must be written before you
+    * close the CodecContexts open when you wrote the header; otherwise
+    * av_write_trailer() may try to use memory that was freed on
+    * av_codec_close(). */
+    int ret = av_write_trailer(formatContext_.get());
+    if (ret < 0)
+        throw std::runtime_error(std::string("Error writing trailer: ") + av_err2str(ret).c_str());
 }

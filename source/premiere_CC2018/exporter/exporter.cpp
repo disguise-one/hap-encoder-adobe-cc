@@ -104,10 +104,10 @@ ExportJob ExporterJobWriter::write()
 
             nextFrameToWrite_++;
 
-            // last frame triggers close etc
+            // last frame triggers writing trailer
             if (nextFrameToWrite_ == nFrames_)
             {
-                writer_.reset(nullptr);
+                writer_->writeTrailer();
             }
 
             return job;
@@ -119,17 +119,23 @@ ExportJob ExporterJobWriter::write()
     return nullptr;
 }
 
-void ExporterJobWriter::waitForLastWrite()
+void ExporterJobWriter::waitForLastWrite(const std::atomic<bool>& abort)
 {
     // wait for completion - nonintrusive
-    while (nextFrameToWrite_ < nFrames_)
+    while (nextFrameToWrite_ < nFrames_ &&
+          !abort)
     {
         std::this_thread::sleep_for(10ms);
     }
 }
 
-ExporterWorker::ExporterWorker(bool& quit, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer)
-    : quit_(quit), freeList_(freeList), encoder_(encoder), writer_(writer)
+void ExporterJobWriter::close()
+{
+    writer_->close();
+}
+
+ExporterWorker::ExporterWorker(bool& quit, std::atomic<bool>& error, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer)
+    : quit_(quit), error_(error), freeList_(freeList), encoder_(encoder), writer_(writer)
 {
     worker_ = std::thread(worker_start, std::ref(*this));
 }
@@ -148,42 +154,50 @@ void ExporterWorker::worker_start(ExporterWorker& worker)
 // private
 void ExporterWorker::run()
 {
-    while (!quit_)
+    try
     {
-        // we assume the exporter delivers frames in sequence; we can't
-        // buffer unlimited frames for writing until we're give frame 1
-        // at the end, for example.
-        ExportJob job = encoder_.encode();
-
-        if (!job)
+        while (!quit_)
         {
-            std::this_thread::sleep_for(2ms);
-        }
-        else
-        {
-            // submit it to be written (frame may be out of order)
-            writer_.push(std::move(job));
+            // we assume the exporter delivers frames in sequence; we can't
+            // buffer unlimited frames for writing until we're give frame 1
+            // at the end, for example.
+            ExportJob job = encoder_.encode();
 
-            // dequeue any in-order writes
-            // NOTE: other threads may be blocked here, even though they could get on with encoding
-            //       this is ultimately not a problem as they'll be rate limited by how much can be
-            //       written out - we don't want encoding to get too far ahead of writing, as that's
-            //       a liveleak of the encode buffers
-            //       each job that is written, we release one decode thread
-            //       each job must do one write
-            do
+            if (!job)
             {
-                ExportJob written = writer_.write();
+                std::this_thread::sleep_for(2ms);
+            }
+            else
+            {
+                // submit it to be written (frame may be out of order)
+                writer_.push(std::move(job));
 
-                if (written)
+                // dequeue any in-order writes
+                // NOTE: other threads may be blocked here, even though they could get on with encoding
+                //       this is ultimately not a problem as they'll be rate limited by how much can be
+                //       written out - we don't want encoding to get too far ahead of writing, as that's
+                //       a liveleak of the encode buffers
+                //       each job that is written, we release one decode thread
+                //       each job must do one write
+                do
                 {
-                    freeList_.free_job(std::move(written));
-                    break;
-                }
+                    ExportJob written = writer_.write();
 
-                std::this_thread::sleep_for(1ms);
-            } while (!quit_);
+                    if (written)
+                    {
+                        freeList_.free_job(std::move(written));
+                        break;
+                    }
+
+                    std::this_thread::sleep_for(1ms);
+                } while (!quit_);
+            }
         }
+    }
+    catch (...)
+    {
+        //!!! should copy the exception and rethrow in main thread when it joins
+        error_ = true;
     }
 }
 
@@ -195,7 +209,7 @@ Exporter::Exporter(
     int64_t nFrames)
   : codec_(std::move(codec)), encoder_(*codec_), nFrames_(nFrames),
             writer_(std::move(movieWriter), nFrames), nFramesDispatched_(0),
-    quit_(false)
+    quit_(false), error_(false)
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write
 
@@ -203,31 +217,60 @@ Exporter::Exporter(
     size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
     for (size_t i=0; i<startingThreads; ++i)
     {
-        workers_.push_back(std::make_unique<ExporterWorker>(quit_, freeList_, encoder_, writer_));
+        workers_.push_back(std::make_unique<ExporterWorker>(quit_, error_, freeList_, encoder_, writer_));
     }
 }
 
 Exporter::~Exporter()
 {
+    try
+    {
+        close();
+    }
+    catch (...)
+    {
+        //!!! not much we can do now;
+        //!!! users should call 'close' themselves if they need to catch errors
+    }
+}
+
+void Exporter::close()
+{
     // if the number of frames dispatched was _all_ of them, wait for the final renders to exit the door
     if (nFramesDispatched_ == nFrames_)
     {
-        writer_.waitForLastWrite();
+        writer_.waitForLastWrite(error_);
     }
 
     // workers can go home
     quit_ = true;
+
+    // wait for them to exit
+    std::swap(workers_, ExportWorkers());
+
+    writer_.close();
+
+    if (error_)
+        throw std::runtime_error("error writing");
 }
+
 
 void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const
 {
     // throttle the caller - if the queue is getting too long we should wait
     while ( (encoder_.nEncodeJobs() >= workers_.size()-1)
-            && !expandWorkerPoolToCapacity()) // if we can, expand the pool
+            && !expandWorkerPoolToCapacity()  // if we can, expand the pool
+            && !error_)
     {
         // otherwise wait for an opening
         std::this_thread::sleep_for(2ms);
     }
+
+    // worker threads can die while encoding or writing (eg full disk)
+    // this is the most likely spot where the error can be noted by the main thread
+    // TODO: should intercept and alert with the correct error reason
+    if (error_)
+        throw std::runtime_error("error while exporting");
 
     ExportJob job = freeList_.allocate_job();
 
@@ -256,7 +299,7 @@ bool Exporter::expandWorkerPoolToCapacity() const
     bool isNotBufferLimited = true;  // TODO: get memoryUsed < maxMemoryCapacity from Adobe API
 
     if (isNotThreadLimited && isNotOutputLimited && isNotBufferLimited) {
-        workers_.push_back(std::make_unique<ExporterWorker>(quit_, freeList_, encoder_, writer_));
+        workers_.push_back(std::make_unique<ExporterWorker>(quit_, error_, freeList_, encoder_, writer_));
         return true;
     }
     return false;

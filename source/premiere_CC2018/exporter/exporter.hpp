@@ -15,9 +15,12 @@ struct ExporterEncodeBuffers
     EncodeOutput output;
 };
 
+class ExporterWorker;
+
 typedef std::pair<int64_t, ExporterEncodeBuffers> ExportFrameAndBuffers;
 typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or write, depending on the queue its in
 typedef std::vector<ExportJob> ExportJobQueue;
+typedef std::list<std::unique_ptr<ExporterWorker> > ExportWorkers;
 
 // thread-safe freelist of ExportJob
 class ExporterJobFreeList
@@ -57,12 +60,14 @@ class ExporterJobWriter
 public:
     ExporterJobWriter(std::unique_ptr<MovieWriter> writer, int64_t nFrames);
 
+    void close();  // call ahead of destruction in order to recognise errors
+
     void push(ExportJob job);
     ExportJob write();  // returns the job that was written
 
     double utilisation() { return utilisation_; }
 
-    void waitForLastWrite(); // finish up
+    void waitForLastWrite(const std::atomic<bool>& abort);
 
 private:
     int64_t nFrames_;
@@ -80,7 +85,7 @@ private:
 class ExporterWorker
 {
 public:
-    ExporterWorker(bool& quit, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer);
+    ExporterWorker(bool& quit, std::atomic<bool>& error, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer);
     ~ExporterWorker();
 
     static void worker_start(ExporterWorker& worker);
@@ -90,6 +95,7 @@ private:
     void run();
 
     bool& quit_;
+    std::atomic<bool>& error_;
     ExporterJobFreeList& freeList_;
     ExporterJobEncoder& encoder_;
     ExporterJobWriter& writer_;
@@ -104,6 +110,9 @@ public:
         std::unique_ptr<MovieWriter> writer,
         int64_t nFrames);
     ~Exporter();
+
+    // users should call close if they wish to handle errors on shutdown
+    void close();
     
     // thread safe to be called 'on frame rendered'
     void dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const;
@@ -113,6 +122,7 @@ private:
     size_t concurrentThreadsSupported_;
 
     mutable bool quit_;
+    mutable std::atomic<bool> error_;
     std::unique_ptr<Codec> codec_;
     int64_t nFrames_;
     mutable int64_t nFramesDispatched_;
@@ -122,5 +132,5 @@ private:
     mutable ExporterJobWriter writer_;
 
     // must be last to ensure they're joined before their dependents are destructed
-    mutable std::list<std::unique_ptr<ExporterWorker> > workers_;
+    mutable ExportWorkers workers_;
 };

@@ -53,8 +53,9 @@ public:
     ~MovieWriter();
 
     void writeFrame(const uint8_t *data, size_t size);
+    void writeTrailer();
 
-    void close(); // close ahead of destruction. Can throw.
+    void close(); // can throw. Call ahead of destruction if onClose errors must be caught externally.
 
 private:
     MovieWriteCallback onWrite_;

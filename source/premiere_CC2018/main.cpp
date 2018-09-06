@@ -282,7 +282,7 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
         codec->subType(),
         width.value.intValue, height.value.intValue,
         frameRateNumerator, frameRateDenominator,
-        [&](const uint8_t* buffer, size_t size) { return Write(file, (void *)buffer, (int32_t)size);  },
+        [&](const uint8_t* buffer, size_t size) { return (malNoError == Write(file, (void *)buffer, (int32_t)size)) ? 0 : -1;  },
         [&](int64_t offset, int whence) {
             int64_t newPosition;
             ExFileSuite_SeekMode seekMode;
@@ -295,7 +295,7 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
             else
                 throw std::runtime_error("unhandled file seek mode");
             return (malNoError==Seek(file, offset, newPosition, seekMode)) ? 0 : -1; },
-        [&]() { Close(file);  },
+        [&]() { return (malNoError==Close(file)) ? 0 : -1;  },
         [&](const char *msg) { /* !!! log it */ });
 
     int64_t nFrames = (exportInfoP->endTime - exportInfoP->startTime) / ticksPerFrame.value.timeValue;
@@ -341,6 +341,16 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
         onFrameComplete,
         settings
     );
+
+    try
+    {
+        // this may throw
+        settings->exporter->close();
+    }
+    catch (...)
+    {
+        return malUnknownError;
+    }
 
     settings->exporter.reset(nullptr);
 
