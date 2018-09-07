@@ -5,27 +5,6 @@
 
 using namespace std::chrono_literals;
 
-ExportJob ExporterJobFreeList::allocate_job()
-{
-    std::lock_guard<std::mutex> guard(mutex_);
-    if (!jobs_.empty())
-    {
-        ExportJob job = std::move(jobs_.back());
-        jobs_.pop_back();
-        return job;
-    }
-    else
-        return std::make_unique<ExportFrameAndBuffers>();
-}
-
-void ExporterJobFreeList::free_job(ExportJob job)
-{
-    std::lock_guard<std::mutex> guard(mutex_);
-    jobs_.push_back(std::move(job));
-}
-
-
-
 ExporterJobEncoder::ExporterJobEncoder(Codec& codec)
     : codec_(codec), nEncodeJobs_(0)
 {
@@ -185,7 +164,7 @@ void ExporterWorker::run()
 
                     if (written)
                     {
-                        freeList_.free_job(std::move(written));
+                        freeList_.free(std::move(written));
                         break;
                     }
 
@@ -272,7 +251,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     if (error_)
         throw std::runtime_error("error while exporting");
 
-    ExportJob job = freeList_.allocate_job();
+    ExportJob job = freeList_.allocate();
 
     job->iFrame = iFrame;
 

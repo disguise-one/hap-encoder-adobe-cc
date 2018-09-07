@@ -27,17 +27,35 @@ typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or w
 typedef std::vector<ExportJob> ExportJobQueue;
 typedef std::list<std::unique_ptr<ExporterWorker> > ExportWorkers;
 
-// thread-safe freelist of ExportJob
-class ExporterJobFreeList
+// thread-safe freelist. T must be unique_ptr<>
+template<class T>
+class FreeList
 {
 public:
-    ExportJob allocate_job();
-    void free_job(ExportJob job);
+    T allocate()
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        if (!freeList_.empty())
+        {
+            T t = std::move(freeList_.back());
+            freeList_.pop_back();
+            return t;
+        }
+        else
+            return std::make_unique<T::element_type>();
+    }
+    void free(T t)
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        freeList_.push_back(std::move(t));
+    }
 
 private:
     std::mutex mutex_;
-    ExportJobQueue jobs_;
+    std::vector<T> freeList_;
 };
+
+typedef FreeList<ExportJob> ExporterJobFreeList;
 
 // thread-safe encoder of ExportJob
 class ExporterJobEncoder
