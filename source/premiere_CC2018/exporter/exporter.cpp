@@ -45,7 +45,7 @@ ExportJob ExporterJobEncoder::encode()
     {
         std::lock_guard<std::mutex> guard(mutex_);
         auto earliest = std::min_element(queue_.begin(), queue_.end(),
-                                         [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
+                                         [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
         if (earliest != queue_.end()) {
             job = std::move(*earliest);
             queue_.erase(earliest);
@@ -54,7 +54,7 @@ ExportJob ExporterJobEncoder::encode()
     }
 
     if (job)
-        codec_.encode(job->second.scratchpad, job->second.output);
+        codec_.encode(job->buffers.scratchpad, job->buffers.output);
 
 
     return job;
@@ -79,8 +79,8 @@ ExportJob ExporterJobWriter::write()
     if (try_guard.owns_lock())
     {
         auto earliest = std::min_element(queue_.begin(), queue_.end(),
-                                         [](const auto& lhs, const auto& rhs) { return (*lhs).first < (*rhs).first; });
-        if (earliest != queue_.end() && (*earliest)->first == nextFrameToWrite_) {
+                                         [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
+        if (earliest != queue_.end() && (*earliest)->iFrame == nextFrameToWrite_) {
             ExportJob job = std::move(*earliest);
             queue_.erase(earliest);
 
@@ -89,7 +89,7 @@ ExportJob ExporterJobWriter::write()
                 idleStart_ = std::chrono::high_resolution_clock::now();
 
             writeStart_ = std::chrono::high_resolution_clock::now();
-            writer_->writeFrame(&job->second.output.buffer[0], job->second.output.buffer.size());
+            writer_->writeFrame(&job->buffers.output.buffer[0], job->buffers.output.buffer.size());
             auto writeEnd = std::chrono::high_resolution_clock::now();
  
             // filtered update of utilisation_
@@ -274,18 +274,18 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
 
     ExportJob job = freeList_.allocate_job();
 
-    job->first = iFrame;
+    job->iFrame = iFrame;
 
     // take a copy of the frame, in the codec preferred manner. we immediately return and let
     // the renderer get on with its job.
     //
     // TODO: may be able to use Adobe's addRef at a higher level and pipe it through for a minor
     //       performance gain
-    job->second.input.bgraBottomLeftOrigin = bgra_bottom_left_origin_data;
-    job->second.input.stride = stride;
+    job->buffers.input.bgraBottomLeftOrigin = bgra_bottom_left_origin_data;
+    job->buffers.input.stride = stride;
 
     codec_->copyExternalToLocal(
-        job->second.input, job->second.scratchpad, job->second.output);
+        job->buffers.input, job->buffers.scratchpad, job->buffers.output);
 
     encoder_.push(std::move(job));
     nFramesDispatched_++;

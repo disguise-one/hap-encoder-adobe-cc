@@ -15,9 +15,14 @@ struct ExporterEncodeBuffers
     EncodeOutput output;
 };
 
+struct ExportFrameAndBuffers
+{
+    int64_t iFrame;
+    ExporterEncodeBuffers buffers;
+};
+
 class ExporterWorker;
 
-typedef std::pair<int64_t, ExporterEncodeBuffers> ExportFrameAndBuffers;
 typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or write, depending on the queue its in
 typedef std::vector<ExportJob> ExportJobQueue;
 typedef std::list<std::unique_ptr<ExporterWorker> > ExportWorkers;
