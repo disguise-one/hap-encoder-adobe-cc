@@ -33,7 +33,7 @@ ExportJob ExporterJobEncoder::encode()
     }
 
     if (job)
-        codec_.encode(job->buffers.scratchpad, job->buffers.output);
+        codec_.encode(job->buffers.input, job->buffers.scratchpad, job->buffers.output);
 
 
     return job;
@@ -260,11 +260,9 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     //
     // TODO: may be able to use Adobe's addRef at a higher level and pipe it through for a minor
     //       performance gain
-    job->buffers.input.bgraBottomLeftOrigin = bgra_bottom_left_origin_data;
-    job->buffers.input.stride = stride;
-
     codec_->copyExternalToLocal(
-        job->buffers.input, job->buffers.scratchpad, job->buffers.output);
+        bgra_bottom_left_origin_data, stride,
+        job->buffers.input);
 
     encoder_.push(std::move(job));
     nFramesDispatched_++;

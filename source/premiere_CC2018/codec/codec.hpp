@@ -22,14 +22,12 @@ typedef std::array<unsigned int, 2> HapChunkCounts;
 
 struct EncodeInput
 {
-	const uint8_t *bgraBottomLeftOrigin;
-	size_t stride;
+    std::vector<uint8_t> rgbaTopLeftOrigin;       // for squish
 };
 
 struct EncodeScratchpad
 {
     // not all of these are used by all codecs
-    std::vector<uint8_t> rgbaTopLeftOrigin;       // for squish
     std::vector<uint8_t> ycocg;                   // for ycog -> ycog_dxt
     std::array<std::vector<uint8_t>, 2> buffers;  // for hap_encode
 };
@@ -59,8 +57,9 @@ public:
 	size_t getMaxEncodedSize() const;
 
     void copyExternalToLocal(
-        const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;
-    void encode(EncodeScratchpad& scratchpad, EncodeOutput& out) const;
+        const uint8_t *bgraBottomLeftOrigin, size_t stride,
+        EncodeInput& local) const;
+    void encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;
 
 private:
     CodecSubType subType_;
