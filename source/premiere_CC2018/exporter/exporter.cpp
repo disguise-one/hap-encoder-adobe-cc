@@ -33,8 +33,10 @@ ExportJob ExporterJobEncoder::encode()
     }
 
     if (job)
-        codec_.encode(job->buffers.input, job->buffers.scratchpad, job->buffers.output);
-
+    {
+        codec_.convert(job->buffers.input, job->buffers.scratchpad);
+        codec_.encode(job->buffers.scratchpad, job->buffers.output);
+    }
 
     return job;
 }

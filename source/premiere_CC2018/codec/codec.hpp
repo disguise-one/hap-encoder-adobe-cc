@@ -59,7 +59,10 @@ public:
     void copyExternalToLocal(
         const uint8_t *bgraBottomLeftOrigin, size_t stride,
         EncodeInput& local) const;
-    void encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const;
+
+
+    void convert(const EncodeInput& in, EncodeScratchpad& scratchpad) const;
+    void encode(const EncodeScratchpad& scratchpad, EncodeOutput& out) const;
 
 private:
     CodecSubType subType_;

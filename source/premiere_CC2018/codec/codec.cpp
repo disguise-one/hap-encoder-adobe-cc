@@ -108,7 +108,7 @@ void Codec::copyExternalToLocal(
         &in.rgbaTopLeftOrigin[0]);
 }
 
-void Codec::encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOutput& out) const
+void Codec::convert(const EncodeInput& in, EncodeScratchpad& scratchpad) const
 {
     // convert input texture from rgba to <subcodec defined> dxt [+ dxt]
     for (unsigned int i = 0; i < count_; ++i)
@@ -118,7 +118,10 @@ void Codec::encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOu
             scratchpad.ycocg,
             scratchpad.buffers[i]);
     }
+}
 
+void Codec::encode(const EncodeScratchpad& scratchpad, EncodeOutput& out) const
+{
     // encode textures for output stream
     std::array<void*, 2> bufferPtrs;              // for hap_encode
     std::array<unsigned long, 2> buffersBytes;    // for hap_encode
@@ -126,18 +129,18 @@ void Codec::encode(const EncodeInput& in, EncodeScratchpad& scratchpad, EncodeOu
     unsigned long outputBufferBytesUsed;
     for (unsigned int i = 0; i < count_; ++i)
     {
-        bufferPtrs[i] = &(scratchpad.buffers[i][0]);
+        bufferPtrs[i] = const_cast<uint8_t *>(&(scratchpad.buffers[i][0]));
         buffersBytes[i] = (unsigned long)scratchpad.buffers[i].size();
     }
 
     auto result = HapEncode(
-            count_,
-            const_cast<const void **>(&bufferPtrs[0]), const_cast<unsigned long *>(&buffersBytes[0]),
-            const_cast<unsigned int *>(&textureFormats_[0]),
-            const_cast<unsigned int *>(&compressors_[0]),
-            const_cast<unsigned int *>(&chunkCounts_[0]),
-            &out.buffer[0], (unsigned long)out.buffer.size(),
-            &outputBufferBytesUsed);
+        count_,
+        const_cast<const void **>(&bufferPtrs[0]), const_cast<unsigned long *>(&buffersBytes[0]),
+        const_cast<unsigned int *>(&textureFormats_[0]),
+        const_cast<unsigned int *>(&compressors_[0]),
+        const_cast<unsigned int *>(&chunkCounts_[0]),
+        &out.buffer[0], (unsigned long)out.buffer.size(),
+        &outputBufferBytesUsed);
 
     if (HapResult_No_Error != result)
     {
