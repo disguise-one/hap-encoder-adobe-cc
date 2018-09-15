@@ -5,6 +5,7 @@
 #include "export_settings.hpp"
 #include "exporter/exporter.hpp"
 #include "configure.hpp"
+#include <codecvt>
 #include <vector>
 
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
@@ -124,6 +125,14 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
 	spError = spBasic->AcquireSuite(kPrSDKTimeSuite, kPrSDKTimeSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->timeSuite))));
     spError = spBasic->AcquireSuite(kPrSDKWindowSuite, kPrSDKWindowSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->windowSuite))));
 
+    // convenience callback
+    settings->reportError = [&](const std::string& error) {
+        settings->exporterUtilitySuite->ReportEvent(
+            instanceRecP->exporterPluginID, PrSDKErrorSuite2::kEventTypeError,
+            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes("HAP encoder plugin").c_str(),
+            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error).c_str());
+    };
+
 	instanceRecP->privateData = reinterpret_cast<void*>(settings);
 
 	return malNoError;
@@ -232,9 +241,43 @@ prMALError fileExtension(exportStdParms* stdParmsP, exQueryExportFileExtensionRe
 	return malNoError;
 }
 
-prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
+static prMALError c_onFrameComplete(
+    csSDK_uint32 inWhichPass,
+    csSDK_uint32 inFrameNumber,
+    csSDK_uint32 inFrameRepeatCount,
+    PPixHand inRenderedFrame,
+    void* inCallbackData)
 {
-	prMALError result = malNoError;
+    ExportSettings* settings = reinterpret_cast<ExportSettings*>(inCallbackData);
+    try
+    {
+        char* bgra_buffer;
+        int32_t bgra_stride;
+        prMALError error = settings->ppixSuite->GetPixels(inRenderedFrame, PrPPixBufferAccess_ReadOnly, &bgra_buffer);
+        if (malNoError != error)
+            throw std::runtime_error("could not GetPixels on completed frame");
+
+        error = settings->ppixSuite->GetRowBytes(inRenderedFrame, &bgra_stride);
+        if (malNoError != error)
+            throw std::runtime_error("could not GetRowBytes on completed frame");
+
+        settings->exporter->dispatch(inFrameNumber, (uint8_t*)bgra_buffer, bgra_stride);
+    }
+    catch (const std::exception& ex)
+    {
+        settings->reportError(ex.what());
+        return malUnknownError;
+    }
+    catch (...)
+    {
+        settings->reportError("unspecified error while processing frame");
+        return malUnknownError;
+    }
+    return malNoError;
+}
+
+static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
+{
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
 	exParamValues ticksPerFrame, width, height, hapSubcodec, chunkCount;
@@ -260,15 +303,7 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 					  FrameDef(width.value.intValue, height.value.intValue),
                       chunkCounts));
 
-	// get the filename
-	csSDK_int32 outPathLength=1024;
-	prUTF16Char outPlatformPath[1024];
-	
-	prMALError error = settings->exportFileSuite->GetPlatformPath(exportInfoP->fileObject, &outPathLength, outPlatformPath);
-	if (malNoError != error)
-		return error;
-
-    error = settings->exportFileSuite->Open(exportInfoP->fileObject);
+    prMALError error = settings->exportFileSuite->Open(exportInfoP->fileObject);
     if (malNoError != error)
         throw std::runtime_error(std::string("couldn't open output file"));
 
@@ -296,12 +331,13 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
                 throw std::runtime_error("unhandled file seek mode");
             return (malNoError==Seek(file, offset, newPosition, seekMode)) ? 0 : -1; },
         [&]() { return (malNoError==Close(file)) ? 0 : -1;  },
-        [&](const char *msg) { /* !!! log it */ });
+        [&](const char *msg) { settings->reportError(msg); } );
 
     int64_t nFrames = (exportInfoP->endTime - exportInfoP->startTime) / ticksPerFrame.value.timeValue;
     settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter), nFrames);
 
     ExportLoopRenderParams renderParams;
+
     renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
     renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
     renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
@@ -310,57 +346,41 @@ prMALError renderAndWriteAllVideo(exDoExportRec* exportInfoP)
     renderParams.inReservedProgressPreRender = 0.0; //!!!
     renderParams.inReservedProgressPostRender = 0.0; //!!!
 
-    auto onFrameComplete = [](
-        csSDK_uint32 inWhichPass,
-        csSDK_uint32 inFrameNumber,
-        csSDK_uint32 inFrameRepeatCount,
-        PPixHand inRenderedFrame,
-        void* inCallbackData)
-    {
-        try
-        {
-            char* bgra_buffer;
-            int32_t bgra_stride;
-            ExportSettings* settings = reinterpret_cast<ExportSettings*>(inCallbackData);
-            settings->ppixSuite->GetPixels(inRenderedFrame, PrPPixBufferAccess_ReadOnly, &bgra_buffer);
-            settings->ppixSuite->GetRowBytes(inRenderedFrame, &bgra_stride);
-
-            settings->exporter->dispatch(inFrameNumber, (uint8_t*)bgra_buffer, bgra_stride);
-        }
-        catch (...)
-        {
-            return malUnknownError;
-        }
-        return malNoError;
-    };
-
-    settings->exporterUtilitySuite->DoMultiPassExportLoop(
+    error = settings->exporterUtilitySuite->DoMultiPassExportLoop(
         exportInfoP->exporterPluginID,
         &renderParams,
         1,  // number of passes
-        onFrameComplete,
+        c_onFrameComplete,
         settings
     );
+    if (malNoError != error)
+        throw std::runtime_error("DoMultiPassExportLoop failed");
 
-    try
-    {
-        // this may throw
-        settings->exporter->close();
-    }
-    catch (...)
-    {
-        return malUnknownError;
-    }
+
+    // this may throw
+    settings->exporter->close();
 
     settings->exporter.reset(nullptr);
-
-	return result;
 }
 
 prMALError doExport(exportStdParms* stdParmsP, exDoExportRec* exportInfoP)
 {
-	if (exportInfoP->exportVideo)
-		return renderAndWriteAllVideo(exportInfoP);
+    ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
+
+    try {
+        if (exportInfoP->exportVideo)
+            renderAndWriteAllVideo(exportInfoP);
+    }
+    catch (const std::exception& ex)
+    {
+        settings->reportError(ex.what());
+        return malUnknownError;
+    }
+    catch (...)
+    {
+        settings->reportError("unspecified error while rendering and writing video");
+        return malUnknownError;
+    }
 
     return 	malNoError;
 }

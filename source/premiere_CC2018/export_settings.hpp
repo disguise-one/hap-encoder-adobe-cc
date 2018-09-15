@@ -25,6 +25,7 @@ typedef struct ExportSettings
     CodecSubType hapSubcodec;
     std::unique_ptr<Exporter> exporter;
 	SPBasicSuite* spBasic;
+    std::function<void(const std::string& error)> reportError;
     PrSDKExporterUtilitySuite* exporterUtilitySuite;
 	PrSDKExportParamSuite* exportParamSuite;
 	PrSDKExportProgressSuite* exportProgressSuite;
