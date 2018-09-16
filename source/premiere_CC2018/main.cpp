@@ -126,9 +126,11 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     spError = spBasic->AcquireSuite(kPrSDKWindowSuite, kPrSDKWindowSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->windowSuite))));
 
     // convenience callback
-    settings->reportError = [&](const std::string& error) {
-        settings->exporterUtilitySuite->ReportEvent(
-            instanceRecP->exporterPluginID, PrSDKErrorSuite2::kEventTypeError,
+    auto report = settings->exporterUtilitySuite->ReportEvent;
+    auto pluginId = instanceRecP->exporterPluginID;
+    settings->reportError = [report, pluginId](const std::string& error) {
+        report(
+            pluginId, PrSDKErrorSuite2::kEventTypeError,
             std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes("HAP encoder plugin").c_str(),
             std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error).c_str());
     };
@@ -333,8 +335,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
         [&]() { return (malNoError==Close(file)) ? 0 : -1;  },
         [&](const char *msg) { settings->reportError(msg); } );
 
-    int64_t nFrames = (exportInfoP->endTime - exportInfoP->startTime) / ticksPerFrame.value.timeValue;
-    settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter), nFrames);
+    settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
 
     ExportLoopRenderParams renderParams;
 
@@ -355,7 +356,6 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
     );
     if (malNoError != error)
         throw std::runtime_error("DoMultiPassExportLoop failed");
-
 
     // this may throw
     settings->exporter->close();
