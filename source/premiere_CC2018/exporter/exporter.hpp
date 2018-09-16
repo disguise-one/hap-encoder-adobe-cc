@@ -81,7 +81,14 @@ private:
 class ExporterJobWriter
 {
 public:
-    ExporterJobWriter(std::unique_ptr<MovieWriter> writer, int64_t nFrames);
+    ExporterJobWriter(std::unique_ptr<MovieWriter> writer);
+
+    void setFirstFrame(int64_t iFrame);
+    // we don't know the index of the first frame until the first frame is dispatched
+    // but the writer is created before then
+    // and the first frame to hit the writer may not be the first frame that was dispatched
+    // (it might take longer to encode)
+    // TODO: remove this hack.
 
     void close();  // call ahead of destruction in order to recognise errors
 
@@ -90,14 +97,12 @@ public:
 
     double utilisation() { return utilisation_; }
 
-    void waitForLastWrite(const std::atomic<bool>& abort);
-
 private:
-    int64_t nFrames_;
+    int64_t endFrame_;
 
     std::mutex mutex_;
     ExportJobQueue queue_;
-    std::atomic<int64_t> nextFrameToWrite_;
+    std::unique_ptr<int64_t> nextFrameToWrite_;
     std::unique_ptr<MovieWriter> writer_;
     std::chrono::high_resolution_clock::time_point idleStart_;
     std::chrono::high_resolution_clock::time_point writeStart_;
@@ -108,7 +113,7 @@ private:
 class ExporterWorker
 {
 public:
-    ExporterWorker(bool& quit, std::atomic<bool>& error, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer);
+    ExporterWorker(std::atomic<bool>& error, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer);
     ~ExporterWorker();
 
     static void worker_start(ExporterWorker& worker);
@@ -117,7 +122,7 @@ private:
     std::thread worker_;
     void run();
 
-    bool& quit_;
+    std::atomic<bool> quit_;
     std::atomic<bool>& error_;
     ExporterJobFreeList& freeList_;
     ExporterJobEncoder& encoder_;
@@ -130,8 +135,7 @@ class Exporter
 public:
     Exporter(
         std::unique_ptr<Codec> codec,
-        std::unique_ptr<MovieWriter> writer,
-        int64_t nFrames);
+        std::unique_ptr<MovieWriter> writer);
     ~Exporter();
 
     // users should call close if they wish to handle errors on shutdown
@@ -141,14 +145,14 @@ public:
     void dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const;
 
 private:
+    bool closed_;
+    mutable std::unique_ptr<int64_t> currentFrame_;
+
     bool expandWorkerPoolToCapacity() const;
     size_t concurrentThreadsSupported_;
 
-    mutable bool quit_;
     mutable std::atomic<bool> error_;
     std::unique_ptr<Codec> codec_;
-    int64_t nFrames_;
-    mutable int64_t nFramesDispatched_;
 
     mutable ExporterJobFreeList freeList_;
     mutable ExporterJobEncoder encoder_;
