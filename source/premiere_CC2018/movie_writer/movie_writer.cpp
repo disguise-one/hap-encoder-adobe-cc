@@ -118,12 +118,12 @@ void MovieWriter::close()
 {
     if (!closed_)
     {
+        closed_ = true;
+
         if (onClose_() < 0)
         {
             throw std::runtime_error("error while closing");
         }
-
-        closed_ = true;
     }
 }
 
