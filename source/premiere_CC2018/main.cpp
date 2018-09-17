@@ -278,7 +278,7 @@ static prMALError c_onFrameComplete(
     return malNoError;
 }
 
-static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
+static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error)
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
@@ -305,9 +305,11 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 					  FrameDef(width.value.intValue, height.value.intValue),
                       chunkCounts));
 
-    prMALError error = settings->exportFileSuite->Open(exportInfoP->fileObject);
+    //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
+    //--- passed up to Adobe
+    error = settings->exportFileSuite->Open(exportInfoP->fileObject);
     if (malNoError != error)
-        throw std::runtime_error(std::string("couldn't open output file"));
+        throw std::runtime_error("couldn't open output file");
 
     // cache some things
     auto file = exportInfoP->fileObject;
@@ -319,8 +321,15 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
         codec->subType(),
         width.value.intValue, height.value.intValue,
         frameRateNumerator, frameRateDenominator,
-        [&](const uint8_t* buffer, size_t size) { return (malNoError == Write(file, (void *)buffer, (int32_t)size)) ? 0 : -1;  },
-        [&](int64_t offset, int whence) {
+        [&, &error=error](const uint8_t* buffer, size_t size) {
+            prMALError writeError = Write(file, (void *)buffer, (int32_t)size);
+            if (malNoError != writeError) {
+                settings->reportError("Could not write to file");
+                return -1;
+            }
+            return 0;
+        },
+        [&, &error=error](int64_t offset, int whence) {
             int64_t newPosition;
             ExFileSuite_SeekMode seekMode;
             if (whence == SEEK_SET)
@@ -331,34 +340,53 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
                 seekMode = fileSeekMode_Current;
             else
                 throw std::runtime_error("unhandled file seek mode");
-            return (malNoError==Seek(file, offset, newPosition, seekMode)) ? 0 : -1; },
-        [&]() { return (malNoError==Close(file)) ? 0 : -1;  },
+            prMALError seekError = Seek(file, offset, newPosition, seekMode);
+            if (malNoError != seekError) {
+                settings->reportError("Could not seek in file");
+                return -1;
+            }
+            return 0;
+        },
+        [&, &error=error]() {
+            return (malNoError == Close(file)) ? 0 : -1;
+        },
         [&](const char *msg) { settings->reportError(msg); } );
 
-    settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
+    try {
+        settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
 
-    ExportLoopRenderParams renderParams;
+        ExportLoopRenderParams renderParams;
 
-    renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
-    renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
-    renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
-    renderParams.inStartTime = exportInfoP->startTime;
-    renderParams.inEndTime = exportInfoP->endTime;
-    renderParams.inReservedProgressPreRender = 0.0; //!!!
-    renderParams.inReservedProgressPostRender = 0.0; //!!!
+        renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
+        renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
+        renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
+        renderParams.inStartTime = exportInfoP->startTime;
+        renderParams.inEndTime = exportInfoP->endTime;
+        renderParams.inReservedProgressPreRender = 0.0; //!!!
+        renderParams.inReservedProgressPostRender = 0.0; //!!!
 
-    error = settings->exporterUtilitySuite->DoMultiPassExportLoop(
-        exportInfoP->exporterPluginID,
-        &renderParams,
-        1,  // number of passes
-        c_onFrameComplete,
-        settings
-    );
-    if (malNoError != error)
-        throw std::runtime_error("DoMultiPassExportLoop failed");
+        prMALError multipassExportError = settings->exporterUtilitySuite->DoMultiPassExportLoop(
+            exportInfoP->exporterPluginID,
+            &renderParams,
+            1,  // number of passes
+            c_onFrameComplete,
+            settings
+        );
+        if (malNoError != multipassExportError)
+        {
+            if (error == malNoError)  // retain error if it was set in per-frame export
+                error = multipassExportError;
+            throw std::runtime_error("DoMultiPassExportLoop failed");
+        }
 
-    // this may throw
-    settings->exporter->close();
+        // this may throw
+        settings->exporter->close();
+    }
+    catch (...)
+    {
+        settings->exporter.reset(nullptr);
+        throw;
+    }
 
     settings->exporter.reset(nullptr);
 }
@@ -366,20 +394,21 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP)
 prMALError doExport(exportStdParms* stdParmsP, exDoExportRec* exportInfoP)
 {
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
+    prMALError error = malNoError;
 
     try {
         if (exportInfoP->exportVideo)
-            renderAndWriteAllVideo(exportInfoP);
+            renderAndWriteAllVideo(exportInfoP, error);
     }
     catch (const std::exception& ex)
     {
         settings->reportError(ex.what());
-        return malUnknownError;
+        return (error == malNoError) ? malUnknownError : error;
     }
     catch (...)
     {
         settings->reportError("unspecified error while rendering and writing video");
-        return malUnknownError;
+        return (error == malNoError) ? malUnknownError : error;
     }
 
     return 	malNoError;
