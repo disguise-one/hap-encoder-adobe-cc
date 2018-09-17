@@ -42,8 +42,9 @@ ExportJob ExporterJobEncoder::encode()
 }
 
 ExporterJobWriter::ExporterJobWriter(std::unique_ptr<MovieWriter> writer)
-    : writer_(std::move(writer)),
-      utilisation_(1.)
+  : writer_(std::move(writer)),
+    utilisation_(1.),
+    error_(false)
 {
 }
 
@@ -71,33 +72,39 @@ ExportJob ExporterJobWriter::write()
 
     if (try_guard.owns_lock())
     {
-        auto earliest = std::min_element(queue_.begin(), queue_.end(),
-                                         [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
-        if (earliest != queue_.end() && nextFrameToWrite_ && (*earliest)->iFrame == *nextFrameToWrite_) {
-            ExportJob job = std::move(*earliest);
-            queue_.erase(earliest);
+        try {
+            auto earliest = std::min_element(queue_.begin(), queue_.end(),
+                [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
+            if (earliest != queue_.end() && nextFrameToWrite_ && (*earliest)->iFrame == *nextFrameToWrite_) {
+                ExportJob job = std::move(*earliest);
+                queue_.erase(earliest);
 
-            // start idle timer first time we try to write to avoid false including setup time
-            if (idleStart_ == std::chrono::high_resolution_clock::time_point())
-                idleStart_ = std::chrono::high_resolution_clock::now();
+                // start idle timer first time we try to write to avoid false including setup time
+                if (idleStart_ == std::chrono::high_resolution_clock::time_point())
+                    idleStart_ = std::chrono::high_resolution_clock::now();
 
-            writeStart_ = std::chrono::high_resolution_clock::now();
-            writer_->writeFrame(&job->buffers.output.buffer[0], job->buffers.output.buffer.size());
-            auto writeEnd = std::chrono::high_resolution_clock::now();
- 
-            // filtered update of utilisation_
-            if (writeEnd != idleStart_)
-            {
-                auto totalTime = (writeEnd - idleStart_).count();
-                auto writeTime = (writeEnd - writeStart_).count();
-                const double alpha = 0.9;
-                utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)writeTime / totalTime);
+                writeStart_ = std::chrono::high_resolution_clock::now();
+                writer_->writeFrame(&job->buffers.output.buffer[0], job->buffers.output.buffer.size());
+                auto writeEnd = std::chrono::high_resolution_clock::now();
+
+                // filtered update of utilisation_
+                if (writeEnd != idleStart_)
+                {
+                    auto totalTime = (writeEnd - idleStart_).count();
+                    auto writeTime = (writeEnd - writeStart_).count();
+                    const double alpha = 0.9;
+                    utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)writeTime / totalTime);
+                }
+                idleStart_ = writeEnd;
+
+                (*nextFrameToWrite_)++;
+
+                return job;
             }
-            idleStart_ = writeEnd;
-
-            (*nextFrameToWrite_)++;
-
-            return job;
+        }
+        catch (...) {
+            error_ = true;
+            throw;
         }
     }
 
@@ -106,9 +113,10 @@ ExportJob ExporterJobWriter::write()
 
 void ExporterJobWriter::close()
 {
-    // TODO: probably shouldn't do this if there was an exception thrown while writing, or if the export was
-    //       aborted
-    writer_->writeTrailer();
+    if (!error_)
+    {
+        writer_->writeTrailer();
+    }
 
     writer_->close();
 }

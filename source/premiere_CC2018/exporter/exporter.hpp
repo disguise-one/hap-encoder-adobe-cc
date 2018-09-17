@@ -98,9 +98,9 @@ public:
     double utilisation() { return utilisation_; }
 
 private:
-    int64_t endFrame_;
 
     std::mutex mutex_;
+    bool error_;
     ExportJobQueue queue_;
     std::unique_ptr<int64_t> nextFrameToWrite_;
     std::unique_ptr<MovieWriter> writer_;
