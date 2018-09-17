@@ -31,7 +31,7 @@
 	<DoEmulation>false</DoEmulation>
 	<DoVideo>true</DoVideo>
 	<DoAudio>false</DoAudio>
-	<PresetID>98108439-0f4a-4a6a-8638-00d2c976ccdb</PresetID>
+	<PresetID>e38982ac-3e52-4db2-83bd-b409fc446a2f</PresetID>
 	<CaptionParamContainer ObjectRef="233"/>
 	<ExportParamContainer ObjectRef="1"/>
 	<ExporterFileType>6840688</ExporterFileType>
@@ -73,7 +73,7 @@
 		<ParamValue>0</ParamValue>
 	</ExporterParam>
 	<ExporterParamContainer ObjectID="3" ClassID="5c20a4a5-5e7c-4032-85b8-26ad4531fe7b" Version="1">
-		<ContainedParamsVersion>1</ContainedParamsVersion>
+		<ContainedParamsVersion>4</ContainedParamsVersion>
 		<ParamContainerItems Version="1">
 			<ParamContainerItem Index="0" ObjectRef="4"/>
 			<ParamContainerItem Index="1" ObjectRef="17"/>
@@ -101,7 +101,7 @@
 		<ParamValue>0</ParamValue>
 	</ExporterParam>
 	<ExporterParamContainer ObjectID="5" ClassID="5c20a4a5-5e7c-4032-85b8-26ad4531fe7b" Version="1">
-		<ContainedParamsVersion>1</ContainedParamsVersion>
+		<ContainedParamsVersion>4</ContainedParamsVersion>
 		<ParamContainerItems Version="1">
 			<ParamContainerItem Index="0" ObjectRef="6"/>
 			<ParamContainerItem Index="1" ObjectRef="7"/>
@@ -198,7 +198,7 @@
 		<ParamDontSerializeValue>false</ParamDontSerializeValue>
 		<ParamOrdinalValue>1</ParamOrdinalValue>
 		<ParamType>2</ParamType>
-		<ParamValue>1920</ParamValue>
+		<ParamValue>3840</ParamValue>
 	</ExporterParam>
 	<ExporterParam ObjectID="11" ClassID="9f049ab7-d48f-43e9-a8ca-4d7f21233625" Version="1">
 		<ParamAuxType></ParamAuxType>
@@ -218,7 +218,7 @@
 		<ParamDontSerializeValue>false</ParamDontSerializeValue>
 		<ParamOrdinalValue>2</ParamOrdinalValue>
 		<ParamType>2</ParamType>
-		<ParamValue>1080</ParamValue>
+		<ParamValue>2160</ParamValue>
 	</ExporterParam>
 	<ExporterParam ObjectID="12" ClassID="9f049ab7-d48f-43e9-a8ca-4d7f21233625" Version="1">
 		<ParamAuxType></ParamAuxType>
@@ -238,7 +238,7 @@
 		<ParamDontSerializeValue>false</ParamDontSerializeValue>
 		<ParamOrdinalValue>3</ParamOrdinalValue>
 		<ParamType>2</ParamType>
-		<ParamValue>829448520</ParamValue>
+		<ParamValue>896557384</ParamValue>
 	</ExporterParam>
 	<ExporterParam ObjectID="13" ClassID="8def7863-204e-4206-8791-54a78f15c66b" Version="1">
 		<ParamAuxType></ParamAuxType>
@@ -258,7 +258,7 @@
 		<ParamDontSerializeValue>false</ParamDontSerializeValue>
 		<ParamOrdinalValue>4</ParamOrdinalValue>
 		<ParamType>4</ParamType>
-		<ParamValue>8475667200</ParamValue>
+		<ParamValue>4233600000</ParamValue>
 	</ExporterParam>
 	<ExporterParam ObjectID="14" ClassID="9f049ab7-d48f-43e9-a8ca-4d7f21233625" Version="1">
 		<ParamAuxType></ParamAuxType>
@@ -329,7 +329,7 @@
 		<ParamValue>0</ParamValue>
 	</ExporterParam>
 	<ExporterParamContainer ObjectID="18" ClassID="5c20a4a5-5e7c-4032-85b8-26ad4531fe7b" Version="1">
-		<ContainedParamsVersion>1</ContainedParamsVersion>
+		<ContainedParamsVersion>4</ContainedParamsVersion>
 		<ParamContainerItems Version="1">
 			<ParamContainerItem Index="0" ObjectRef="19"/>
 			<ParamContainerItem Index="1" ObjectRef="23"/>
@@ -2176,7 +2176,7 @@
 		<FilterItem Index="8" ObjectRef="232"/>
 	</StandardFilterContainer>
 	<StandardFilterWrapperLumetri ObjectID="119" ClassID="a3da719f-5b68-4fbe-af95-d0c3e0127e5e" Version="1">
-		<Enabled>false</Enabled>
+		<Enabled>true</Enabled>
 		<BaseStorageVersion>1</BaseStorageVersion>
 		<LoadedEffectName></LoadedEffectName>
 		<UiInstance>0</UiInstance>
@@ -2196,6 +2196,7 @@
 		<FilterMatchName>AE.ADBE Lumetri</FilterMatchName>
 	</FilterPreset>
 	<VideoFilterComponent ObjectID="121" ClassID="d10da199-beea-4dd1-b941-ed3a78766d50" Version="7">
+		<PremiereFilterPrivateData Encoding="base64" Checksum="4274703050">dG11bAMAAAD/////////////////////AAAAAP//////////AAAAAAAAAAD/////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAA</PremiereFilterPrivateData>
 		<VideoFilterType>2</VideoFilterType>
 		<MatchName>AE.ADBE Lumetri</MatchName>
 		<Component Version="5">
@@ -4074,7 +4075,7 @@
 		<UiInstance>0</UiInstance>
 	</StandardFilterWrapperOverlay>
 	<StandardFilterWrapperAlphaAdjust ObjectID="227" ClassID="d3391303-f3a9-4932-a3b1-3a5fcb28dfb2" Version="1">
-		<Enabled>true</Enabled>
+		<Enabled>false</Enabled>
 		<AlphaAdjust_MaskOnly>false</AlphaAdjust_MaskOnly>
 		<AlphaAdjust_InvertAlpha>false</AlphaAdjust_InvertAlpha>
 		<AlphaAdjust_IgnoreAlpha>false</AlphaAdjust_IgnoreAlpha>
@@ -4122,7 +4123,7 @@
 	<StandardFilterWrapperTimeCarving ObjectID="230" ClassID="b468411d-5d5a-4900-ad11-cd34ab0622f9" Version="2">
 		<SkipSlates>false</SkipSlates>
 		<Mode>1</Mode>
-		<TargetDuration>0</TargetDuration>
+		<TargetDuration>2303078400000</TargetDuration>
 		<CarveRatio>1.</CarveRatio>
 		<Enabled>false</Enabled>
 		<BaseStorageVersion>1</BaseStorageVersion>
