@@ -38,7 +38,7 @@ install(
 set(CPACK_PACKAGE_NAME "HapEncoder")
 set(CPACK_PACKAGE_VENDOR "HapCommunity")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HapEncoder - Hap encoding plugin for Adobe CC 2018")
-set(CPACK_PACKAGE_VERSION "1.0.8-rc3")
+set(CPACK_PACKAGE_VERSION "1.0.8-rc4")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "8")
@@ -52,6 +52,9 @@ set(CPACK_NSIS_URL_INFO_ABOUT "https://hap.video")
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
 set(CPACK_NSIS_MENU_LINKS "doc\\\\HapExporterPlugin_for_AdobeCC2018.html;User Guide")
+set(CPACK_NSIS_HELP_LINK "https://github.com/GregBakker/hap-adobe-premiere-plugin")
+set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/GregBakker/hap-adobe-premiere-plugin/tree/master/doc/user_guide/")
+set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 
 # NSIS component specific settings
 set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$RegInstDir")
