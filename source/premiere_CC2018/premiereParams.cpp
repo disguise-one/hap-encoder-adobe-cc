@@ -3,6 +3,9 @@
 #include "prstring.hpp"
 #include "configure.hpp"
 
+const int k_chunkingMin = 1;
+const int k_chunkingMax = 64;
+
 prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultParamRec *generateDefaultParamRec)
 {
     prMALError result = malNoError;
@@ -108,8 +111,8 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         safeStrCpy(chunkCountParam.identifier, 256, HAPChunkCount);
         chunkCountParam.paramType = exParamType_int;
         chunkCountParam.flags = exParamFlag_optional;
-        chunkCountValues.rangeMin.intValue = 1;
-        chunkCountValues.rangeMax.intValue = 64;
+        chunkCountValues.rangeMin.intValue = k_chunkingMin;
+        chunkCountValues.rangeMax.intValue = k_chunkingMax;
         chunkCountValues.value.intValue = 1;
         chunkCountValues.disabled = kPrFalse;
         chunkCountValues.hidden = kPrFalse;
@@ -183,6 +186,15 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 
     copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCount, tempString);
+    exParamValues chunkCountValues;
+    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCount, &chunkCountValues);
+    chunkCountValues.rangeMin.intValue = k_chunkingMin;
+    chunkCountValues.rangeMax.intValue = k_chunkingMax;
+    chunkCountValues.disabled = kPrFalse;
+    chunkCountValues.hidden = kPrFalse;
+    settings->exportParamSuite->ChangeParam(exID, 0, HAPChunkCount, &chunkCountValues);
+
+
 
     return malNoError;
 }
