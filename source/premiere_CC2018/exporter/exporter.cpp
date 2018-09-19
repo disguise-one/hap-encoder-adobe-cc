@@ -237,7 +237,8 @@ void Exporter::close()
 
         // wait for last jobs to complete. The last one does the last write. If something
         // fails it will abort the others.
-        std::swap(workers_, ExportWorkers());
+        ExportWorkers empty;
+        std::swap(workers_, empty);
 
         // finalise and close the file.
         writer_.close();

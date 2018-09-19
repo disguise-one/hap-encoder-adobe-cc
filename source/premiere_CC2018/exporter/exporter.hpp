@@ -42,7 +42,7 @@ public:
             return t;
         }
         else
-            return std::make_unique<T::element_type>();
+            return std::make_unique<typename T::element_type>();
     }
     void free(T t)
     {

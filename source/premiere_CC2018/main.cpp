@@ -7,6 +7,21 @@
 #include "configure.hpp"
 #include <codecvt>
 #include <vector>
+#include <locale>
+
+class StringForPr
+{
+public:
+    StringForPr(const std::wstring &from)
+    : prString_(from.size() + 1) {
+        copyConvertStringLiteralIntoUTF16(from.c_str(), prString_.data());
+    };
+    const prUTF16Char *get() const {
+        return prString_.data();
+    }
+private:
+    std::vector<prUTF16Char> prString_;
+};
 
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
 {
@@ -129,10 +144,14 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     auto report = settings->exporterUtilitySuite->ReportEvent;
     auto pluginId = instanceRecP->exporterPluginID;
     settings->reportError = [report, pluginId](const std::string& error) {
+
+        StringForPr title(L"HAP encoder plugin");
+        StringForPr detail(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error));
+
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
-            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes("HAP encoder plugin").c_str(),
-            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error).c_str());
+            title.get(),
+            detail.get());
     };
 
 	instanceRecP->privateData = reinterpret_cast<void*>(settings);
