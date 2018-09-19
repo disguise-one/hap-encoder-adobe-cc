@@ -96,7 +96,7 @@ for details.
 
 ## Known issues
 
-TODO
+Performing multiple parallel exports in Media Encoder may cause the system to become unresponsive, although the operation should eventually complete.
 
 ## Credits
 
