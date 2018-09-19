@@ -315,7 +315,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 
     // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
     unsigned int chunkCountAfterAutoApplied = (chunkCount.optionalParamEnabled == 1) ?
-                                              std::min(1, chunkCount.value.intValue)  // force old param to 1
+                                              std::max(1, chunkCount.value.intValue)  // force old param to 1
                                               : 1;
     HapChunkCounts chunkCounts{ chunkCountAfterAutoApplied, chunkCountAfterAutoApplied };
 
