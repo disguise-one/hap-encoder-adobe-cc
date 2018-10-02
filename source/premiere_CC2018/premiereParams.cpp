@@ -228,7 +228,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256];
-    exParamValues width, height, frameRate, hapSubcodec;
+    exParamValues width, height, frameRate, hapSubcodec, hapQuality;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -243,9 +243,51 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoHeight, &height);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoFPS, &frameRate);
 	paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
+    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoQuality, &hapQuality);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    swprintf(videoSummary, 256, L"%ix%i, %.2f fps", width.value.intValue, height.value.intValue, static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
+    wchar_t *hapQualitySummary;
+    switch(hapQuality.value.intValue)
+    {
+        case kSquishEncoderFastQuality:
+            hapQualitySummary = STR_HAP_QUALITY_0 L" ";
+            break;
+        case kSquishEncoderNormalQuality:
+            hapQualitySummary = L"";
+            break;
+        case kSquishEncoderBestQuality:
+            hapQualitySummary = STR_HAP_QUALITY_2 L" ";
+            break;
+        default:
+            hapQualitySummary = L"Unknown";
+    }
+
+    wchar_t *hapSubcodecSummary;
+    switch(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue)[3])
+    {
+        case '1':
+            hapSubcodecSummary = STR_HAP_SUBCODEC_0;
+            break;
+        case '5':
+            hapSubcodecSummary = STR_HAP_SUBCODEC_1;
+            break;
+        case 'Y':
+            hapSubcodecSummary = STR_HAP_SUBCODEC_2;
+            break;
+        case 'M':
+            hapSubcodecSummary = STR_HAP_SUBCODEC_3;
+            break;
+        case 'A':
+            hapSubcodecSummary = STR_HAP_SUBCODEC_4;
+            break;
+        default:
+            hapSubcodecSummary = L"Unknown";
+    }
+
+    swprintf(videoSummary, 256, L"%ix%i, %s%s, %.2f fps",
+            width.value.intValue, height.value.intValue,
+            hapQualitySummary, hapSubcodecSummary, 
+            static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 
     return malNoError;
