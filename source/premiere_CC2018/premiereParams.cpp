@@ -93,6 +93,19 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
 		hapSubcodecParam.paramValues = hapSubcodecValues;
 		exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &hapSubcodecParam);
 
+        exNewParamInfo hapQualityParam;
+        exParamValues hapQualityValues;
+        safeStrCpy(hapQualityParam.identifier, 256, ADBEVideoQuality);
+        hapQualityParam.paramType = exParamType_int;
+        hapQualityParam.flags = exParamFlag_none;
+        hapQualityValues.rangeMin.intValue = 0;
+        hapQualityValues.rangeMax.intValue = 2;
+        hapQualityValues.value.intValue = 1;
+        hapQualityValues.disabled = kPrFalse;
+        hapQualityValues.hidden = kPrFalse;
+        hapQualityParam.paramValues = hapQualityValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &hapQualityParam);
+
 		exNewParamInfo frameRateParam;
         exParamValues frameRateValues;
         safeStrCpy(frameRateParam.identifier, 256, ADBEVideoFPS);
@@ -119,7 +132,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         chunkCountParam.paramValues = chunkCountValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountParam);
 
-        exportParamSuite->SetParamsVersion(exporterPluginID, 4);
+        exportParamSuite->SetParamsVersion(exporterPluginID, 5);
     }
 
     return result;
@@ -132,6 +145,8 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime ticksPerSecond = 0;
 	exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
+    exOneParamValueRec tempHapQuality;
+    SquishEncoderQuality HAPquality[] = { kSquishEncoderFastQuality, kSquishEncoderNormalQuality, kSquishEncoderBestQuality };
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
@@ -139,6 +154,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
 	const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
+    const wchar_t *hapQualityStrings[] = { STR_HAP_QUALITY_0, STR_HAP_QUALITY_1, STR_HAP_QUALITY_2 };
 
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
@@ -169,6 +185,16 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         tempHapSubcodec.intValue = reinterpret_cast<int32_t &>(HAPsubcodecs[i][0]);
         copyConvertStringLiteralIntoUTF16(hapSubcodecStrings[i], tempString);
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoCodec, &tempHapSubcodec, tempString);
+    }
+
+    copyConvertStringLiteralIntoUTF16(STR_HAP_QUALITY, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoQuality);
+    for (csSDK_int32 i = 0; i < sizeof(HAPquality) / sizeof(HAPquality[0]); i++)
+    {
+        tempHapQuality.intValue = HAPquality[i];
+        copyConvertStringLiteralIntoUTF16(hapQualityStrings[i], tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempHapQuality, tempString);
     }
 
     copyConvertStringLiteralIntoUTF16(STR_FRAME_RATE, tempString);
