@@ -97,14 +97,28 @@ size_t TextureConverter::size() const
 }
 
 
-std::unique_ptr<TextureConverter> TextureConverter::create(const FrameDef& frameDef, unsigned int destFormat)
+std::unique_ptr<TextureConverter> TextureConverter::create(const FrameDef& frameDef, unsigned int destFormat, SquishEncoderQuality quality)
 {
+	int flag_quality;
+	switch (quality)
+	{
+	case kSquishEncoderFastQuality:
+		flag_quality = squish::kColourRangeFit;
+		break;
+	case kSquishEncoderBestQuality:
+		flag_quality = squish::kColourIterativeClusterFit;
+		break;
+	default:
+		flag_quality = squish::kColourClusterFit;
+		break;
+	}
+
 	switch (destFormat)
 	{
 	case HapTextureFormat_RGB_DXT1:
-		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt1);
+		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt1 | flag_quality);
 	case HapTextureFormat_RGBA_DXT5:
-		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt5);
+		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt5 | flag_quality);
 	case HapTextureFormat_YCoCg_DXT5:
 		return std::make_unique<TextureConverterToYCoCg_Dxt5>(frameDef);
 	case HapTextureFormat_A_RGTC1:

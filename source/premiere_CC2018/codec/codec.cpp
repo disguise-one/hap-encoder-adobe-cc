@@ -15,7 +15,8 @@ Codec::Codec(
     CodecSubType subType,
     const FrameDef& frameDef,
     HapChunkCounts chunkCounts,
-    const std::vector<unsigned int>& textureFormats)
+    const std::vector<unsigned int>& textureFormats,
+    SquishEncoderQuality textureQuality)
     : subType_(subType),
       frameDef_(frameDef),
       count_((int)textureFormats.size()),
@@ -25,7 +26,7 @@ Codec::Codec(
     for (size_t i = 0; i < count_; ++i)
     {
         textureFormats_[i] = textureFormats[i];
-        converters_[i] = TextureConverter::create(frameDef, textureFormats[i]);
+        converters_[i] = TextureConverter::create(frameDef, textureFormats[i], textureQuality);
         sizes_[i] = (unsigned long)converters_[i]->size();
     }
 }
@@ -36,7 +37,9 @@ Codec::~Codec()
 }
 
 
-std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& frameDef, HapChunkCounts chunkCounts)
+std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& frameDef,
+                                    HapChunkCounts chunkCounts,
+                                    SquishEncoderQuality textureQuality)
 {
     std::vector<unsigned int> textureFormats;
 
@@ -62,7 +65,7 @@ std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& fra
     else
         throw std::runtime_error("unknown codec");
 
-    return std::make_unique<Codec>(codecType, frameDef, chunkCounts, textureFormats);
+    return std::make_unique<Codec>(codecType, frameDef, chunkCounts, textureFormats, textureQuality);
 }
 
 std::string Codec::getSubTypeAsString() const
