@@ -9,6 +9,12 @@
 
 typedef std::array<char, 4> CodecSubType;
 
+enum SquishEncoderQuality {
+    kSquishEncoderFastQuality = 0,
+    kSquishEncoderNormalQuality = 1,
+    kSquishEncoderBestQuality = 2
+};
+
 // Details of frame
 
 struct FrameDef
@@ -31,7 +37,7 @@ public:
 	{}
 	virtual ~TextureConverter();
 
-	static std::unique_ptr<TextureConverter> create(const FrameDef& frameDef, unsigned int destFormat);
+	static std::unique_ptr<TextureConverter> create(const FrameDef& frameDef, unsigned int destFormat, SquishEncoderQuality quality);
 
 	const FrameDef& frameDef() const { return frameDef_; }
 

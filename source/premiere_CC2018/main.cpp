@@ -301,13 +301,14 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, hapSubcodec, chunkCount;
+	exParamValues ticksPerFrame, width, height, hapSubcodec, hapQuality, chunkCount;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &hapQuality);
     settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCount, &chunkCount);
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
@@ -322,7 +323,8 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
         Codec::create(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue),
 					  FrameDef(width.value.intValue, height.value.intValue),
-                      chunkCounts));
+                      chunkCounts,
+                      static_cast<SquishEncoderQuality>(hapQuality.value.intValue)));
 
     //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
     //--- passed up to Adobe

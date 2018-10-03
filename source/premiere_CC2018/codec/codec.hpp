@@ -47,10 +47,13 @@ public:
         CodecSubType subType,
 		const FrameDef& frameDef,
         HapChunkCounts chunkCounts,
-		const std::vector<unsigned int>& textureFormats);
+		const std::vector<unsigned int>& textureFormats,
+		SquishEncoderQuality textureQuality);
 	~Codec();
 
-	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef, HapChunkCounts chunkCounts);
+	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef,
+										HapChunkCounts chunkCounts,
+										SquishEncoderQuality textureQuality);
 
     CodecSubType subType() const { return subType_; }
 	std::string getSubTypeAsString() const;
