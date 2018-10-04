@@ -73,14 +73,6 @@ An optional specified number of chunks size may be specified to optimize for ult
 
 At present, 'auto' corresponds to choosing 1 chunk per texture; this may change in the future.
 
-### Playback
-
-Playback requires support for the HAP codec. There are plenty of options, including
-
--  the HAP QuickTime codec
--  VLC
--  many media servers
--  HAP codec ingestion in Adobe products
 
 ## What is HAP
 
