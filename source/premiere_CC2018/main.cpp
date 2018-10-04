@@ -382,7 +382,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
         renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
         renderParams.inStartTime = exportInfoP->startTime;
-        renderParams.inEndTime = exportInfoP->endTime;
+        renderParams.inEndTime = exportInfoP->endTime + frameRateDenominator;
         renderParams.inReservedProgressPreRender = 0.0; //!!!
         renderParams.inReservedProgressPostRender = 0.0; //!!!
 
