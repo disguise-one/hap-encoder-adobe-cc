@@ -2,25 +2,30 @@
 
 This is the community-supplied Hap and Hap Q exporter plugin for Adobe CC 2018.
 
-Development of this plugin was sponsored by disguise, makers of the disguise show production software and hardware
-
-    http://disguise.one
+Development of this plugin was sponsored by [disguise](http://disguise.one), makers of the disguise show production software and hardware.
 
 Principal authors of the plugin are
 
 -  Greg Bakker (gbakker@gmail.com)
 -  Richard Sykes
--  Tom Butterworth (http://kriss.cx/tom)
+-  [Tom Butterworth](http://kriss.cx/tom)
 
 Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting that development.
 
-Please see license.txt for the licenses of this plugin and the components that were used to create it.
+Please see [license.txt](license.txt) for the licenses of this plugin and the components used to create it.
+
+
+# Download
+
+An installer for the exporter can be downloaded [here](https://github.com/disguise-one/hap-adobe-premiere-plugin/releases).
 
 # User Guide
 
-The User Guide can be found [here](doc/user_guide/README.md)
+Please consult the User Guide, which can be found [here](doc/user_guide/README.md).
 
 # Development
+
+The following information is for developers who wish to contribute to the project, and is not for users of the plugin.
 
 ## Prerequisites
 
@@ -28,29 +33,32 @@ The User Guide can be found [here](doc/user_guide/README.md)
 
 You'll need a compiler environment appropriate to your operating system. The current plugin has been developed on
 -  win64 with Microsoft Visual Studio 2017 Professional.
--  macosx with XCode
+-  macOS with XCode
 
-### cmake
-cmake creates the build system for the supported target platforms.
+### CMake
 
-    https://cmake.org/install/
-    get >= 3.12.0
+CMake creates the build system for the supported target platforms. This project requires version 3.12.0 or later.
+
+[https://cmake.org/install/](https://cmake.org/install/)
 
 ### NSIS
+
 NSIS is required for win32 installer builds.
 
-    http://nsis.sourceforge.net/Main_Page
+[http://nsis.sourceforge.net/Main_Page](http://nsis.sourceforge.net/Main_Page)
 
 ### Adobe CC 2018 SDK
+
 Website
 
-    https://www.adobe.io/apis/creativecloud/premierepro.html
+[https://www.adobe.io/apis/creativecloud/premierepro.html](https://www.adobe.io/apis/creativecloud/premierepro.html)
 
 Place in
 
     external/adobe/premiere
 
 ### FFMpeg
+
 FFmpeg 4.0 is used for output of the .mov format.
 
 It is referenced as a submodule of this repository. Fetch the source for building with
@@ -61,22 +69,21 @@ It is referenced as a submodule of this repository. Fetch the source for buildin
 The FFMpeg build is not wrapped by the plugin's cmake build process, and must be made in a platform specific process as descibed below.
 
 #### win64
+
 Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
 
-    https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC
+[https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC](https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC)
 
 For reference, the FFMpeg build for the win64 plugin was created by
 
--  first installing
- 
-        http://www.mingw.org/wiki/msys
+-  first installing [MSYS](http://www.mingw.org/wiki/msys)
 
--  launching a visual studio 2017 developer prompt
--  set visual studio build vars for an x64 build. Something like
+-  launching a Visual Studio 2017 developer prompt
+-  set Visual Studio build vars for an x64 build. Something like
 
         "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
--  running the msys shell from within that prompt
+-  running the MSYS shell from within that prompt
 
         C:\MinGW\msys\1.0\msys.bat
  
@@ -87,18 +94,21 @@ For reference, the FFMpeg build for the win64 plugin was created by
 
 This will take a while.
 
-#### macosx
+#### macOS
+
 Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg. Then
 
     ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --disable-zlib --disable-iconv
     make
 
 ### Pandoc
+
 Pandoc is required to build the documentation, which is bundled by the installer.
 
-    https://pandoc.org/
+[https://pandoc.org/](https://pandoc.org/)
 
-#### macos
+#### macOS
+
 For macos, the homebrew installation is recommended.
 
     brew install pandoc
@@ -123,7 +133,7 @@ This should create HapEncoder.sln in the current directory. Open it in Visual St
 The encoder plugin (.prm) is created by building all.
 The installer executable is made by building the PACKAGE target, which is excluded from the regular build.
 
-### macosx
+### macOS
 
 First create a build directory at the top level, and move into it
 
@@ -147,4 +157,4 @@ To create an installer (requires Apple Developer Program membership for signing)
     cd installer
     ./make_mac_installer.sh
 
-TODO: have the installer figure out the right paths to copy plugin+presets to from Adobe's .plist file
+The installer is created in the Release directory.
