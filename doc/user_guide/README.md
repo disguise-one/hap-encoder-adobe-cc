@@ -16,21 +16,21 @@ HAP is a collection of high-performance codecs optimised for playback of multipl
 
 Releases of this plugin are available at
 
-    https://github.com/GregBakker/hap-exporter-adobe-cc/releases
+[https://github.com/disguise-one/hap-adobe-premiere-plugin/releases](https://github.com/disguise-one/hap-adobe-premiere-plugin/releases)
 
 ## Requirements
 
-This codec has been tested on Windows 10, and supports Core i3 processors and later.
+This codec has been tested on Windows 10, macOS High Sierra and macOS Mojave and supports Core i3 processors and later.
 
-It has been tested in Adobe Media Encoder CC 2018 12.1.2.69
+It has been tested in Adobe Media Encoder CC 2018 12.1.2.69.
 
 ## Installation
 
-Obtain the installer executable and run it.
+Run the provided installer.
 
 ## Usage
 
-After installation, the encoders will be available as the 'HAP Video' format when creating a new preset in Adobe Media Encoder CC 2018 or when exporting in Adobe Premiere CC 2018.
+After installation, the encoders will be available as the 'HAP Video' format when exporting in Adobe Media Encoder CC 2018 or Adobe Premiere CC 2018.
 
 ![HAP format](format-option.png)
 
@@ -77,7 +77,7 @@ At present, 'auto' corresponds to choosing 1 chunk per texture; this may change 
 
 Playback requires support for the HAP codec. There are plenty of options, including
 
--  the HAP quicktime codec
+-  the HAP QuickTime codec
 -  VLC
 -  many media servers
 -  HAP codec ingestion in Adobe products
@@ -90,7 +90,7 @@ HAP prioritises decode-speed, efficient upload to GPUs and GPU-side decoding to 
 
 Please see
 
-    http://hap.video/
+[http://hap.video/](http://hap.video/)
 
 for details.
 
@@ -104,12 +104,11 @@ Principal authors of this plugin are
 
 -  Greg Bakker (gbakker@gmail.com)
 -  Richard Sykes
--  Tom Butterworth (http://kriss.cx/tom)
+-  [Tom Butterworth](http://kriss.cx/tom)
 
-Development of this plugin was sponsored by disguise, makers of the disguise show production software and hardware
-    http://disguise.one
+Development of this plugin was sponsored by [disguise](http://disguise.one), makers of the disguise show production software and hardware.
 
-The Hap codec was developed by Tom Butterworth with the support of VIDVOX.
+The Hap codec was developed by Tom Butterworth with the support of [VIDVOX](https://vidvox.net).
 
 Many thanks to Tom Butterworth, David Lublin, Nick Wilkinson, Ruben Garcia and the disguise QA team for their assistance throughout development of this plugin.
 
