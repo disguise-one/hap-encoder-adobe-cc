@@ -143,6 +143,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     const csSDK_uint32 exID = postProcessParamsRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(postProcessParamsRecP->privateData);
     PrTime ticksPerSecond = 0;
+    exParamValues hapSubcodec, qualityToValidate;
 	exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
     exOneParamValueRec tempHapQuality;
@@ -196,6 +197,15 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         copyConvertStringLiteralIntoUTF16(hapQualityStrings[i], tempString);
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempHapQuality, tempString);
     }
+
+    // quality setting is not supported by all subcodecs
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
+    const auto codecSubtype = reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue);
+    bool enableQuality = Codec::getCapabilities(codecSubtype).hasQuality;
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &qualityToValidate);
+    qualityToValidate.disabled = !enableQuality;
+    settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &qualityToValidate);
+
 
     copyConvertStringLiteralIntoUTF16(STR_FRAME_RATE, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoFPS, tempString);
@@ -300,10 +310,28 @@ prMALError paramButton(exportStdParms *stdParmsP, exParamButtonRec *getFilePrefs
 
 prMALError validateParamChanged(exportStdParms *stdParmsP, exParamChangedRec *validateParamChangedRecP)
 {
+    const csSDK_uint32 exID = validateParamChangedRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(validateParamChangedRecP->privateData);
+    exParamValues hapSubcodec, toValidate;
 
     if (settings->exportParamSuite == nullptr)
         return exportReturn_ErrMemory;
+
+    // quality setting is not supported by all subcodecs
+    if (strcmp(validateParamChangedRecP->changedParamIdentifier, ADBEVideoCodec) == 0)
+    {
+        settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
+        const auto codecSubtype = reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue);
+        bool enableQuality = Codec::getCapabilities(codecSubtype).hasQuality;
+
+        settings->exportParamSuite->GetParamValue(exID,
+            validateParamChangedRecP->multiGroupIndex,
+            ADBEVideoQuality,
+            &toValidate);
+
+        toValidate.disabled = !enableQuality;
+        settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &toValidate);
+    }
 
     return malNoError;
 }
