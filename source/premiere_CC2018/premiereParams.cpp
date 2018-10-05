@@ -99,8 +99,8 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         hapQualityParam.paramType = exParamType_int;
         hapQualityParam.flags = exParamFlag_none;
         hapQualityValues.rangeMin.intValue = 0;
-        hapQualityValues.rangeMax.intValue = 2;
-        hapQualityValues.value.intValue = 1;
+        hapQualityValues.rangeMax.intValue = 1;
+        hapQualityValues.value.intValue = kSquishEncoderNormalQuality;
         hapQualityValues.disabled = kPrFalse;
         hapQualityValues.hidden = kPrFalse;
         hapQualityParam.paramValues = hapQualityValues;
@@ -147,7 +147,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 	exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
     exOneParamValueRec tempHapQuality;
-    SquishEncoderQuality HAPquality[] = { kSquishEncoderFastQuality, kSquishEncoderNormalQuality, kSquishEncoderBestQuality };
+    SquishEncoderQuality HAPquality[] = { kSquishEncoderFastQuality, kSquishEncoderNormalQuality };
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
@@ -155,7 +155,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
 	const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
-    const wchar_t *hapQualityStrings[] = { STR_HAP_QUALITY_0, STR_HAP_QUALITY_1, STR_HAP_QUALITY_2 };
+    const wchar_t *hapQualityStrings[] = { STR_HAP_QUALITY_0, STR_HAP_QUALITY_1 };
 
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
@@ -256,22 +256,6 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoQuality, &hapQuality);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    wchar_t *hapQualitySummary;
-    switch(hapQuality.value.intValue)
-    {
-        case kSquishEncoderFastQuality:
-            hapQualitySummary = STR_HAP_QUALITY_0 L" ";
-            break;
-        case kSquishEncoderNormalQuality:
-            hapQualitySummary = L"";
-            break;
-        case kSquishEncoderBestQuality:
-            hapQualitySummary = STR_HAP_QUALITY_2 L" ";
-            break;
-        default:
-            hapQualitySummary = L"Unknown";
-    }
-
     wchar_t *hapSubcodecSummary;
     switch(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue)[3])
     {
@@ -294,9 +278,9 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
             hapSubcodecSummary = L"Unknown";
     }
 
-    swprintf(videoSummary, 256, L"%ix%i, %s%s, %.2f fps",
+    swprintf(videoSummary, 256, L"%ix%i, %s, %.2f fps",
             width.value.intValue, height.value.intValue,
-            hapQualitySummary, hapSubcodecSummary, 
+            hapSubcodecSummary, 
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 
