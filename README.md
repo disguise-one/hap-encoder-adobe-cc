@@ -17,7 +17,7 @@ Please see [license.txt](license.txt) for the licenses of this plugin and the co
 
 # Download
 
-An installer for the exporter can be downloaded [here](https://github.com/disguise-one/hap-adobe-premiere-plugin/releases).
+An installer for the exporter can be downloaded [here](https://github.com/disguise-one/hap-encoder-adobe-cc/releases).
 
 # User Guide
 

@@ -16,7 +16,7 @@ HAP is a collection of high-performance codecs optimised for playback of multipl
 
 Releases of this plugin are available at
 
-[https://github.com/disguise-one/hap-adobe-premiere-plugin/releases](https://github.com/disguise-one/hap-adobe-premiere-plugin/releases)
+[https://github.com/disguise-one/hap-encoder-adobe-cc/releases](https://github.com/disguise-one/hap-encoder-adobe-cc/releases)
 
 ## Requirements
 
