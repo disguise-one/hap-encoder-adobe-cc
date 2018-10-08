@@ -23,6 +23,10 @@ An installer for the exporter can be downloaded [here](https://github.com/disgui
 
 Please consult the User Guide, which can be found [here](doc/user_guide/README.md).
 
+# Support
+
+Users can contact happlugin@disguise.one for support.
+
 # Development
 
 The following information is for developers who wish to contribute to the project, and is not for users of the plugin.
