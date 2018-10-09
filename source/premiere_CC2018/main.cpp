@@ -139,6 +139,8 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
 	spError = spBasic->AcquireSuite(kPrSDKPPixSuite, kPrSDKPPixSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->ppixSuite))));
 	spError = spBasic->AcquireSuite(kPrSDKTimeSuite, kPrSDKTimeSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->timeSuite))));
     spError = spBasic->AcquireSuite(kPrSDKWindowSuite, kPrSDKWindowSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->windowSuite))));
+    spError = spBasic->AcquireSuite(kPrSDKAudioSuite, kPrSDKAudioSuiteVersion, const_cast<const void**>(reinterpret_cast<void**>(&(settings->audioSuite))));
+    spError = spBasic->AcquireSuite(kPrSDKSequenceAudioSuite, kPrSDKSequenceAudioSuiteVersion1, const_cast<const void**>(reinterpret_cast<void**>(&(settings->sequenceAudioSuite))));
 
     // convenience callback
     auto report = settings->exporterUtilitySuite->ReportEvent;
@@ -200,6 +202,12 @@ prMALError endInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanc
 
 	if (settings->windowSuite)
 		result = spBasic->ReleaseSuite(kPrSDKWindowSuite, kPrSDKWindowSuiteVersion);
+
+    if (settings->audioSuite)
+        result = spBasic->ReleaseSuite(kPrSDKAudioSuite, kPrSDKAudioSuiteVersion);
+
+    if (settings->sequenceAudioSuite)
+        result = spBasic->ReleaseSuite(kPrSDKSequenceAudioSuite, kPrSDKSequenceAudioSuiteVersion1);
 
 	settings->~ExportSettings();
 
@@ -410,6 +418,105 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     }
 
     settings->exporter.reset(nullptr);
+}
+
+csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType)
+{
+    csSDK_int32 numberOfChannels = -1;
+
+    if (audioChannelType == kPrAudioChannelType_Mono)
+        numberOfChannels = 1;
+
+    else if (audioChannelType == kPrAudioChannelType_Stereo)
+        numberOfChannels = 2;
+
+    else if (audioChannelType == kPrAudioChannelType_51)
+        numberOfChannels = 6;
+
+    return numberOfChannels;
+}
+
+static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer)
+{
+    // All audio calls to and from Premiere use arrays of buffers of 32-bit floats to pass audio.
+    // Audio is not interleaved, rather separate channels are stored in separate buffers.
+    const int kAudioSampleSizePremiere = sizeof(float_t);
+
+    // Assume we export 16bit audio and pack up to 1024 samples per packet
+    const int kAudioSampleSizeOutput = sizeof(int16_t);
+    const int kAudioSamplesPerPacket = 1024;
+
+    const csSDK_uint32 exID = exportInfoP->exporterPluginID;
+    ExportSettings *settings = reinterpret_cast<ExportSettings *>(exportInfoP->privateData);
+    exParamValues ticksPerFrame, sampleRate, channelType;
+
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioRatePerSecond, &sampleRate);
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioNumChannels, &channelType);
+    csSDK_int32 numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
+
+    csSDK_uint32 audioRenderID = 0;
+    settings->sequenceAudioSuite->MakeAudioRenderer(exID,
+                                                    exportInfoP->startTime,
+                                                    (PrAudioChannelType)channelType.value.intValue,
+                                                    kPrAudioSampleType_32BitFloat,
+                                                    (float)sampleRate.value.floatValue,
+                                                    &audioRenderID);
+
+    PrTime ticksPerSample = 0;
+    settings->timeSuite->GetTicksPerAudioSample((float)sampleRate.value.floatValue, &ticksPerSample);
+
+    PrTime exportDuration = exportInfoP->endTime - exportInfoP->startTime;
+    csSDK_int64 totalAudioSamples = exportDuration / ticksPerSample;
+    csSDK_int64 samplesRemaining = totalAudioSamples;
+
+    // Allocate audio buffers
+    csSDK_int32 audioBufferSize = kAudioSamplesPerPacket;
+    auto audioBufferOut = (csSDK_int16 *)settings->memorySuite->NewPtr(numAudioChannels * audioBufferSize * kAudioSampleSizeOutput);
+    float *audioBuffer[kMaxAudioChannelCount];
+    for (csSDK_int32 bufferIndexL = 0; bufferIndexL < numAudioChannels; bufferIndexL++)
+    {
+        audioBuffer[bufferIndexL] = (float *)settings->memorySuite->NewPtr(audioBufferSize * kAudioSampleSizePremiere);
+    }
+
+    // GetAudio loop
+    csSDK_int32 samplesRequested, maxBlipSize;
+    prMALError resultS = malNoError;
+    while (samplesRemaining && (resultS == malNoError))
+    {
+        // Find size of blip to ask for
+        settings->sequenceAudioSuite->GetMaxBlip(audioRenderID, ticksPerFrame.value.timeValue, &maxBlipSize);
+        samplesRequested = std::min(audioBufferSize, maxBlipSize);
+        if (samplesRequested > samplesRemaining)
+            samplesRequested = (csSDK_int32)samplesRemaining;
+
+        // Fill the buffer with audio
+        resultS = settings->sequenceAudioSuite->GetAudio(audioRenderID, samplesRequested, audioBuffer, kPrFalse);
+        if (resultS != malNoError)
+            break;
+
+        settings->audioSuite->ConvertAndInterleaveTo16BitInteger(audioBuffer, audioBufferOut,
+                                                                 numAudioChannels, samplesRequested);
+
+        //Write audioBufferOut to file
+        auto buf = reinterpret_cast<const uint8_t*>(audioBufferOut);
+        for (csSDK_int32 i=0; i < samplesRequested; i++) {
+            csSDK_int32 offset = i * numAudioChannels * kAudioSampleSizeOutput;
+            //writer->writeAudioFrame(&buf[offset], numAudioChannels * kAudioSampleSizeOutput);
+        }
+
+        // Calculate remaining audio
+        samplesRemaining -= samplesRequested;
+    }
+    error = resultS;
+
+    // Free up
+    settings->memorySuite->PrDisposePtr((PrMemoryPtr)audioBufferOut);
+    for (csSDK_int32 bufferIndexL = 0; bufferIndexL < numAudioChannels; bufferIndexL++)
+    {
+        settings->memorySuite->PrDisposePtr((PrMemoryPtr)audioBuffer[bufferIndexL]);
+    }
+    settings->sequenceAudioSuite->ReleaseAudioRenderer(exID, audioRenderID);
 }
 
 prMALError doExport(exportStdParms* stdParmsP, exDoExportRec* exportInfoP)
