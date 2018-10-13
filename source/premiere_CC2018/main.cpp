@@ -9,6 +9,9 @@
 #include <vector>
 #include <locale>
 
+csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType);
+static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer);
+
 class StringForPr
 {
 public:
@@ -381,6 +384,23 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         },
         [&](const char *msg) { settings->reportError(msg); } );
 
+        // TODO move this outside to DoExport()
+        auto writer = movieWriter.get();
+        if (exportInfoP->exportAudio) 
+        {
+            exParamValues sampleRate, channelType;
+            settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioRatePerSecond, &sampleRate);
+            settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioNumChannels, &channelType);
+            csSDK_int32 numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
+            
+            writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
+        }
+
+        writer->writeHeader();
+
+        if (exportInfoP->exportAudio)
+            renderAndWriteAllAudio(exportInfoP, error, writer);
+
     try {
         settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
 
@@ -535,6 +555,9 @@ prMALError doExport(exportStdParms* stdParmsP, exDoExportRec* exportInfoP)
     prMALError error = malNoError;
 
     try {
+        // if (exportInfoP->exportAudio)
+        //     renderAndWriteAllAudio(exportInfoP, error);
+
         if (exportInfoP->exportVideo)
             renderAndWriteAllVideo(exportInfoP, error);
     }
