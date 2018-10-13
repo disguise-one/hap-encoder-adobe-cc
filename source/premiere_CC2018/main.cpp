@@ -93,7 +93,7 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         infoRec->isCacheable = kPrFalse;
         infoRec->exportReqIndex = 0;
         infoRec->canExportVideo = kPrTrue;
-        infoRec->canExportAudio = kPrFalse;
+        infoRec->canExportAudio = kPrTrue;
         infoRec->canEmbedCaptions = kPrFalse;
         infoRec->canConformToMatchParams = kPrTrue;
         infoRec->singleFrameOnly = kPrFalse;

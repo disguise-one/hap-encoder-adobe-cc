@@ -132,6 +132,36 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         chunkCountParam.paramValues = chunkCountValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountParam);
 
+        // Audio parameters
+        copyConvertStringLiteralIntoUTF16(TOP_AUDIO_PARAM_GROUP_NAME, tempString);
+        exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBETopParamGroup, ADBEAudioTabGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
+        copyConvertStringLiteralIntoUTF16(BASIC_AUDIO_PARAM_GROUP_NAME, tempString);
+        exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBEAudioTabGroup, ADBEBasicAudioGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
+
+        // Sample rate
+        exNewParamInfo sampleRateParam;
+        exParamValues sampleRateValues;
+        safeStrCpy(sampleRateParam.identifier, 256, ADBEAudioRatePerSecond);
+        sampleRateParam.paramType = exParamType_float;
+        sampleRateParam.flags = exParamFlag_none;
+        sampleRateValues.value.floatValue = 44100.0f; // disguise servers default samplerate
+        sampleRateValues.disabled = kPrFalse;
+        sampleRateValues.hidden = kPrFalse;
+        sampleRateParam.paramValues = sampleRateValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicAudioGroup, &sampleRateParam);
+        
+        // Channel type
+        exNewParamInfo channelTypeParam;
+        exParamValues channelTypeValues;
+        safeStrCpy(channelTypeParam.identifier, 256, ADBEAudioNumChannels);
+        channelTypeParam.paramType = exParamType_int;
+        channelTypeParam.flags = exParamFlag_none;
+        channelTypeValues.value.intValue = kPrAudioChannelType_Stereo;
+        channelTypeValues.disabled = kPrFalse; // TODO in Release disable to simplify user expirience: only stereo
+        channelTypeValues.hidden = kPrFalse;
+        channelTypeParam.paramValues = channelTypeValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicAudioGroup, &channelTypeParam);
+
         exportParamSuite->SetParamsVersion(exporterPluginID, 5);
     }
 
@@ -152,10 +182,17 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
 
+    exOneParamValueRec tempSampleRate;
+    float sampleRates[] = {44100.0f, 48000.0f};
+    exOneParamValueRec tempChannelType;
+    csSDK_int32 channelTypes[] = {kPrAudioChannelType_Mono, kPrAudioChannelType_Stereo, kPrAudioChannelType_51};
+
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
 	const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
     const wchar_t *hapQualityStrings[] = { STR_HAP_QUALITY_0, STR_HAP_QUALITY_1 };
+    const wchar_t *sampleRateStrings[] = {STR_SAMPLE_RATE_441, STR_SAMPLE_RATE_48};
+    const wchar_t *channelTypeStrings[] = {STR_CHANNEL_TYPE_MONO, STR_CHANNEL_TYPE_STEREO, STR_CHANNEL_TYPE_51};
 
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
@@ -230,15 +267,36 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     chunkCountValues.hidden = kPrFalse;
     settings->exportParamSuite->ChangeParam(exID, 0, HAPChunkCount, &chunkCountValues);
 
+    copyConvertStringLiteralIntoUTF16(BASIC_AUDIO_PARAM_GROUP_NAME, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, ADBEBasicAudioGroup, tempString);
 
+    copyConvertStringLiteralIntoUTF16(STR_SAMPLE_RATE, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, ADBEAudioRatePerSecond, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEAudioRatePerSecond);
+    for (csSDK_int32 i = 0; i < sizeof(sampleRates) / sizeof(float); i++)
+    {
+        tempSampleRate.floatValue = sampleRates[i];
+        copyConvertStringLiteralIntoUTF16(sampleRateStrings[i], tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEAudioRatePerSecond, &tempSampleRate, tempString);
+    }
+
+    copyConvertStringLiteralIntoUTF16(STR_CHANNEL_TYPE, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, ADBEAudioNumChannels, tempString);
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEAudioNumChannels);
+    for (csSDK_int32 i = 0; i < sizeof(channelTypes) / sizeof(csSDK_int32); i++)
+    {
+        tempChannelType.intValue = channelTypes[i];
+        copyConvertStringLiteralIntoUTF16(channelTypeStrings[i], tempString);
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEAudioNumChannels, &tempChannelType, tempString);
+    }
 
     return malNoError;
 }
 
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
-    wchar_t videoSummary[256];
-    exParamValues width, height, frameRate, hapSubcodec, hapQuality;
+    wchar_t videoSummary[256], audioSummary[256];
+    exParamValues width, height, frameRate, hapSubcodec, hapQuality, sampleRate, channelType;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -254,6 +312,8 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoFPS, &frameRate);
 	paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoQuality, &hapQuality);
+    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioRatePerSecond, &sampleRate);
+    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
     wchar_t *hapSubcodecSummary;
@@ -283,6 +343,30 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
             hapSubcodecSummary, 
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
+
+    if (summaryRecP->exportAudio)
+    {
+        wchar_t *audioChannelSummary;
+        switch (channelType.value.intValue)
+        {
+        case kPrAudioChannelType_Mono:
+            audioChannelSummary = STR_CHANNEL_TYPE_MONO;
+            break;
+        case kPrAudioChannelType_Stereo:
+            audioChannelSummary = STR_CHANNEL_TYPE_STEREO;
+            break;
+        case kPrAudioChannelType_51:
+            audioChannelSummary = STR_CHANNEL_TYPE_51;
+            break;
+        default:
+            audioChannelSummary = L"Unknown";
+        }
+
+        swprintf(audioSummary, 256, L"Uncompressed, %.0f Hz, %s, 16bit",
+                 sampleRate.value.floatValue,
+                 audioChannelSummary);
+        copyConvertStringLiteralIntoUTF16(audioSummary, summaryRecP->audioSummary);
+    }
 
     return malNoError;
 }
