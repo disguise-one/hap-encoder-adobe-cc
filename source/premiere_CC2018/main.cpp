@@ -444,7 +444,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
 
     // Assume we export 16bit audio and pack up to 1024 samples per packet
     const int kAudioSampleSizeOutput = sizeof(int16_t);
-    const int kAudioSamplesPerPacket = 1024;
+    const int kMaxAudioSamplesPerPacket = 1024;
 
     const csSDK_uint32 exID = exportInfoP->exporterPluginID;
     ExportSettings *settings = reinterpret_cast<ExportSettings *>(exportInfoP->privateData);
@@ -471,7 +471,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
     csSDK_int64 samplesRemaining = totalAudioSamples;
 
     // Allocate audio buffers
-    csSDK_int32 audioBufferSize = kAudioSamplesPerPacket;
+    csSDK_int32 audioBufferSize = kMaxAudioSamplesPerPacket;
     auto audioBufferOut = (csSDK_int16 *)settings->memorySuite->NewPtr(numAudioChannels * audioBufferSize * kAudioSampleSizeOutput);
     float *audioBuffer[kMaxAudioChannelCount];
     for (csSDK_int32 bufferIndexL = 0; bufferIndexL < numAudioChannels; bufferIndexL++)
@@ -481,6 +481,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
 
     // GetAudio loop
     csSDK_int32 samplesRequested, maxBlipSize;
+    csSDK_int64 samplesExported = 0; // pts
     prMALError resultS = malNoError;
     while (samplesRemaining && (resultS == malNoError))
     {
@@ -498,14 +499,23 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
         settings->audioSuite->ConvertAndInterleaveTo16BitInteger(audioBuffer, audioBufferOut,
                                                                  numAudioChannels, samplesRequested);
 
-        //Write audioBufferOut to file
-        auto buf = reinterpret_cast<const uint8_t*>(audioBufferOut);
-        for (csSDK_int32 i=0; i < samplesRequested; i++) {
-            csSDK_int32 offset = i * numAudioChannels * kAudioSampleSizeOutput;
-            //writer->writeAudioFrame(&buf[offset], numAudioChannels * kAudioSampleSizeOutput);
-        }
+        // Write audioBufferOut as one packet
+        writer->writeAudioFrame(reinterpret_cast<const uint8_t *>(audioBufferOut),
+                                samplesRequested * numAudioChannels * kAudioSampleSizeOutput,
+                                samplesExported);
+
+        // Write audioBufferOut as separate samples
+        // auto buf = reinterpret_cast<const uint8_t *>(audioBufferOut);
+        // for (csSDK_int32 i = 0; i < samplesRequested; i++)
+        // {
+        //     csSDK_int32 offset = i * numAudioChannels * kAudioSampleSizeOutput;
+        //     writer->writeAudioFrame(&buf[offset],
+        //                             numAudioChannels * kAudioSampleSizeOutput,
+        //                             samplesExported + i);
+        // }
 
         // Calculate remaining audio
+        samplesExported += samplesRequested;
         samplesRemaining -= samplesRequested;
     }
     error = resultS;
