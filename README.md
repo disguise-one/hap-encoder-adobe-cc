@@ -4,11 +4,12 @@ This is the community-supplied Hap and Hap Q exporter plugin for Adobe CC 2018.
 
 Development of this plugin was sponsored by [disguise](http://disguise.one), makers of the disguise show production software and hardware.
 
-Principal authors of the plugin are
+Principal contributors to this plugin are
 
 -  Greg Bakker (gbakker@gmail.com)
 -  Richard Sykes
 -  [Tom Butterworth](http://kriss.cx/tom)
+-  [Nick Zinovenko](https://github.com/exscriber)
 
 Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting that development.
 
