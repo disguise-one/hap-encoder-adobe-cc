@@ -36,6 +36,19 @@ Codec::~Codec()
 {
 }
 
+CodecCapabilities Codec::getCapabilities(CodecSubType codecType)
+{
+    if (codecType == kHapCodecSubType || codecType == kHapAlphaCodecSubType) {
+        return CodecCapabilities{
+            true  // hasQuality
+        };
+    }
+    else {
+        return CodecCapabilities{
+            false // hasQuality
+        };
+    }
+}
 
 std::unique_ptr<Codec> Codec::create(CodecSubType codecType, const FrameDef& frameDef,
                                     HapChunkCounts chunkCounts,

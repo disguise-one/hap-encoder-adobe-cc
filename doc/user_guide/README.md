@@ -70,6 +70,12 @@ Hap Q Alpha
 :   improved image quality and an Alpha channel, at the expense of larger file sizes
 
 ### Codec parameters
+For Hap and Hap Alpha codecs render time can be reduced with Quality-Fast option. It uses fast and simple algorithm, but with reduced image quality.
+
+- Fast suggested for draft renders, last-minute notebook renders, etc...
+- Normal is default option for general renders
+
+![Hap quality option](codec-quality.png)
 
 An optional specified number of chunks size may be specified to optimize for ultra high resolution video on a particular hardware system. This setting should typically only be used if you are reaching a CPU performance bottleneck during playback. As a general guide, for HD footage or smaller you can set the chunk size to 1 and for 4k or larger footage the number of chunks should never exceed the number of CPU cores on the computer used for playback.
 

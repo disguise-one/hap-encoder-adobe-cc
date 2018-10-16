@@ -37,6 +37,12 @@ struct EncodeOutput
 	std::vector<uint8_t> buffer;
 };
 
+// CodecCapabilities lets ui be adjusted according to specific codec subtypes
+struct CodecCapabilities
+{
+    bool hasQuality;
+};
+
 // Instantiate once per input frame definition
 //
 
@@ -54,6 +60,7 @@ public:
 	static std::unique_ptr<Codec> create(CodecSubType codecType, const FrameDef& frameDef,
 										HapChunkCounts chunkCounts,
 										SquishEncoderQuality textureQuality);
+    static CodecCapabilities getCapabilities(CodecSubType codecType);
 
     CodecSubType subType() const { return subType_; }
 	std::string getSubTypeAsString() const;
