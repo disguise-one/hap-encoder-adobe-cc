@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <string>
+#include <numeric>
 
 #define __STDC_CONSTANT_MACROS
 
@@ -45,9 +46,10 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
         throw std::runtime_error("Could not allocate format context");
     formatContext_.reset(formatContext); // and own it
 
-    double frameRateFrac = (double)frameRateNumerator / frameRateDenominator;
-    streamTimebase_.num = 100;
-    streamTimebase_.den = (int)(frameRateFrac*100.0 + 0.5);
+    int64_t frameRateGCD = std::gcd(frameRateNumerator, frameRateDenominator);
+    streamTimebase_.num = static_cast<int>(frameRateDenominator / frameRateGCD);
+    streamTimebase_.den = static_cast<int>(frameRateNumerator / frameRateGCD);
+    // TODO: rename streamTimebase_ to videoTimebase_ to differ video and audio streams
 
     /* Add the video stream */
     // becomes owned by formatContext
@@ -69,6 +71,7 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     // which doesn't work for 29.97fps?
     // videoStream_->time_base will later get trashed by mov file format
     videoStream_->time_base = streamTimebase_;
+    videoStream_->codec->time_base = streamTimebase_; // deprecation warning, but it work...
 
     uint8_t* buffer = (uint8_t*)av_malloc(cAVIOBufferSize);
     if (!buffer)
