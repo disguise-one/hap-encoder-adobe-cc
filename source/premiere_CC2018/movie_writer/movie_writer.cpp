@@ -197,6 +197,7 @@ void MovieWriter::writeFrame(const uint8_t *data, size_t size)
     pkt.size = (int)size;
     pkt.stream_index = videoStream_->index;
     pkt.pts = iFrame_++;
+    pkt.dts = pkt.pts;
     av_packet_rescale_ts(&pkt, streamTimebase_, videoStream_->time_base);
     pkt.flags = AV_PKT_FLAG_KEY;
 
@@ -217,6 +218,7 @@ void MovieWriter::writeAudioFrame(const uint8_t *data, size_t size, int64_t pts)
     pkt.size = (int)size;
     pkt.stream_index = audioStream_->index;
     pkt.pts = pts;
+    pkt.dts = pkt.pts;
     //av_packet_rescale_ts(&pkt, streamTimebase_, audioStream_->time_base);
     pkt.flags = AV_PKT_FLAG_KEY;
 
