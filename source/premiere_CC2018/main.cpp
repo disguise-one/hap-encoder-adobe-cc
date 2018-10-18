@@ -499,6 +499,12 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
         audioBuffer[bufferIndexL] = (float *)settings->memorySuite->NewPtr(audioBufferSize * kAudioSampleSizePremiere);
     }
 
+    // Progress bar init with label
+    float progress = 0.f;
+    prUTF16Char tempStrProgress[256];
+    copyConvertStringLiteralIntoUTF16(L"Preparing Audio...", tempStrProgress);
+    settings->exportProgressSuite->SetProgressString(exID, tempStrProgress);
+
     // GetAudio loop
     csSDK_int32 samplesRequested, maxBlipSize;
     csSDK_int64 samplesExported = 0; // pts
@@ -537,8 +543,16 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
         // Calculate remaining audio
         samplesExported += samplesRequested;
         samplesRemaining -= samplesRequested;
+
+        // Update progress bar percent
+        progress = (float) samplesExported / totalAudioSamples;
+        settings->exportProgressSuite->UpdateProgressPercent(exID, progress);
     }
     error = resultS;
+
+    // Reset progress bar label
+    copyConvertStringLiteralIntoUTF16(L"", tempStrProgress);
+    settings->exportProgressSuite->SetProgressString(exID, tempStrProgress);
 
     // Free up
     settings->memorySuite->PrDisposePtr((PrMemoryPtr)audioBufferOut);
