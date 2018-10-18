@@ -261,6 +261,17 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		videoBitrate = static_cast<csSDK_uint32>(width.value.intValue * height.value.intValue * getPixelFormatSize(hapSubcodec.value.intValue) * fps);
 	}
 
+    if (outputSettingsP->inExportAudio)
+    {
+        exParamValues sampleRate, channelType;
+        paramSuite->GetParamValue(exID, mgroupIndex, ADBEAudioRatePerSecond, &sampleRate);
+        paramSuite->GetParamValue(exID, mgroupIndex, ADBEAudioNumChannels, &channelType);
+        
+        outputSettingsP->outAudioChannelType = static_cast<PrAudioChannelType>(channelType.value.intValue);
+        outputSettingsP->outAudioSampleRate = sampleRate.value.floatValue;
+        outputSettingsP->outAudioSampleType = kPrAudioSampleType_16BitInt;
+    }
+
 	outputSettingsP->outBitratePerSecond = videoBitrate * 8 / 1000;
 
 	return malNoError;
