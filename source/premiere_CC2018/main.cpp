@@ -333,12 +333,13 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height;
+	exParamValues ticksPerFrame, width, height, quality;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
 #if 0
     !!!
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
@@ -349,7 +350,8 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 
     //!!!
     std::unique_ptr<CodecParametersBase> parameters = std::make_unique<CodecParametersBase>(
-        FrameDef(width.value.intValue, height.value.intValue)
+        FrameDef(width.value.intValue, height.value.intValue),
+        quality.value.intValue
     );
     std::unique_ptr<Codec> codec = CodecRegistry::create(std::move(parameters));
 

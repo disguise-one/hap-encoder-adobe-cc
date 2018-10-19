@@ -18,6 +18,7 @@
 #define STR_CODEC_TOOLTIP				L"The video codec to be used for encode."
 #define STR_WIDTH						L"Width"
 #define STR_HEIGHT						L"Height"
+#define STR_QUALITY						L"Quality"
 #define STR_FRAME_RATE					L"Frame Rate (fps)"
 #define STR_FRAME_RATE_10				L"10"
 #define STR_FRAME_RATE_15				L"15"

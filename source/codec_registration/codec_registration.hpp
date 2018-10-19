@@ -22,8 +22,8 @@ struct EncodeOutput
 };
 
 struct CodecParametersBase {
-    CodecParametersBase(const FrameDef& frameDef_)
-        : frameDef(frameDef_) {}
+    CodecParametersBase(const FrameDef& frameDef_, int quality_)
+        : frameDef(frameDef_), quality(quality_) {}
     virtual ~CodecParametersBase() {}
 
     // ui-building
@@ -32,6 +32,7 @@ struct CodecParametersBase {
     // );
 
     FrameDef frameDef;
+    int quality;
 
     CodecParametersBase(const CodecParametersBase&) = delete;
     CodecParametersBase& operator=(const CodecParametersBase&) = delete;

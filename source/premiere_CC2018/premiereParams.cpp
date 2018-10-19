@@ -78,6 +78,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         heightValues.hidden = kPrFalse;
         heightParam.paramValues = heightValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &heightParam);
+
 #if 0
         !!!
 		exNewParamInfo hapSubcodecParam;
@@ -138,6 +139,21 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicAudioGroup, &channelTypeParam);
 
         exportParamSuite->SetParamsVersion(exporterPluginID, 5);
+
+        exNewParamInfo qualityParam;
+        exParamValues qualityValues;
+        safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
+        qualityParam.paramType = exParamType_int;
+        qualityParam.flags = exParamFlag_slider;
+        qualityValues.rangeMin.intValue = 0;
+        qualityValues.rangeMax.intValue = 100;
+        qualityValues.value.intValue = 75;
+        qualityValues.disabled = kPrFalse;
+        qualityValues.hidden = kPrFalse;
+        qualityParam.paramValues = qualityValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+
+        exportParamSuite->SetParamsVersion(exporterPluginID, 4);
     }
 
     return result;
@@ -234,6 +250,10 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoFPS, &tempFrameRate, tempString);
     }
 
+    copyConvertStringLiteralIntoUTF16(STR_QUALITY, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
+
+
     copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPSpecificCodecGroup, tempString);
 
@@ -266,7 +286,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256], audioSummary[256];
-    exParamValues width, height, frameRate, sampleRate, channelType;
+    exParamValues width, height, quality, frameRate, sampleRate, channelType;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -284,31 +304,8 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    std::wstring hapSubcodecSummary;
-    switch(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue)[3])
-    {
-        case '1':
-            hapSubcodecSummary = STR_HAP_SUBCODEC_0;
-            break;
-        case '5':
-            hapSubcodecSummary = STR_HAP_SUBCODEC_1;
-            break;
-        case 'Y':
-            hapSubcodecSummary = STR_HAP_SUBCODEC_2;
-            break;
-        case 'M':
-            hapSubcodecSummary = STR_HAP_SUBCODEC_3;
-            break;
-        case 'A':
-            hapSubcodecSummary = STR_HAP_SUBCODEC_4;
-            break;
-        default:
-            hapSubcodecSummary = L"Unknown";
-    }
-
-    swprintf(videoSummary, 256, L"%ix%i, %ls, %.2f fps",
+    swprintf(videoSummary, 256, L"%ix%i, %.2f fps",
             width.value.intValue, height.value.intValue,
-            hapSubcodecSummary.c_str(), 
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 
