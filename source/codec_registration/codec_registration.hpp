@@ -16,19 +16,6 @@ struct FrameDef
     int height;
 };
 
-// Placeholders for inputs, processing and outputs for encode process
-
-struct EncodeInput
-{
-    std::vector<uint8_t> rgbaTopLeftOrigin;
-};
-
-struct EncodeScratchpad
-{
-    // not all of these are used by all codecs
-    std::vector<std::vector<uint8_t> > buffers;
-};
-
 struct EncodeOutput
 {
     std::vector<uint8_t> buffer;
@@ -52,52 +39,60 @@ struct CodecParametersBase {
 
 typedef std::array<char, 4> VideoFormat;
 
+class CodecJob {
+public:
+    CodecJob() {}
+
+    // respond to a new incoming frame in the main thread; returns as fast as possible
+    void copyExternalToLocal(
+        const uint8_t *bgraBottomLeftOrigin,
+        size_t stride)
+    {
+        doCopyExternalToLocal(
+            bgraBottomLeftOrigin,
+            stride);
+    }
+
+    // encoding steps
+
+    // prepare for CPU-side compression, performed in a job-thread
+    void convert()
+    {
+        doConvert();
+    }
+
+    // CPU-side compression, performed in a job-thread
+    void encode(EncodeOutput& out)
+    {
+        doEncode(out);
+    }
+
+private:
+    // derived CodecJob classes  must implement these
+    virtual void doCopyExternalToLocal(
+        const uint8_t *bgraBottomLeftOrigin,
+        size_t stride) = 0;
+
+    virtual void doConvert() = 0;
+    virtual void doEncode(EncodeOutput& out) = 0;
+
+    CodecJob(const CodecJob& rhs) = delete;
+    CodecJob& operator=(const CodecJob& rhs) = delete;
+};
+
 class Codec {
 public:
     Codec(std::unique_ptr<CodecParametersBase> parameters)
         : parameters_(std::move(parameters))
     {};
-    ~Codec() {};
+    virtual ~Codec() {};
 
     virtual VideoFormat subType() const { throw std::exception("not implemented"); }
     const CodecParametersBase& parameters() const { return *parameters_; }
 
-    // encoding steps
-    void copyExternalToLocal(
-        const uint8_t *bgraBottomLeftOrigin,
-        size_t stride,
-        EncodeInput& local) const
-    {
-        doCopyExternalToLocal(
-            bgraBottomLeftOrigin,
-            stride,
-            local);
-    }
-    void convert(const EncodeInput& in, EncodeScratchpad& scratchpad) const
-    {
-        doConvert(in, scratchpad);
-    }
-    void encode(const EncodeScratchpad& scratchpad, EncodeOutput& out) const
-    {
-        doEncode(scratchpad, out);
-    }
+    virtual std::unique_ptr<CodecJob> create()=0;
 
 private:
-    // derived codec classes  must implement these
-    virtual void doCopyExternalToLocal(
-        const uint8_t *bgraBottomLeftOrigin,
-        size_t stride,
-        EncodeInput& local) const
-    {
-    }
-    virtual void doConvert(const EncodeInput& in, EncodeScratchpad& scratchpad) const
-    {
-    }
-    virtual void doEncode(const EncodeScratchpad& scratchpad, EncodeOutput& out) const
-    {
-    }
-
-
     Codec(const Codec&) = delete;
     Codec& operator=(const Codec&) = delete;
 

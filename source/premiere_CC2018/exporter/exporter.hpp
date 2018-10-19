@@ -8,22 +8,18 @@
 #include "../movie_writer/movie_writer.hpp"
 #include "codec_registration.hpp"
 
-struct ExporterEncodeBuffers
+struct ExportJobImpl
 {
-    EncodeInput input;
-    EncodeScratchpad scratchpad;
-    EncodeOutput output;
-};
+    ExportJobImpl(std::unique_ptr<CodecJob>& codecJob_) : codecJob(std::move(codecJob_)) {}
 
-struct ExportFrameAndBuffers
-{
     int64_t iFrame;
-    ExporterEncodeBuffers buffers;
+    std::unique_ptr<CodecJob> codecJob;
+    EncodeOutput output;
 };
 
 class ExporterWorker;
 
-typedef std::unique_ptr<ExportFrameAndBuffers> ExportJob;  // either encode or write, depending on the queue its in
+typedef std::unique_ptr<ExportJobImpl> ExportJob;  // either encode or write, depending on the queue its in
 typedef std::vector<ExportJob> ExportJobQueue;
 typedef std::list<std::unique_ptr<ExporterWorker> > ExportWorkers;
 
@@ -32,6 +28,8 @@ template<class T>
 class FreeList
 {
 public:
+    FreeList(std::function<T ()> factory) : factory_(factory) {}
+
     T allocate()
     {
         std::lock_guard<std::mutex> guard(mutex_);
@@ -42,7 +40,7 @@ public:
             return t;
         }
         else
-            return std::make_unique<typename T::element_type>();
+            return factory_();
     }
     void free(T t)
     {
@@ -53,6 +51,7 @@ public:
 private:
     std::mutex mutex_;
     std::vector<T> freeList_;
+    std::function<T ()> factory_;
 };
 
 typedef FreeList<ExportJob> ExporterJobFreeList;

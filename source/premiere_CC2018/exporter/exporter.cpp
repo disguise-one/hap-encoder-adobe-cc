@@ -34,8 +34,8 @@ ExportJob ExporterJobEncoder::encode()
 
     if (job)
     {
-        codec_.convert(job->buffers.input, job->buffers.scratchpad);
-        codec_.encode(job->buffers.scratchpad, job->buffers.output);
+        job->codecJob->convert();
+        job->codecJob->encode(job->output);
     }
 
     return job;
@@ -84,7 +84,7 @@ ExportJob ExporterJobWriter::write()
                     idleStart_ = std::chrono::high_resolution_clock::now();
 
                 writeStart_ = std::chrono::high_resolution_clock::now();
-                writer_->writeFrame(&job->buffers.output.buffer[0], job->buffers.output.buffer.size());
+                writer_->writeFrame(&job->output.buffer[0], job->output.buffer.size());
                 auto writeEnd = std::chrono::high_resolution_clock::now();
 
                 // filtered update of utilisation_
@@ -201,6 +201,9 @@ Exporter::Exporter(
     std::unique_ptr<Codec> codec,
     std::unique_ptr<MovieWriter> movieWriter)
   : codec_(std::move(codec)), encoder_(*codec_),
+    freeList_(std::function<ExportJob ()>([&](){
+        return std::make_unique<ExportJob::element_type>(codec_->create());
+    })),
     closed_(false),
     writer_(std::move(movieWriter)),
     error_(false)
@@ -296,9 +299,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     //
     // TODO: may be able to use Adobe's addRef at a higher level and pipe it through for a minor
     //       performance gain
-    codec_->copyExternalToLocal(
-        bgra_bottom_left_origin_data, stride,
-        job->buffers.input);
+    job->codecJob->copyExternalToLocal(bgra_bottom_left_origin_data, stride);
 
     encoder_.push(std::move(job));
 }
