@@ -316,7 +316,7 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    wchar_t *hapSubcodecSummary;
+    std::wstring hapSubcodecSummary;
     switch(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue)[3])
     {
         case '1':
@@ -338,15 +338,15 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
             hapSubcodecSummary = L"Unknown";
     }
 
-    swprintf(videoSummary, 256, L"%ix%i, %s, %.2f fps",
+    swprintf(videoSummary, 256, L"%ix%i, %ls, %.2f fps",
             width.value.intValue, height.value.intValue,
-            hapSubcodecSummary, 
+            hapSubcodecSummary.c_str(), 
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 
     if (summaryRecP->exportAudio)
     {
-        wchar_t *audioChannelSummary;
+        std::wstring audioChannelSummary;
         switch (channelType.value.intValue)
         {
         case kPrAudioChannelType_Mono:
@@ -362,9 +362,9 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
             audioChannelSummary = L"Unknown";
         }
 
-        swprintf(audioSummary, 256, L"Uncompressed, %.0f Hz, %s, 16bit",
+        swprintf(audioSummary, 256, L"Uncompressed, %.0f Hz, %ls, 16bit",
                  sampleRate.value.floatValue,
-                 audioChannelSummary);
+                 audioChannelSummary.c_str());
         copyConvertStringLiteralIntoUTF16(audioSummary, summaryRecP->audioSummary);
     }
 
