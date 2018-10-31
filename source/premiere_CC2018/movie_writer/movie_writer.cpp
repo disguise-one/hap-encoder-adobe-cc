@@ -93,7 +93,11 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     ioContext_.reset(ioContext);
 
     formatContext->pb = ioContext_.get();
-  
+    //writeHeader();
+}
+
+void MovieWriter::writeHeader()
+{
     /* Write the stream header, if any. */
     int ret = avformat_write_header(formatContext_.get(), nullptr); // this is where the mov file format trashes the videoStream_ timebase
     if (ret < 0) {
@@ -169,6 +173,20 @@ int64_t MovieWriter::c_onSeek(void *context, int64_t seekPos, int whence)
     }
 }
 
+void MovieWriter::addAudioStream(int numChannels, int sampleRate)
+{
+    audioStream_ = avformat_new_stream(formatContext_.get(), NULL);
+    if (!audioStream_)
+        throw std::runtime_error("Could not allocate audio stream");
+
+    audioStream_->id = formatContext_->nb_streams - 1;
+    audioStream_->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    audioStream_->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+    audioStream_->codecpar->format = AV_SAMPLE_FMT_S16;
+    audioStream_->codecpar->channels = numChannels;
+    audioStream_->codecpar->channel_layout = av_get_default_channel_layout(numChannels);
+    audioStream_->codecpar->sample_rate = sampleRate;
+}
 
 void MovieWriter::writeFrame(const uint8_t *data, size_t size)
 {
@@ -179,6 +197,7 @@ void MovieWriter::writeFrame(const uint8_t *data, size_t size)
     pkt.size = (int)size;
     pkt.stream_index = videoStream_->index;
     pkt.pts = iFrame_++;
+    pkt.dts = pkt.pts;
     av_packet_rescale_ts(&pkt, streamTimebase_, videoStream_->time_base);
     pkt.flags = AV_PKT_FLAG_KEY;
 
@@ -187,6 +206,27 @@ void MovieWriter::writeFrame(const uint8_t *data, size_t size)
     if (ret < 0)
     {
         throw std::runtime_error(std::string("Error while writing video frame: ") + av_err2str(ret).c_str());
+    }
+}
+
+void MovieWriter::writeAudioFrame(const uint8_t *data, size_t size, int64_t pts)
+{
+    AVPacket pkt = { 0 };
+
+    av_init_packet(&pkt);
+    pkt.data = const_cast<uint8_t *>(data);
+    pkt.size = (int)size;
+    pkt.stream_index = audioStream_->index;
+    pkt.pts = pts;
+    pkt.dts = pkt.pts;
+    //av_packet_rescale_ts(&pkt, streamTimebase_, audioStream_->time_base);
+    pkt.flags = AV_PKT_FLAG_KEY;
+
+    /* Write the compressed frame to the media file. */
+    int ret = av_interleaved_write_frame(formatContext_.get(), &pkt);
+    if (ret < 0)
+    {
+        throw std::runtime_error(std::string("Error while writing audio frame: ") + av_err2str(ret).c_str());
     }
 }
 

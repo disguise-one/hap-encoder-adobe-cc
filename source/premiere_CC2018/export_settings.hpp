@@ -8,6 +8,8 @@
 #include <PrSDKPPixSuite.h>
 #include <PrSDKMarkerSuite.h>
 #include <PrSDKClipRenderSuite.h>
+#include <PrSDKAudioSuite.h>
+#include <PrSDKSequenceAudioSuite.h>
 #include <PrSDKErrorSuite.h>
 #include <PrSDKExportFileSuite.h>
 #include <PrSDKExportInfoSuite.h>
@@ -38,6 +40,8 @@ typedef struct ExportSettings
 	PrSDKTimeSuite* timeSuite;
     PrSDKMemoryManagerSuite* memorySuite;
 	PrSDKWindowSuite* windowSuite;
+	PrSDKAudioSuite* audioSuite;
+	PrSDKSequenceAudioSuite1* sequenceAudioSuite;
 } ExportSettings;
 
 csSDK_int32 getPixelFormatSize(const PrFourCC subtype);

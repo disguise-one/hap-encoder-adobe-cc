@@ -52,7 +52,11 @@ public:
                 MovieErrorCallback onError);
     ~MovieWriter();
 
+    //void addVideoStream(VideoFormat videoFormat, int width, int height, int64_t frameRateNumerator, int64_t frameRateDenominator);
+    void addAudioStream(int numChannels, int sampleRate);
     void writeFrame(const uint8_t *data, size_t size);
+    void writeAudioFrame(const uint8_t *data, size_t size, int64_t pts);
+    void writeHeader();
     void writeTrailer();
 
     void close(); // can throw. Call ahead of destruction if onClose errors must be caught externally.
@@ -76,6 +80,7 @@ private:
     FormatContext formatContext_;
     IOContext ioContext_;
     AVStream *videoStream_;
+    AVStream *audioStream_;
     AVRational streamTimebase_;
     int64_t iFrame_;
 
