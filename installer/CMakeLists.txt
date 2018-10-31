@@ -57,7 +57,7 @@ set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/GregBakker/hap-adobe-premiere-
 set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 
 # NSIS component specific settings
-set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$RegInstDir")
+set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\")
 set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\")
 
 

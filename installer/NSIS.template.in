@@ -20,9 +20,6 @@
   Var INSTALL_DESKTOP
   Var IS_DEFAULT_INSTALLDIR
 
-;!!!
-  Var RegInstDir
-
 
 ;--------------------------------
 ;Include Modern UI
@@ -903,19 +900,6 @@ SectionEnd
 ; "Program Files" for AllUsers, "My Documents" for JustMe...
 
 Function .onInit
-  ;!!!
-  SetRegView 64
-  ;!!! for retrieving adobe installation directory from registry
-  ReadRegStr $RegInstDir HKLM "SOFTWARE\Adobe\Premiere Pro\12.0" "CommonPluginInstallPath"
-  StrCmp $RegInstDir "" noadobe haveadobe
-
-noadobe:
-  MessageBox MB_OK "Could not find installation of Premiere Pro."
-  Abort
-
-haveadobe:
-  ;!!!StrCpy $INSTDIR $RegInstDir
-
   StrCmp "@CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@" "ON" 0 inst
 
   ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_INSTALL_REGISTRY_KEY@" "UninstallString"
