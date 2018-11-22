@@ -59,7 +59,7 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     }
     videoStream_->id = formatContext_->nb_streams - 1;
     videoStream_->codecpar->codec_tag = MKTAG(videoFormat[0], videoFormat[1], videoFormat[2], videoFormat[3]);
-    videoStream_->codecpar->codec_id = AV_CODEC_ID_HAP;
+    videoStream_->codecpar->codec_id = AV_CODEC_ID_WRAPPED_AVFRAME;
     videoStream_->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     videoStream_->codecpar->width = width;
     videoStream_->codecpar->height = height;

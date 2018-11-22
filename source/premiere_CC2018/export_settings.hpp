@@ -24,7 +24,6 @@ typedef struct ExportSettings
 	~ExportSettings();
 
 	csSDK_int32 fileType;
-    CodecSubType hapSubcodec;
     std::unique_ptr<Exporter> exporter;
 	SPBasicSuite* spBasic;
     std::function<void(const std::string& error)> reportError;

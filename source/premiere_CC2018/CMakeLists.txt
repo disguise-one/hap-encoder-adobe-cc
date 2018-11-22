@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
-project(HapEncoderPlugin)
+project(EncoderPlugin)
 
 # this is the one we will install
-add_library(HapEncoderPlugin MODULE)
+add_library(EncoderPlugin MODULE)
 
-target_sources(HapEncoderPlugin
+target_sources(EncoderPlugin
     PRIVATE
         configure.hpp
         export_settings.cpp
@@ -15,11 +15,9 @@ target_sources(HapEncoderPlugin
         premiereParams.hpp
         prstring.cpp
         prstring.hpp
-        targetver.h        
-        codec/codec.cpp
-        codec/codec.hpp
-        codec/texture_converter.cpp
-        codec/texture_converter.hpp
+        targetver.h
+        # codec/texture_converter.cpp
+        # codec/texture_converter.hpp
         exporter/exporter.cpp
         exporter/exporter.hpp
         movie_writer/movie_writer.cpp
@@ -27,9 +25,6 @@ target_sources(HapEncoderPlugin
 )
 
 # make the layout look ok in IDEs
-# !!! this isn't working; probably need to get list added above
-# source_group(TREE . $<TARGET_PROPERTY:HapEncoderPlugin,SOURCES>)
-source_group("Source Files\\codec" REGULAR_EXPRESSION codec/*)
 source_group("Source Files\\exporter" REGULAR_EXPRESSION exporter/*)
 source_group("Source Files\\movie_writer" REGULAR_EXPRESSION movie_writer/*)
 
@@ -44,12 +39,10 @@ else (MSVC)
    include(findZLIB)
 endif(MSVC)
 
-target_link_libraries(HapEncoderPlugin
+target_link_libraries(EncoderPlugin
     PRIVATE
-        Hap
-        snappy
-        squish
-        ycocg
+        CodecRegistration
+        Codec
         AdobeSdk
         ffmpeg::libavformat
         ffmpeg::libavcodec
@@ -64,31 +57,26 @@ target_link_libraries(HapEncoderPlugin
 )
 
 # Include the ffmpeg headers
-target_include_directories(HapEncoderPlugin
+target_include_directories(EncoderPlugin
     PRIVATE
         ${ffmpeg_INCLUDE_DIRS}
 )
 
 if (MSVC)
-    set_target_properties(HapEncoderPlugin
+    set_target_properties(EncoderPlugin
         PROPERTIES
             SUFFIX ".prm"
     )
 endif(MSVC)
 
-set_target_properties(HapEncoderPlugin
+set_target_properties(EncoderPlugin
     PROPERTIES
 	    BUNDLE TRUE
 	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapEncoderPlugin
 )
 
-# hack because squish CMakeLists.txt predates v3.4
-# TODO: fix the squish CMakeLists.txt
-list(APPEND INCLUDE_DIRS ${squish_SOURCE_DIR})
-include_directories(${INCLUDE_DIRS})
-
 install(
-  TARGETS HapEncoderPlugin
+  TARGETS EncoderPlugin
   RUNTIME
   BUNDLE DESTINATION .
   LIBRARY DESTINATION .

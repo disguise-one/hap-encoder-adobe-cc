@@ -6,7 +6,7 @@
 #include <thread>
 
 #include "../movie_writer/movie_writer.hpp"
-#include "../codec/codec.hpp"
+#include "codec_registration.hpp"
 
 struct ExporterEncodeBuffers
 {

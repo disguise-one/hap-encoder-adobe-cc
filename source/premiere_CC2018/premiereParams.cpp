@@ -78,7 +78,8 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         heightValues.hidden = kPrFalse;
         heightParam.paramValues = heightValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &heightParam);
-
+#if 0
+        !!!
 		exNewParamInfo hapSubcodecParam;
 		exParamValues hapSubcodecValues;
 		safeStrCpy(hapSubcodecParam.identifier, 256, ADBEVideoCodec);
@@ -92,20 +93,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
 		hapSubcodecValues.hidden = kPrFalse;
 		hapSubcodecParam.paramValues = hapSubcodecValues;
 		exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &hapSubcodecParam);
-
-        exNewParamInfo hapQualityParam;
-        exParamValues hapQualityValues;
-        safeStrCpy(hapQualityParam.identifier, 256, ADBEVideoQuality);
-        hapQualityParam.paramType = exParamType_int;
-        hapQualityParam.flags = exParamFlag_none;
-        hapQualityValues.rangeMin.intValue = 0;
-        hapQualityValues.rangeMax.intValue = 1;
-        hapQualityValues.value.intValue = kSquishEncoderNormalQuality;
-        hapQualityValues.disabled = kPrFalse;
-        hapQualityValues.hidden = kPrFalse;
-        hapQualityParam.paramValues = hapQualityValues;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &hapQualityParam);
-
+#endif
 		exNewParamInfo frameRateParam;
         exParamValues frameRateValues;
         safeStrCpy(frameRateParam.identifier, 256, ADBEVideoFPS);
@@ -118,19 +106,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateValues.hidden = kPrFalse;
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
-
-        exNewParamInfo chunkCountParam;
-        exParamValues chunkCountValues;
-        safeStrCpy(chunkCountParam.identifier, 256, HAPChunkCount);
-        chunkCountParam.paramType = exParamType_int;
-        chunkCountParam.flags = exParamFlag_optional;
-        chunkCountValues.rangeMin.intValue = k_chunkingMin;
-        chunkCountValues.rangeMax.intValue = k_chunkingMax;
-        chunkCountValues.value.intValue = 1;
-        chunkCountValues.disabled = kPrFalse;
-        chunkCountValues.hidden = kPrFalse;
-        chunkCountParam.paramValues = chunkCountValues;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, HAPSpecificCodecGroup, &chunkCountParam);
 
         // Audio parameters
         copyConvertStringLiteralIntoUTF16(TOP_AUDIO_PARAM_GROUP_NAME, tempString);
@@ -173,11 +148,11 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     const csSDK_uint32 exID = postProcessParamsRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(postProcessParamsRecP->privateData);
     PrTime ticksPerSecond = 0;
-    exParamValues hapSubcodec, qualityToValidate;
-	exOneParamValueRec tempHapSubcodec;
+#if 0
+!!!
+    exOneParamValueRec tempHapSubcodec;
 	CodecSubType HAPsubcodecs[] = { kHapCodecSubType, kHapAlphaCodecSubType, kHapYCoCgCodecSubType, kHapYCoCgACodecSubType, kHapAOnlyCodecSubType };
-    exOneParamValueRec tempHapQuality;
-    SquishEncoderQuality HAPquality[] = { kSquishEncoderFastQuality, kSquishEncoderNormalQuality };
+#endif
     exOneParamValueRec tempFrameRate;
     PrTime frameRates[] = { 10, 15, 23, 24, 25, 29, 30, 50, 59, 60 };
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
@@ -189,11 +164,13 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 
     prUTF16Char tempString[256];
     const wchar_t* frameRateStrings[] = { STR_FRAME_RATE_10, STR_FRAME_RATE_15, STR_FRAME_RATE_23976, STR_FRAME_RATE_24, STR_FRAME_RATE_25, STR_FRAME_RATE_2997, STR_FRAME_RATE_30, STR_FRAME_RATE_50, STR_FRAME_RATE_5994, STR_FRAME_RATE_60 };
-	const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
-    const wchar_t *hapQualityStrings[] = { STR_HAP_QUALITY_0, STR_HAP_QUALITY_1 };
     const wchar_t *sampleRateStrings[] = {STR_SAMPLE_RATE_441, STR_SAMPLE_RATE_48};
     const wchar_t *channelTypeStrings[] = {STR_CHANNEL_TYPE_MONO, STR_CHANNEL_TYPE_STEREO, STR_CHANNEL_TYPE_51};
 
+#if 0
+!!!
+    const wchar_t *hapSubcodecStrings[] = { STR_HAP_SUBCODEC_0, STR_HAP_SUBCODEC_1, STR_HAP_SUBCODEC_2, STR_HAP_SUBCODEC_3, STR_HAP_SUBCODEC_4 };
+#endif
 	settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     for (csSDK_int32 i = 0; i < sizeof(frameRates) / sizeof(PrTime); i++)
         frameRates[i] = ticksPerSecond / frameRateNumDens[i][0] * frameRateNumDens[i][1];
@@ -215,6 +192,8 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     copyConvertStringLiteralIntoUTF16(STR_HEIGHT, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoHeight, tempString);
 
+#if 0
+    !!!
 	copyConvertStringLiteralIntoUTF16(STR_HAP_SUBCODEC, tempString);
 	settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoCodec, tempString);
     settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoCodec);
@@ -224,6 +203,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         copyConvertStringLiteralIntoUTF16(hapSubcodecStrings[i], tempString);
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoCodec, &tempHapSubcodec, tempString);
     }
+#endif
 
     copyConvertStringLiteralIntoUTF16(STR_HAP_QUALITY, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
@@ -257,16 +237,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPSpecificCodecGroup, tempString);
 
-    copyConvertStringLiteralIntoUTF16(STR_HAP_CHUNKING, tempString);
-    settings->exportParamSuite->SetParamName(exID, 0, HAPChunkCount, tempString);
-    exParamValues chunkCountValues;
-    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCount, &chunkCountValues);
-    chunkCountValues.rangeMin.intValue = k_chunkingMin;
-    chunkCountValues.rangeMax.intValue = k_chunkingMax;
-    chunkCountValues.disabled = kPrFalse;
-    chunkCountValues.hidden = kPrFalse;
-    settings->exportParamSuite->ChangeParam(exID, 0, HAPChunkCount, &chunkCountValues);
-
     copyConvertStringLiteralIntoUTF16(BASIC_AUDIO_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEBasicAudioGroup, tempString);
 
@@ -296,7 +266,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256], audioSummary[256];
-    exParamValues width, height, frameRate, hapSubcodec, hapQuality, sampleRate, channelType;
+    exParamValues width, height, frameRate, sampleRate, channelType;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -310,8 +280,6 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoWidth, &width);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoHeight, &height);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoFPS, &frameRate);
-	paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
-    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoQuality, &hapQuality);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioRatePerSecond, &sampleRate);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
@@ -380,26 +348,9 @@ prMALError validateParamChanged(exportStdParms *stdParmsP, exParamChangedRec *va
 {
     const csSDK_uint32 exID = validateParamChangedRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(validateParamChangedRecP->privateData);
-    exParamValues hapSubcodec, toValidate;
 
     if (settings->exportParamSuite == nullptr)
         return exportReturn_ErrMemory;
-
-    // quality setting is not supported by all subcodecs
-    if (strcmp(validateParamChangedRecP->changedParamIdentifier, ADBEVideoCodec) == 0)
-    {
-        settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-        const auto codecSubtype = reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue);
-        bool enableQuality = Codec::getCapabilities(codecSubtype).hasQuality;
-
-        settings->exportParamSuite->GetParamValue(exID,
-            validateParamChangedRecP->multiGroupIndex,
-            ADBEVideoQuality,
-            &toValidate);
-
-        toValidate.disabled = !enableQuality;
-        settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &toValidate);
-    }
 
     return malNoError;
 }

@@ -5,7 +5,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
 
 # project
 
-project(HapEncoder)
+project(EncoderFoundation)
 
 set (CMAKE_CXX_STANDARD 17)
 
@@ -17,15 +17,11 @@ else()
 endif()
 
 # library dependencies
-add_subdirectory(external/snappy)
-add_subdirectory(external/squish/squish-source)
-add_subdirectory(external/hap)
 add_subdirectory(external/ffmpeg)
-add_subdirectory(external/ycocg)
 add_subdirectory(external/adobe)
 
 # documentation
-add_subdirectory(doc)
+# add_subdirectory(doc)
 
 # plugin
 add_subdirectory(source/premiere_CC2018)

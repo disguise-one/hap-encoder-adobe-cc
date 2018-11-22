@@ -227,8 +227,12 @@ prMALError endInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanc
 prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsRec *outputSettingsP)
 {
 	const csSDK_uint32 exID = outputSettingsP->exporterPluginID;
-    exParamValues width, height, frameRate, hapSubcodec; // , fieldType;
-	ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
+    exParamValues width, height, frameRate;
+#if 0
+   !!!
+       , hapSubcodec; // , fieldType;
+#endif
+    ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
 	PrSDKExportParamSuite* paramSuite = privateData->exportParamSuite;
 	const csSDK_int32 mgroupIndex = 0;
 	float fps = 0.0f;
@@ -241,9 +245,12 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		outputSettingsP->outVideoHeight = height.value.intValue;
 		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFPS, &frameRate);
 		outputSettingsP->outVideoFrameRate = frameRate.value.timeValue;
-		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
+#if 0
+!!!
+        paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
 		privateData->hapSubcodec = reinterpret_cast<CodecSubType &>(hapSubcodec.value.intValue);
-		outputSettingsP->outVideoAspectNum = 1;
+#endif
+        outputSettingsP->outVideoAspectNum = 1;
 		outputSettingsP->outVideoAspectDen = 1;
 		// paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
 		outputSettingsP->outVideoFieldType = prFieldsNone;
@@ -257,9 +264,12 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 	{
 		privateData->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 		fps = static_cast<float>(ticksPerSecond) / frameRate.value.timeValue;
-		paramSuite->GetParamValue(exID, mgroupIndex, "HAPSubcodec", &hapSubcodec);
-		videoBitrate = static_cast<csSDK_uint32>(width.value.intValue * height.value.intValue * getPixelFormatSize(hapSubcodec.value.intValue) * fps);
-	}
+#if 0
+        !!!
+        paramSuite->GetParamValue(exID, mgroupIndex, "HAPSubcodec", &hapSubcodec);
+        videoBitrate = static_cast<csSDK_uint32>(width.value.intValue * height.value.intValue * getPixelFormatSize(hapSubcodec.value.intValue) * fps);
+#endif
+    }
 
     if (outputSettingsP->inExportAudio)
     {
@@ -323,30 +333,25 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, hapSubcodec, hapQuality, chunkCount;
+	exParamValues ticksPerFrame, width, height;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
+#if 0
+    !!!
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &hapQuality);
-    settings->exportParamSuite->GetParamValue(exID, 0, HAPChunkCount, &chunkCount);
+#endif
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
-    // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
-    unsigned int chunkCountAfterAutoApplied = (chunkCount.optionalParamEnabled == 1) ?
-                                              std::max(1, chunkCount.value.intValue)  // force old param to 1
-                                              : 1;
-    HapChunkCounts chunkCounts{ chunkCountAfterAutoApplied, chunkCountAfterAutoApplied };
-
-	std::unique_ptr<Codec> codec = std::unique_ptr<Codec>(
-        Codec::create(reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue),
-					  FrameDef(width.value.intValue, height.value.intValue),
-                      chunkCounts,
-                      static_cast<SquishEncoderQuality>(hapQuality.value.intValue)));
+    //!!!
+    std::unique_ptr<CodecParametersBase> parameters = std::make_unique<CodecParametersBase>(
+        FrameDef(width.value.intValue, height.value.intValue)
+    );
+    std::unique_ptr<Codec> codec = CodecRegistry::create(std::move(parameters));
 
     //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
     //--- passed up to Adobe

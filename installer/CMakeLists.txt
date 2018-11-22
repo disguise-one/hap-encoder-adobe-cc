@@ -2,18 +2,18 @@ cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 
 # presets asset files
 
-install(
-    FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha-Only.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap.epr
-    DESTINATION
-        "Presets"
-    COMPONENT
-        presets
-)
+#install(
+#    FILES
+#        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha-Only.epr
+#        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Alpha.epr
+#        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q\ Alpha.epr
+#        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap\ Q.epr
+#        ${CMAKE_CURRENT_SOURCE_DIR}/../asset/encoder_preset/Hap.epr
+#    DESTINATION
+#        "Presets"
+#    COMPONENT
+#        presets
+#)
 
 # win64 installer
 
