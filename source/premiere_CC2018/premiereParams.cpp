@@ -108,6 +108,19 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
+        exNewParamInfo qualityParam;
+        exParamValues qualityValues;
+        safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
+        qualityParam.paramType = exParamType_int;
+        qualityParam.flags = exParamFlag_none;
+        qualityValues.rangeMin.intValue = 1;
+        qualityValues.rangeMax.intValue = 5;
+        qualityValues.value.intValue = seqHeight.mInt32;
+        qualityValues.disabled = kPrFalse;
+        qualityValues.hidden = kPrFalse;
+        qualityParam.paramValues = qualityValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+
         // Audio parameters
         copyConvertStringLiteralIntoUTF16(TOP_AUDIO_PARAM_GROUP_NAME, tempString);
         exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBETopParamGroup, ADBEAudioTabGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
@@ -140,20 +153,28 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
 
         exportParamSuite->SetParamsVersion(exporterPluginID, 5);
 
-        exNewParamInfo qualityParam;
-        exParamValues qualityValues;
-        safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
-        qualityParam.paramType = exParamType_int;
-        qualityParam.flags = exParamFlag_slider;
-        qualityValues.rangeMin.intValue = 0;
-        qualityValues.rangeMax.intValue = 100;
-        qualityValues.value.intValue = 75;
-        qualityValues.disabled = kPrFalse;
-        qualityValues.hidden = kPrFalse;
-        qualityParam.paramValues = qualityValues;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+        if (CodecRegistry::hasQuality())
+        {
+            exNewParamInfo qualityParam;
+            exParamValues qualityValues;
+            safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
+            qualityParam.paramType = exParamType_int;
+            qualityParam.flags = exParamFlag_slider;
 
-        exportParamSuite->SetParamsVersion(exporterPluginID, 4);
+            auto qualities = CodecRegistry::qualityDescriptions();
+            int worst = qualities.begin()->first;
+            int best = qualities.rbegin()->first;
+
+            qualityValues.rangeMin.intValue = worst;
+            qualityValues.rangeMax.intValue = best;
+            qualityValues.value.intValue = best;
+            qualityValues.disabled = kPrFalse;
+            qualityValues.hidden = kPrFalse;
+            qualityParam.paramValues = qualityValues;
+            exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+        }
+
+        exportParamSuite->SetParamsVersion(exporterPluginID, 5);
     }
 
     return result;
@@ -174,6 +195,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     PrTime frameRateNumDens[][2] = { { 10, 1 }, { 15, 1 }, { 24000, 1001 }, { 24, 1 }, { 25, 1 }, { 30000, 1001 }, { 30, 1 }, { 50, 1 }, { 60000, 1001 }, { 60, 1 } };
 
     exOneParamValueRec tempSampleRate;
+    exOneParamValueRec tempQuality;
     float sampleRates[] = {44100.0f, 48000.0f};
     exOneParamValueRec tempChannelType;
     csSDK_int32 channelTypes[] = {kPrAudioChannelType_Mono, kPrAudioChannelType_Stereo, kPrAudioChannelType_51};
@@ -233,7 +255,25 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 
     copyConvertStringLiteralIntoUTF16(STR_QUALITY, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
+    auto qualities = CodecRegistry::qualityDescriptions();
+    int worst = qualities.begin()->first;
+    int best = qualities.rbegin()->first;
 
+    exParamValues qualityValues;
+    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &qualityValues);
+    qualityValues.rangeMin.intValue = worst;
+    qualityValues.rangeMax.intValue = best;
+    qualityValues.disabled = kPrFalse;
+    qualityValues.hidden = kPrFalse;
+    settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &qualityValues);
+
+    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoQuality);
+    for (const auto& quality : qualities)
+    {
+        tempQuality.intValue = (csSDK_int32)quality.first;
+        StringForPr qualityString(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(quality.second));
+        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempQuality, qualityString.get());
+    }
 
     copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPSpecificCodecGroup, tempString);

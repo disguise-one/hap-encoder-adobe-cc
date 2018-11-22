@@ -334,9 +334,10 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
     //!!!
+    int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
     std::unique_ptr<CodecParametersBase> parameters = std::make_unique<CodecParametersBase>(
         FrameDef(width.value.intValue, height.value.intValue),
-        quality.value.intValue
+        clampedQuality
     );
     std::unique_ptr<Codec> codec = CodecRegistry::create(std::move(parameters));
 
