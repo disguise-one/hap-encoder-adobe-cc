@@ -5,26 +5,11 @@
 #include "export_settings.hpp"
 #include "exporter/exporter.hpp"
 #include "configure.hpp"
-#include <codecvt>
 #include <vector>
 #include <locale>
 
 csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType);
 static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer);
-
-class StringForPr
-{
-public:
-    StringForPr(const std::wstring &from)
-    : prString_(from.size() + 1) {
-        copyConvertStringLiteralIntoUTF16(from.c_str(), prString_.data());
-    };
-    const prUTF16Char *get() const {
-        return prString_.data();
-    }
-private:
-    std::vector<prUTF16Char> prString_;
-};
 
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
 {
