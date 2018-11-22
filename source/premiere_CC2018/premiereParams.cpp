@@ -221,25 +221,6 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     }
 #endif
 
-    copyConvertStringLiteralIntoUTF16(STR_HAP_QUALITY, tempString);
-    settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
-    settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoQuality);
-    for (csSDK_int32 i = 0; i < sizeof(HAPquality) / sizeof(HAPquality[0]); i++)
-    {
-        tempHapQuality.intValue = HAPquality[i];
-        copyConvertStringLiteralIntoUTF16(hapQualityStrings[i], tempString);
-        settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempHapQuality, tempString);
-    }
-
-    // quality setting is not supported by all subcodecs
-    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-    const auto codecSubtype = reinterpret_cast<CodecSubType&>(hapSubcodec.value.intValue);
-    bool enableQuality = Codec::getCapabilities(codecSubtype).hasQuality;
-    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &qualityToValidate);
-    qualityToValidate.disabled = !enableQuality;
-    settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &qualityToValidate);
-
-
     copyConvertStringLiteralIntoUTF16(STR_FRAME_RATE, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoFPS, tempString);
     settings->exportParamSuite->ClearConstrainedValues(exID, 0, ADBEVideoFPS);
@@ -286,7 +267,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256], audioSummary[256];
-    exParamValues width, height, quality, frameRate, sampleRate, channelType;
+    exParamValues width, height, frameRate, sampleRate, channelType;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
