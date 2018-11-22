@@ -3,6 +3,7 @@
 
 #include <array>
 #include <functional>
+#include <map>
 
 // Details of frame
 
@@ -112,6 +113,10 @@ public:
 
     // opportunity to customise based on parameters
     static std::unique_ptr<Codec> create(std::unique_ptr<CodecParametersBase> parameters);
+
+    // quality settings
+    static bool hasQuality();
+    static std::map<int, std::string> qualityDescriptions();
 
 private:
 };
