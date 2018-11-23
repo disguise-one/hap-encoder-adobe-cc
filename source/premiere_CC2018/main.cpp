@@ -325,6 +325,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
+
 #if 0
     !!!
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
@@ -388,22 +389,22 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         },
         [&](const char *msg) { settings->reportError(msg); } );
 
-        // TODO move this outside to DoExport()
-        auto writer = movieWriter.get();
-        if (exportInfoP->exportAudio) 
-        {
-            exParamValues sampleRate, channelType;
-            settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioRatePerSecond, &sampleRate);
-            settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioNumChannels, &channelType);
-            csSDK_int32 numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
+    // TODO move this outside to DoExport()
+    auto writer = movieWriter.get();
+    if (exportInfoP->exportAudio) 
+    {
+        exParamValues sampleRate, channelType;
+        settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioRatePerSecond, &sampleRate);
+        settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioNumChannels, &channelType);
+        csSDK_int32 numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
             
-            writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
-        }
+        writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
+    }
 
-        writer->writeHeader();
+    writer->writeHeader();
 
-        if (exportInfoP->exportAudio)
-            renderAndWriteAllAudio(exportInfoP, error, writer);
+    if (exportInfoP->exportAudio)
+        renderAndWriteAllAudio(exportInfoP, error, writer);
 
     try {
         settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
@@ -549,7 +550,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
         samplesRemaining -= samplesRequested;
 
         // Update progress bar percent
-        progress = (float) samplesExported / totalAudioSamples;
+        progress = (float) samplesExported / totalAudioSamples * 0.2f;
         settings->exportProgressSuite->UpdateProgressPercent(exID, progress);
     }
     error = resultS;
