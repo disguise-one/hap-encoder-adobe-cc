@@ -24,8 +24,6 @@ std::string av_err2str(int errnum)
     return buffer;
 }
 
-const char *kVideoCodecName = "hap";
-const char *kVideoCodecLongName = "Vidvox Hap";
 extern "C" {
     extern AVOutputFormat ff_mov_muxer;
 }
