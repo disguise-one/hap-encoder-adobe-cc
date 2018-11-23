@@ -110,6 +110,7 @@ private:
 class CodecRegistry {
 public:
     CodecRegistry();
+    ~CodecRegistry();
 
     // opportunity to customise based on parameters
     static std::unique_ptr<Codec> create(std::unique_ptr<CodecParametersBase> parameters);
