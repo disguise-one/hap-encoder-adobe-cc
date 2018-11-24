@@ -108,18 +108,26 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
-        exNewParamInfo qualityParam;
-        exParamValues qualityValues;
-        safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
-        qualityParam.paramType = exParamType_int;
-        qualityParam.flags = exParamFlag_none;
-        qualityValues.rangeMin.intValue = 1;
-        qualityValues.rangeMax.intValue = 5;
-        qualityValues.value.intValue = seqHeight.mInt32;
-        qualityValues.disabled = kPrFalse;
-        qualityValues.hidden = kPrFalse;
-        qualityParam.paramValues = qualityValues;
-        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+        if (CodecRegistry::hasQuality())
+        {
+            exNewParamInfo qualityParam;
+            exParamValues qualityValues;
+            safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
+            qualityParam.paramType = exParamType_int;
+            qualityParam.flags = exParamFlag_none;
+
+            auto qualities = CodecRegistry::qualityDescriptions();
+            int worst = qualities.begin()->first;
+            int best = qualities.rbegin()->first;
+
+            qualityValues.rangeMin.intValue = worst;
+            qualityValues.rangeMax.intValue = best;
+            qualityValues.value.intValue = 4; // !!! TODO this is 'optimal' vs 'best' - replace with enum constants
+            qualityValues.disabled = kPrFalse;
+            qualityValues.hidden = kPrFalse;
+            qualityParam.paramValues = qualityValues;
+            exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
+        }
 
         // Audio parameters
         copyConvertStringLiteralIntoUTF16(TOP_AUDIO_PARAM_GROUP_NAME, tempString);
@@ -152,7 +160,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicAudioGroup, &channelTypeParam);
 
         exportParamSuite->SetParamsVersion(exporterPluginID, 5);
-
         if (CodecRegistry::hasQuality())
         {
             exNewParamInfo qualityParam;
