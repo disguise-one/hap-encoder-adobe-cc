@@ -213,10 +213,6 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 {
 	const csSDK_uint32 exID = outputSettingsP->exporterPluginID;
     exParamValues width, height, frameRate;
-#if 0
-   !!!
-       , hapSubcodec; // , fieldType;
-#endif
     ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
 	PrSDKExportParamSuite* paramSuite = privateData->exportParamSuite;
 	const csSDK_int32 mgroupIndex = 0;
@@ -230,11 +226,6 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		outputSettingsP->outVideoHeight = height.value.intValue;
 		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFPS, &frameRate);
 		outputSettingsP->outVideoFrameRate = frameRate.value.timeValue;
-#if 0
-!!!
-        paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoCodec, &hapSubcodec);
-		privateData->hapSubcodec = reinterpret_cast<CodecSubType &>(hapSubcodec.value.intValue);
-#endif
         outputSettingsP->outVideoAspectNum = 1;
 		outputSettingsP->outVideoAspectDen = 1;
 		// paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
@@ -249,11 +240,6 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 	{
 		privateData->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 		fps = static_cast<float>(ticksPerSecond) / frameRate.value.timeValue;
-#if 0
-        !!!
-        paramSuite->GetParamValue(exID, mgroupIndex, "HAPSubcodec", &hapSubcodec);
-        videoBitrate = static_cast<csSDK_uint32>(width.value.intValue * height.value.intValue * getPixelFormatSize(hapSubcodec.value.intValue) * fps);
-#endif
     }
 
     if (outputSettingsP->inExportAudio)
@@ -325,22 +311,17 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
-
-#if 0
-    !!!
-    settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &hapSubcodec);
-#endif
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
-    std::unique_ptr<CodecParametersBase> parameters = std::make_unique<CodecParametersBase>(
+    std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
         FrameDef(width.value.intValue, height.value.intValue),
         clampedQuality
     );
-    std::unique_ptr<Codec> codec = CodecRegistry::create(std::move(parameters));
+    std::unique_ptr<Encoder> encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
 
     //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
     //--- passed up to Adobe
@@ -355,7 +336,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     auto Close = settings->exportFileSuite->Close;
 
     std::unique_ptr<MovieWriter> movieWriter = std::make_unique<MovieWriter>(
-        codec->subType(),
+        encoder->subType(),
         width.value.intValue, height.value.intValue,
         frameRateNumerator, frameRateDenominator,
         [&, &error=error](const uint8_t* buffer, size_t size) {
@@ -407,7 +388,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         renderAndWriteAllAudio(exportInfoP, error, writer);
 
     try {
-        settings->exporter = std::make_unique<Exporter>(std::move(codec), std::move(movieWriter));
+        settings->exporter = std::make_unique<Exporter>(std::move(encoder), std::move(movieWriter));
 
         ExportLoopRenderParams renderParams;
 

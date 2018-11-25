@@ -18,6 +18,8 @@
 #include <PrSDKExporterUtilitySuite.h>
 #include "SDK_Segment_Utils.h"
 
+class CodecRegistry;
+
 typedef struct ExportSettings
 {
 	ExportSettings();

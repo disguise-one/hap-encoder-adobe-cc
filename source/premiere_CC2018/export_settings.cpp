@@ -5,7 +5,6 @@
 
 ExportSettings::ExportSettings()
 {
-
 }
 
 ExportSettings::~ExportSettings()

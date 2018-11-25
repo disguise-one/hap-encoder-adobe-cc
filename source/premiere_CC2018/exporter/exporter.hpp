@@ -10,10 +10,10 @@
 
 struct ExportJobImpl
 {
-    ExportJobImpl(std::unique_ptr<CodecJob>& codecJob_) : codecJob(std::move(codecJob_)) {}
+    ExportJobImpl(std::unique_ptr<EncoderJob>& codecJob_) : codecJob(std::move(codecJob_)) {}
 
     int64_t iFrame;
-    std::unique_ptr<CodecJob> codecJob;
+    std::unique_ptr<EncoderJob> codecJob;
     EncodeOutput output;
 };
 
@@ -60,7 +60,7 @@ typedef FreeList<ExportJob> ExporterJobFreeList;
 class ExporterJobEncoder
 {
 public:
-    ExporterJobEncoder(Codec& codec);
+    ExporterJobEncoder(Encoder& encoder);
 
     void push(ExportJob job);
     ExportJob encode();
@@ -68,7 +68,7 @@ public:
     uint64_t nEncodeJobs() const { return nEncodeJobs_;  }
 
 private:
-    Codec& codec_;  // must have thread-safe processing functions
+    Encoder& encoder_;  // must have thread-safe processing functions
 
     std::mutex mutex_;
     ExportJobQueue queue_;
@@ -123,9 +123,9 @@ private:
 
     std::atomic<bool> quit_;
     std::atomic<bool>& error_;
-    ExporterJobFreeList& freeList_;
-    ExporterJobEncoder& encoder_;
-    ExporterJobWriter& writer_;
+    ExporterJobFreeList& jobFreeList_;
+    ExporterJobEncoder& jobEncoder_;
+    ExporterJobWriter& jobWriter_;
 };
 
 
@@ -133,7 +133,7 @@ class Exporter
 {
 public:
     Exporter(
-        std::unique_ptr<Codec> codec,
+        std::unique_ptr<Encoder> encoder,
         std::unique_ptr<MovieWriter> writer);
     ~Exporter();
 
@@ -151,11 +151,11 @@ private:
     size_t concurrentThreadsSupported_;
 
     mutable std::atomic<bool> error_;
-    std::unique_ptr<Codec> codec_;
+    std::unique_ptr<Encoder> encoder_;
 
-    mutable ExporterJobFreeList freeList_;
-    mutable ExporterJobEncoder encoder_;
-    mutable ExporterJobWriter writer_;
+    mutable ExporterJobFreeList jobFreeList_;
+    mutable ExporterJobEncoder jobEncoder_;
+    mutable ExporterJobWriter jobWriter_;
 
     // must be last to ensure they're joined before their dependents are destructed
     mutable ExportWorkers workers_;

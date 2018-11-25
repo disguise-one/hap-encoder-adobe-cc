@@ -5,8 +5,8 @@
 
 using namespace std::chrono_literals;
 
-ExporterJobEncoder::ExporterJobEncoder(Codec& codec)
-    : codec_(codec), nEncodeJobs_(0)
+ExporterJobEncoder::ExporterJobEncoder(Encoder& encoder)
+    : encoder_(encoder), nEncodeJobs_(0)
 {
 }
 
@@ -122,7 +122,7 @@ void ExporterJobWriter::close()
 }
 
 ExporterWorker::ExporterWorker(std::atomic<bool>& error, ExporterJobFreeList& freeList, ExporterJobEncoder& encoder, ExporterJobWriter& writer)
-    : quit_(false), error_(error), freeList_(freeList), encoder_(encoder), writer_(writer)
+    : quit_(false), error_(error), jobFreeList_(freeList), jobEncoder_(encoder), jobWriter_(writer)
 {
     worker_ = std::thread(worker_start, std::ref(*this));
 }
@@ -155,7 +155,7 @@ void ExporterWorker::run()
             // we assume the exporter delivers frames in sequence; we can't
             // buffer unlimited frames for writing until we're give frame 1
             // at the end, for example.
-            ExportJob job = encoder_.encode();
+            ExportJob job = jobEncoder_.encode();
 
             if (!job)
             {
@@ -164,7 +164,7 @@ void ExporterWorker::run()
             else
             {
                 // submit it to be written (frame may be out of order)
-                writer_.push(std::move(job));
+                jobWriter_.push(std::move(job));
 
                 // dequeue any in-order writes
                 // NOTE: other threads may be blocked here, even though they could get on with encoding
@@ -175,11 +175,11 @@ void ExporterWorker::run()
                 //       each job must do one write
                 do
                 {
-                    ExportJob written = writer_.write();
+                    ExportJob written = jobWriter_.write();
 
                     if (written)
                     {
-                        freeList_.free(std::move(written));
+                        jobFreeList_.free(std::move(written));
                         break;
                     }
 
@@ -198,14 +198,14 @@ void ExporterWorker::run()
 
 
 Exporter::Exporter(
-    std::unique_ptr<Codec> codec,
+    std::unique_ptr<Encoder> encoder,
     std::unique_ptr<MovieWriter> movieWriter)
-  : codec_(std::move(codec)), encoder_(*codec_),
-    freeList_(std::function<ExportJob ()>([&](){
-        return std::make_unique<ExportJob::element_type>(codec_->create());
+  : encoder_(std::move(encoder)), jobEncoder_(*encoder_),
+    jobFreeList_(std::function<ExportJob ()>([&](){
+        return std::make_unique<ExportJob::element_type>(encoder_->create());
     })),
     closed_(false),
-    writer_(std::move(movieWriter)),
+    jobWriter_(std::move(movieWriter)),
     error_(false)
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write
@@ -214,7 +214,7 @@ Exporter::Exporter(
     size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
     for (size_t i=0; i<startingThreads; ++i)
     {
-        workers_.push_back(std::make_unique<ExporterWorker>(error_, freeList_, encoder_, writer_));
+        workers_.push_back(std::make_unique<ExporterWorker>(error_, jobFreeList_, jobEncoder_, jobWriter_));
     }
 }
 
@@ -246,7 +246,7 @@ void Exporter::close()
         }
 
         // finalise and close the file.
-        writer_.close();
+        jobWriter_.close();
 
         if (error_)
             throw std::runtime_error("error writing");
@@ -264,7 +264,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     // TODO: get confirmation from Adobe that this assumption cannot be violated
     if (!currentFrame_) {
         currentFrame_ = std::make_unique<int64_t>(iFrame);
-        writer_.setFirstFrame(iFrame);
+        jobWriter_.setFirstFrame(iFrame);
     }
     else {
         ++(*currentFrame_);
@@ -276,7 +276,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     }
 
     // throttle the caller - if the queue is getting too long we should wait
-    while ( (encoder_.nEncodeJobs() >= workers_.size()-1)
+    while ( (jobEncoder_.nEncodeJobs() >= workers_.size()-1)
             && !expandWorkerPoolToCapacity()  // if we can, expand the pool
             && !error_)
     {
@@ -290,7 +290,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     if (error_)
         throw std::runtime_error("error while exporting");
 
-    ExportJob job = freeList_.allocate();
+    ExportJob job = jobFreeList_.allocate();
 
     job->iFrame = iFrame;
 
@@ -301,18 +301,18 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     //       performance gain
     job->codecJob->copyExternalToLocal(bgra_bottom_left_origin_data, stride);
 
-    encoder_.push(std::move(job));
+    jobEncoder_.push(std::move(job));
 }
 
 // returns true if pool was expanded
 bool Exporter::expandWorkerPoolToCapacity() const
 {
     bool isNotThreadLimited = workers_.size() < concurrentThreadsSupported_;
-    bool isNotOutputLimited = writer_.utilisation() < 0.99;
+    bool isNotOutputLimited = jobWriter_.utilisation() < 0.99;
     bool isNotBufferLimited = true;  // TODO: get memoryUsed < maxMemoryCapacity from Adobe API
 
     if (isNotThreadLimited && isNotOutputLimited && isNotBufferLimited) {
-        workers_.push_back(std::make_unique<ExporterWorker>(error_, freeList_, encoder_, writer_));
+        workers_.push_back(std::make_unique<ExporterWorker>(error_, jobFreeList_, jobEncoder_, jobWriter_));
         return true;
     }
     return false;
