@@ -94,7 +94,7 @@ For reference, the FFMpeg build for the win64 plugin was created by
  
 -  going to the external/ffmpeg/FFMPeg directory and then
 
-        ./configure --toolchain=msvc --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --extra-cflags="-MD -arch:AVX"
+        ./configure --toolchain=msvc --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --enable-demuxer=mov --extra-cflags="-MD -arch:AVX"
         make
 
 This will take a while.
@@ -103,7 +103,7 @@ This will take a while.
 
 Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg. Then
 
-    ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --disable-zlib --disable-iconv
+    ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --enable-demuxer=mov --disable-zlib --disable-iconv
     make
 
 ### Pandoc
