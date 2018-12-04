@@ -531,7 +531,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
         samplesRemaining -= samplesRequested;
 
         // Update progress bar percent
-        progress = (float) samplesExported / totalAudioSamples * 0.2f;
+        progress = (float) samplesExported / totalAudioSamples * 0.06f;
         settings->exportProgressSuite->UpdateProgressPercent(exID, progress);
     }
     error = resultS;
