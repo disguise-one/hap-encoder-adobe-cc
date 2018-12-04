@@ -68,8 +68,10 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     * identical to 1. */
     // which doesn't work for 29.97fps?
     // videoStream_->time_base will later get trashed by mov file format
-    videoStream_->time_base = streamTimebase_;
-    videoStream_->codec->time_base = streamTimebase_; // deprecation warning, but it work...
+    videoStream_->avg_frame_rate = streamTimebase_;
+    videoStream_->time_base.den = streamTimebase_.den;
+    videoStream_->time_base.num = 1;
+    //videoStream_->codec->time_base = streamTimebase_; // deprecation warning, but it work...
 
     uint8_t* buffer = (uint8_t*)av_malloc(cAVIOBufferSize);
     if (!buffer)
