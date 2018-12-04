@@ -27,9 +27,15 @@ struct DecodeInput
     std::vector<uint8_t> buffer;
 };
 
+enum CodecAlpha
+{
+    withoutAlpha = 0,
+    withAlpha = 1
+};
+
 struct EncoderParametersBase {
-    EncoderParametersBase(const FrameDef& frameDef_, int quality_)
-        : frameDef(frameDef_), quality(quality_) {}
+    EncoderParametersBase(const FrameDef& frameDef_, CodecAlpha alpha_, int quality_)
+        : frameDef(frameDef_), alpha(alpha_), quality(quality_) {}
     virtual ~EncoderParametersBase() {}
 
     // ui-building
@@ -38,6 +44,7 @@ struct EncoderParametersBase {
     // );
 
     FrameDef frameDef;
+    CodecAlpha alpha;
     int quality;
 
     EncoderParametersBase(const EncoderParametersBase&) = delete;

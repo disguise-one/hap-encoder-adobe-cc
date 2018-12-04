@@ -13,6 +13,7 @@
 #define TOP_VIDEO_PARAM_GROUP_NAME		L"Video parameters"
 #define VIDEO_CODEC_PARAM_GROUP_NAME	L"Video"
 #define BASIC_VIDEO_PARAM_GROUP_NAME	L"Basic video"
+#define STR_INCLUDE_ALPHA               L"Include Alpha Channel"
 #define CODEC_SPECIFIC_PARAM_GROUP_NAME L"Advanced video"
 #define STR_CODEC						L"Codec"
 #define STR_CODEC_TOOLTIP				L"The video codec to be used for encode."

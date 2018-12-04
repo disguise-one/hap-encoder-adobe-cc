@@ -1,5 +1,5 @@
-#include "main.hpp"
 #include "configure.hpp"
+#include "main.hpp"
 #include "premiereParams.hpp"
 #include "prstring.hpp"
 #include "export_settings.hpp"
@@ -304,12 +304,13 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, quality;
+	exParamValues ticksPerFrame, width, height, includeAlphaChannel, quality;
 	PrTime ticksPerSecond;
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
+    settings->exportParamSuite->GetParamValue(exID, 0, NOTCHLCIncludeAlphaChannel, &includeAlphaChannel);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
     const int64_t frameRateNumerator = ticksPerSecond;
@@ -319,6 +320,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
     std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
         FrameDef(width.value.intValue, height.value.intValue),
+        includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha,
         clampedQuality
     );
     std::unique_ptr<Encoder> encoder = CodecRegistry::codec().createEncoder(std::move(parameters));

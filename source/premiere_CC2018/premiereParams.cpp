@@ -79,6 +79,20 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         heightParam.paramValues = heightValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &heightParam);
 
+        exNewParamInfo includeAlphaParam;
+        exParamValues includeAlphaValues;
+        safeStrCpy(includeAlphaParam.identifier, 256, NOTCHLCIncludeAlphaChannel);
+        includeAlphaParam.paramType = exParamType_bool;
+        includeAlphaParam.flags = exParamFlag_none;
+        includeAlphaValues.rangeMin.intValue = 2;
+        includeAlphaValues.rangeMax.intValue = 3;
+        includeAlphaValues.value.intValue = 2;
+        includeAlphaValues.disabled = kPrFalse;
+        includeAlphaValues.hidden = kPrFalse;
+        includeAlphaValues.disabled = kPrFalse;
+        includeAlphaParam.paramValues = includeAlphaValues;
+        exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &includeAlphaParam);
+
 #if 0
         !!!
 		exNewParamInfo hapSubcodecParam;
@@ -284,6 +298,9 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempQuality, qualityString.get());
     }
 
+    copyConvertStringLiteralIntoUTF16(STR_INCLUDE_ALPHA, tempString);
+    settings->exportParamSuite->SetParamName(exID, 0, NOTCHLCIncludeAlphaChannel, tempString);
+
     copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, HAPSpecificCodecGroup, tempString);
 
@@ -316,7 +333,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
 prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summaryRecP)
 {
     wchar_t videoSummary[256], audioSummary[256];
-    exParamValues width, height, frameRate, sampleRate, channelType;
+    exParamValues width, height, includeAlphaChannel, frameRate, sampleRate, channelType;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(summaryRecP->privateData);
     PrSDKExportParamSuite* paramSuite = settings->exportParamSuite;
     PrSDKTimeSuite* timeSuite = settings->timeSuite;
@@ -329,13 +346,15 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
 
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoWidth, &width);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoHeight, &height);
+    paramSuite->GetParamValue(exporterPluginID, mgroupIndex, NOTCHLCIncludeAlphaChannel, &includeAlphaChannel);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoFPS, &frameRate);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioRatePerSecond, &sampleRate);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    swprintf(videoSummary, 256, L"%ix%i, %.2f fps",
+    swprintf(videoSummary, 256, L"%ix%i, %s, %.2f fps",
             width.value.intValue, height.value.intValue,
+            (includeAlphaChannel.value.intValue ? L"with alpha" : L"no alpha"),
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 
