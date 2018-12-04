@@ -44,7 +44,7 @@ else (MSVC)
    include(findZLIB)
 endif(MSVC)
 
-target_link_libraries(EncoderPlugin
+target_link_libraries(CodecPluginFoundation
     PRIVATE
         CodecRegistration
         Codec
@@ -62,26 +62,26 @@ target_link_libraries(EncoderPlugin
 )
 
 # Include the ffmpeg headers
-target_include_directories(EncoderPlugin
+target_include_directories(CodecPluginFoundation
     PRIVATE
         ${ffmpeg_INCLUDE_DIRS}
 )
 
 if (MSVC)
-    set_target_properties(EncoderPlugin
+    set_target_properties(CodecPluginFoundation
         PROPERTIES
             SUFFIX ".prm"
     )
 endif(MSVC)
 
-set_target_properties(EncoderPlugin
+set_target_properties(CodecPluginFoundation
     PROPERTIES
 	    BUNDLE TRUE
-	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapEncoderPlugin
+	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapCodecPlugin
 )
 
 install(
-  TARGETS EncoderPlugin
+  TARGETS CodecPluginFoundation
   RUNTIME
   BUNDLE DESTINATION .
   LIBRARY DESTINATION .
