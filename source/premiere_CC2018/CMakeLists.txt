@@ -1,16 +1,18 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
-project(EncoderPlugin)
+project(CodecPluginFoundation)
 
 # this is the one we will install
-add_library(EncoderPlugin MODULE)
+add_library(CodecPluginFoundation MODULE)
 
-target_sources(EncoderPlugin
+target_sources(CodecPluginFoundation
     PRIVATE
         configure.hpp
         export_settings.cpp
         export_settings.hpp
         main.cpp
         main.hpp
+        importer.cpp
+        importer.hpp
         premiereParams.cpp
         premiereParams.hpp
         prstring.cpp
@@ -20,6 +22,9 @@ target_sources(EncoderPlugin
         # codec/texture_converter.hpp
         exporter/exporter.cpp
         exporter/exporter.hpp
+        movie/ffmpeg_helpers.hpp
+        movie/movie_reader.cpp
+        movie/movie_reader.hpp
         movie_writer/movie_writer.cpp
         movie_writer/movie_writer.hpp
 )
