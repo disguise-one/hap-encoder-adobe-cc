@@ -5,7 +5,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
 
 # project
 
-project(EncoderFoundation)
+project(CodecFoundation)
 
 set (CMAKE_CXX_STANDARD 17)
 
