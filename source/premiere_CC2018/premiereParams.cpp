@@ -192,6 +192,8 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     const csSDK_uint32 exID = postProcessParamsRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(postProcessParamsRecP->privateData);
     PrTime ticksPerSecond = 0;
+
+    postProcessParamsRecP->doConformToMatchParams = true;
 #if 0
 !!!
     exOneParamValueRec tempHapSubcodec;
