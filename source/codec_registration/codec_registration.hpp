@@ -22,7 +22,7 @@ struct EncodeOutput
     std::vector<uint8_t> buffer;
 };
 
-struct DecodeOutput
+struct DecodeInput
 {
     std::vector<uint8_t> buffer;
 };
@@ -60,6 +60,7 @@ struct DecoderParametersBase {
     DecoderParametersBase& operator=(const DecoderParametersBase&) = delete;
 };
 
+typedef std::array<char, 4> FileFormat;
 typedef std::array<char, 4> VideoFormat;
 
 class EncoderJob {
@@ -103,6 +104,46 @@ private:
     EncoderJob& operator=(const EncoderJob& rhs) = delete;
 };
 
+class DecoderJob {
+public:
+    DecoderJob() {}
+
+    // encoding steps
+
+    // CPU-side decompression, performed in a job-thread
+    void decode(DecodeInput& in)  //!!! 'in' buffer is swapped with local
+    {
+        doDecode(in);
+    }
+
+    // convert to texture ready for delivery
+    void convert()
+    {
+        doConvert();
+    }
+
+    // deliver the texture
+    void copyLocalToExternalToExternal(
+        uint8_t *bgraBottomLeftOrigin,
+        size_t stride)
+    {
+        doCopyLocalToExternal(
+            bgraBottomLeftOrigin,
+            stride);
+    }
+
+private:
+    virtual void doDecode(DecodeInput& in) = 0;
+    virtual void doConvert() = 0;
+    // derived EncoderJob classes  must implement these
+    virtual void doCopyLocalToExternal(
+        uint8_t *bgraBottomLeftOrigin,
+        size_t stride) = 0;
+
+    DecoderJob(const DecoderJob& rhs) = delete;
+    DecoderJob& operator=(const DecoderJob& rhs) = delete;
+};
+
 class Encoder {
 public:
     Encoder(std::unique_ptr<EncoderParametersBase> parameters)
@@ -124,44 +165,21 @@ private:
 
 class Decoder {
 public:
-    Decoder(std::unique_ptr<EncoderParametersBase> parameters)
+    Decoder(std::unique_ptr<DecoderParametersBase> parameters)
         : parameters_(std::move(parameters))
     {};
     virtual ~Decoder() {};
 
     virtual VideoFormat subType() const { throw std::exception("not implemented"); }
-    const EncoderParametersBase& parameters() const { return *parameters_; }
+    const DecoderParametersBase& parameters() const { return *parameters_; }
 
-    virtual std::unique_ptr<EncoderJob> create()=0;
-
-    // decoding steps
-
-    // CPU-side decompression, performed in a job-thread
-    void decode(DecodeOutput& out)
-    {
-        doDecode(out);
-    }
-
-    // post-process after decompression, ready for copying back
-    void convert()
-    {
-        doConvert();
-    }
-
-private:
-    // derived EncoderJob classes  must implement these
-    virtual void doCopyLocalToExtermal(
-        uint8_t *bgraBottomLeftOrigin,
-        size_t stride) = 0;
-
-    virtual void doDecode(DecodeOutput& out) = 0;
-    virtual void doConvert() = 0;
+    virtual std::unique_ptr<DecoderJob> create() = 0;
 
 private:
     Decoder(const Decoder&) = delete;
     Decoder& operator=(const Decoder&) = delete;
 
-    std::unique_ptr<EncoderParametersBase> parameters_;
+    std::unique_ptr<DecoderParametersBase> parameters_;
 };
 
 // this class is instantiated by the exporter plugin as a singleton
@@ -177,6 +195,12 @@ public:
     // opportunity to customise based on parameters
     std::function<std::unique_ptr<Encoder> (std::unique_ptr<EncoderParametersBase> parameters)> createEncoder;
     std::function<std::unique_ptr<Decoder> (std::unique_ptr<DecoderParametersBase> parameters)> createDecoder;
+
+
+    // codec properties
+    static FileFormat fileFormat();
+    //!!! these need to be broken out per codec subtype
+    static VideoFormat videoFormat();
 
     // quality settings
     static bool hasQuality();
