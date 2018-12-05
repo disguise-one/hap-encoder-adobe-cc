@@ -517,12 +517,12 @@ ImporterGetSourceVideo(
 
         decoderJob->copyLocalToExternalToExternal(bgraBottomLeftOrigin, stride);
 
-        (*ldataH)->PPixCacheSuite->AddFrameToCache((*ldataH)->importerID,
-                                                    0,
-                                                    *sourceVideoRec->outFrame,
-                                                    theFrame,
-                                                    NULL,
-                                                    NULL);
+        //!!! (*ldataH)->PPixCacheSuite->AddFrameToCache((*ldataH)->importerID,
+        //!!!                                             0,
+        //!!!                                             *sourceVideoRec->outFrame,
+        //!!!                                             theFrame,
+        //!!!                                             NULL,
+        //!!!                                            NULL);
 
         return malNoError;
     }
