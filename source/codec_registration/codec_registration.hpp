@@ -118,7 +118,7 @@ public:
     // encoding steps
 
     // CPU-side decompression, performed in a job-thread
-    void decode(DecodeInput& in)  //!!! 'in' buffer is swapped with local
+    void decode(std::vector<uint8_t>& in)  //!!! 'in' buffer is swapped with local
     {
         doDecode(in);
     }
@@ -140,7 +140,7 @@ public:
     }
 
 private:
-    virtual void doDecode(DecodeInput& in) = 0;
+    virtual void doDecode(std::vector<uint8_t>& in) = 0;
     virtual void doConvert() = 0;
     // derived EncoderJob classes  must implement these
     virtual void doCopyLocalToExternal(

@@ -27,7 +27,8 @@ typedef struct
 {	
 	//!!! PrAudioSample audioPosition;
     std::unique_ptr<MovieReader> movieReader;
-    DecodeInput                  readBuffer;
+    //DecodeInput                  readBuffer;
+    std::vector<uint8_t>           readBuffer;
 
     PlugMemoryFuncsPtr     memFuncs;
     csSDK_int32            importerID;

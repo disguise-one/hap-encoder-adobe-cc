@@ -499,7 +499,7 @@ ImporterGetSourceVideo(
 
         csSDK_int32 bytesPerFrame = frameFormat->inFrameWidth * frameFormat->inFrameHeight * 4;
 
-        (*ldataH)->movieReader->readVideoFrame(tFrame, (std::vector<uint8_t>&)(*ldataH)->readBuffer);
+        (*ldataH)->movieReader->readVideoFrame(theFrame, (*ldataH)->readBuffer);
 
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
             FrameDef((*ldataH)->movieReader->width(), (*ldataH)->movieReader->height())
