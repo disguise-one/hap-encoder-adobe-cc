@@ -393,7 +393,7 @@ ImporterGetInfo8(
     fileInfo8->vidInfo.depth       = 32;  //!!! lack of alpha should change this
     fileInfo8->vidInfo.fieldType   = prFieldsNone;
 
-    fileInfo8->vidInfo.alphaType = alphaNone;
+    fileInfo8->vidInfo.alphaType = alphaStraight;
 
     //!!!if (SDKFileInfo8->vidInfo.depth == 32)
     //!!!{
