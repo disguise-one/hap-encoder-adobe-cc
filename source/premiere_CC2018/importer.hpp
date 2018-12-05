@@ -29,6 +29,9 @@ typedef struct
     std::unique_ptr<MovieReader> movieReader;
     //DecodeInput                  readBuffer;
     std::vector<uint8_t>           readBuffer;
+    std::unique_ptr<Decoder>       decoder;
+    std::unique_ptr<DecoderJob>    decoderJob;
+
 
     PlugMemoryFuncsPtr     memFuncs;
     csSDK_int32            importerID;

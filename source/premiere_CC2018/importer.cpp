@@ -153,6 +153,13 @@ ImporterOpenFile8(
                 //!!! report here
             }
         );
+        auto decoderParameters = std::make_unique<DecoderParametersBase>(
+            FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height())
+            );
+        (*localRecH)->decoder = CodecRegistry::codec().createDecoder(std::move(decoderParameters));
+        (*localRecH)->decoderJob = (*localRecH)->decoder->create();
+
+
     }
     catch (...)
     {
@@ -496,18 +503,11 @@ ImporterGetSourceVideo(
         prSetRect (&theRect, 0, 0, frameFormat->inFrameWidth, frameFormat->inFrameHeight);
         (*ldataH)->PPixCreatorSuite->CreatePPix(sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, frameFormat->inPixelFormat, &theRect);
         (*ldataH)->PPixSuite->GetPixels(*sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, &frameBuffer);
-
         csSDK_int32 bytesPerFrame = frameFormat->inFrameWidth * frameFormat->inFrameHeight * 4;
 
         (*ldataH)->movieReader->readVideoFrame(theFrame, (*ldataH)->readBuffer);
-
-        auto decoderParameters = std::make_unique<DecoderParametersBase>(
-            FrameDef((*ldataH)->movieReader->width(), (*ldataH)->movieReader->height())
-        );
-        auto decoder = CodecRegistry::codec().createDecoder(std::move(decoderParameters));
-        auto decoderJob = decoder->create();
-        decoderJob->decode((*ldataH)->readBuffer);
-        decoderJob->convert();
+        (*ldataH)->decoderJob->decode((*ldataH)->readBuffer);
+        (*ldataH)->decoderJob->convert();
 
         uint8_t *bgraBottomLeftOrigin = (uint8_t *)frameBuffer;
         int32_t stride;
@@ -515,7 +515,7 @@ ImporterGetSourceVideo(
         // If extra row padding is needed, add it
         (*ldataH)->PPixSuite->GetRowBytes(*sourceVideoRec->outFrame, &stride);
 
-        decoderJob->copyLocalToExternalToExternal(bgraBottomLeftOrigin, stride);
+        (*ldataH)->decoderJob->copyLocalToExternalToExternal(bgraBottomLeftOrigin, stride);
 
         //!!! (*ldataH)->PPixCacheSuite->AddFrameToCache((*ldataH)->importerID,
         //!!!                                             0,
