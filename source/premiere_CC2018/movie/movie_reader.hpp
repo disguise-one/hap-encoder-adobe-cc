@@ -18,7 +18,7 @@ public:
     );
     ~MovieReader();
 
-    void readVideoFrame(double tFrame, std::vector<uint8_t>& frame);
+    void readVideoFrame(int iFrame, std::vector<uint8_t>& frame);
     bool hasAudio() const { return audioStreamIdx_ != -1;  }
 
     int width() const { return width_; }

@@ -109,18 +109,21 @@ MovieReader::MovieReader(
 
 }
 
-void MovieReader::readVideoFrame(double tFrame, std::vector<uint8_t>& frame)
+void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
 {
-    int64_t timestamp = (int64_t)(tFrame * formatContext_->streams[videoStreamIdx_]->avg_frame_rate.num);
+    AVStream *stream = formatContext_->streams[videoStreamIdx_];
+    int64_t timestamp = iFrame * stream->r_frame_rate.den * stream->time_base.den / (int64_t(stream->r_frame_rate.num) * stream->time_base.num);
+
     int ret = av_seek_frame(formatContext_.get(), videoStreamIdx_, timestamp, AVSEEK_FLAG_ANY);
     if (ret < 0)
-        throw std::runtime_error(std::string("could not seek to read frame " + std::to_string(tFrame) + " - " + av_err2str(ret)));
+        throw std::runtime_error(std::string("could not seek to read frame " + std::to_string(iFrame) + " - " + av_err2str(ret)));
 
     AVPacket pkt;
-    ret = av_read_frame(formatContext_.get(), &pkt);
-    if (ret < 0)
-        throw std::runtime_error(std::string("could not read frame " + std::to_string(tFrame) + " - " + av_err2str(ret)));
-
+    do {
+        ret = av_read_frame(formatContext_.get(), &pkt);
+        if (ret < 0)
+            throw std::runtime_error(std::string("could not read frame " + std::to_string(iFrame) + " - " + av_err2str(ret)));
+    } while (pkt.stream_index != videoStreamIdx_);
     frame.resize(pkt.size);
     std::copy(pkt.data, pkt.data + pkt.size, &frame[0]);
 
