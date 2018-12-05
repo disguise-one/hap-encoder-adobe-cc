@@ -119,15 +119,20 @@ void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
         throw std::runtime_error(std::string("could not seek to read frame " + std::to_string(iFrame) + " - " + av_err2str(ret)));
 
     AVPacket pkt;
-    do {
+    while (true) {
         ret = av_read_frame(formatContext_.get(), &pkt);
         if (ret < 0)
             throw std::runtime_error(std::string("could not read frame " + std::to_string(iFrame) + " - " + av_err2str(ret)));
-    } while (pkt.stream_index != videoStreamIdx_);
-    frame.resize(pkt.size);
-    std::copy(pkt.data, pkt.data + pkt.size, &frame[0]);
-
-    av_packet_unref(&pkt);
+        else if (pkt.stream_index == videoStreamIdx_) {
+            frame.resize(pkt.size);
+            std::copy(pkt.data, pkt.data + pkt.size, &frame[0]);
+            av_packet_unref(&pkt);
+            return;
+        }
+        else {
+            av_packet_unref(&pkt);
+        }
+    }
 }
 
 MovieReader::~MovieReader()
