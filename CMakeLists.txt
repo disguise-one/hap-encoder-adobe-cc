@@ -25,7 +25,3 @@ add_subdirectory(external/adobe)
 
 # plugin
 add_subdirectory(source/premiere_CC2018)
-
-# installer
-# *** this must be last according to CPACK usage directions
-add_subdirectory(installer)
