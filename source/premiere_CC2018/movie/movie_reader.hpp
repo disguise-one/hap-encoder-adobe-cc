@@ -14,7 +14,8 @@ public:
         VideoFormat videoFormat,
         MovieReadCallback onRead,
         MovieSeekCallback onSeek,
-        MovieErrorCallback onError
+        MovieErrorCallback onError,
+        MovieCloseCallback onClose
     );
     ~MovieReader();
 
@@ -23,8 +24,8 @@ public:
 
     int width() const { return width_; }
     int height() const { return height_;  }
-    int64_t frameRateNumerator() const { return frameRateNumerator_; }
-    int64_t frameRateDenominator() const { return frameRateDenominator_; }
+    int frameRateNumerator() const { return frameRateNumerator_; }
+    int frameRateDenominator() const { return frameRateDenominator_; }
     int64_t numFrames() const { return numFrames_; }
 
 private:
@@ -38,8 +39,8 @@ private:
 
     int width_;
     int height_;
-    int64_t frameRateNumerator_;
-    int64_t frameRateDenominator_;
+    int frameRateNumerator_;
+    int frameRateDenominator_;
     int64_t numFrames_;
 
     // adapt writers that throw exceptions
@@ -53,6 +54,7 @@ private:
     MovieReadCallback onRead_;
     MovieSeekCallback onSeek_;
     MovieErrorCallback onError_;
+    MovieCloseCallback onClose_;
 };
 
 #endif   // MOVIE_WRITER_HPP
