@@ -6,9 +6,12 @@ add_library(CodecPluginFoundation MODULE)
 
 target_sources(CodecPluginFoundation
     PRIVATE
+        async_importer.cpp
+        async_importer.hpp
         configure.hpp
         export_settings.cpp
         export_settings.hpp
+        freelist.hpp
         main.cpp
         main.hpp
         importer.cpp

@@ -7,6 +7,7 @@
 
 #include "../movie_writer/movie_writer.hpp"
 #include "codec_registration.hpp"
+#include "../freelist.hpp"
 
 struct ExportJobImpl
 {
@@ -22,37 +23,6 @@ class ExporterWorker;
 typedef std::unique_ptr<ExportJobImpl> ExportJob;  // either encode or write, depending on the queue its in
 typedef std::vector<ExportJob> ExportJobQueue;
 typedef std::list<std::unique_ptr<ExporterWorker> > ExportWorkers;
-
-// thread-safe freelist. T must be unique_ptr<>
-template<class T>
-class FreeList
-{
-public:
-    FreeList(std::function<T ()> factory) : factory_(factory) {}
-
-    T allocate()
-    {
-        std::lock_guard<std::mutex> guard(mutex_);
-        if (!freeList_.empty())
-        {
-            T t = std::move(freeList_.back());
-            freeList_.pop_back();
-            return t;
-        }
-        else
-            return factory_();
-    }
-    void free(T t)
-    {
-        std::lock_guard<std::mutex> guard(mutex_);
-        freeList_.push_back(std::move(t));
-    }
-
-private:
-    std::mutex mutex_;
-    std::vector<T> freeList_;
-    std::function<T ()> factory_;
-};
 
 typedef FreeList<ExportJob> ExporterJobFreeList;
 
@@ -137,7 +107,8 @@ public:
         std::unique_ptr<MovieWriter> writer);
     ~Exporter();
 
-    // users should call close if they wish to handle errors on shutdown
+    // users should call close if they wish to handle errors on shutdown - destructors cannot
+    // throw, 'close' can and will
     void close();
     
     // thread safe to be called 'on frame rendered'
