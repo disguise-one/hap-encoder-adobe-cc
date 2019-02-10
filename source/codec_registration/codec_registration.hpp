@@ -130,9 +130,9 @@ public:
     }
 
     // deliver the texture
-    void copyLocalToExternalToExternal(
+    void copyLocalToExternal(
         uint8_t *bgraBottomLeftOrigin,
-        size_t stride)
+        size_t stride) const
     {
         doCopyLocalToExternal(
             bgraBottomLeftOrigin,
@@ -145,7 +145,7 @@ private:
     // derived EncoderJob classes  must implement these
     virtual void doCopyLocalToExternal(
         uint8_t *bgraBottomLeftOrigin,
-        size_t stride) = 0;
+        size_t stride) const = 0;
 
     DecoderJob(const DecoderJob& rhs) = delete;
     DecoderJob& operator=(const DecoderJob& rhs) = delete;
