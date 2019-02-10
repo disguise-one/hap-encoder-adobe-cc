@@ -1,11 +1,385 @@
+#include <codecvt>
 #include <new>
 
+#include "async_importer.hpp"
 #include "codec_registration.hpp"
 #include "importer.hpp"
 
-//!!! #ifdef PRWIN_ENV
-//!!! #include "SDK_Async_Import.h"
-//!!! #endif
+using namespace std::chrono_literals;
+
+// nuisance
+std::string to_string(const std::wstring& fromUTF16)
+{
+    //setup converter
+    using convert_type = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_type, wchar_t> converter;
+
+    return converter.to_bytes(fromUTF16);
+}
+
+//!!! if importerID can be removed rename this to AdobeSuites
+AdobeImporterAPI::AdobeImporterAPI(piSuitesPtr piSuites)
+{
+    memFuncs = piSuites->memFuncs;
+    BasicSuite = piSuites->utilFuncs->getSPBasicSuite();
+    if (BasicSuite)
+    {
+        BasicSuite->AcquireSuite(kPrSDKPPixCreatorSuite, kPrSDKPPixCreatorSuiteVersion, (const void**)&PPixCreatorSuite);
+        BasicSuite->AcquireSuite(kPrSDKPPixCacheSuite, kPrSDKPPixCacheSuiteVersion, (const void**)&PPixCacheSuite);
+        BasicSuite->AcquireSuite(kPrSDKPPixSuite, kPrSDKPPixSuiteVersion, (const void**)&PPixSuite);
+        BasicSuite->AcquireSuite(kPrSDKTimeSuite, kPrSDKTimeSuiteVersion, (const void**)&TimeSuite);
+    }
+    else
+        throw std::runtime_error("no BasicSuite available");
+}
+
+AdobeImporterAPI::~AdobeImporterAPI()
+{
+    BasicSuite->ReleaseSuite(kPrSDKPPixCreatorSuite, kPrSDKPPixCreatorSuiteVersion);
+    BasicSuite->ReleaseSuite(kPrSDKPPixCacheSuite, kPrSDKPPixCacheSuiteVersion);
+    BasicSuite->ReleaseSuite(kPrSDKPPixSuite, kPrSDKPPixSuiteVersion);
+    BasicSuite->ReleaseSuite(kPrSDKTimeSuite, kPrSDKTimeSuiteVersion);
+}
+
+ImporterJobReader::ImporterJobReader(std::unique_ptr<MovieReader> reader)
+    : reader_(std::move(reader)),
+    utilisation_(1.),
+    error_(false)
+{
+}
+
+void ImporterJobReader::push(ImportJob job)
+{
+    std::lock_guard<std::mutex> guard(mutex_);
+    queue_.push_back(std::move(job));
+}
+
+ImportJob ImporterJobReader::read()
+{
+    std::unique_lock<std::mutex> try_guard(mutex_, std::try_to_lock);
+
+    if (try_guard.owns_lock())
+    {
+        try {
+            // attempt to read in frame order
+            auto earliest = std::min_element(queue_.begin(), queue_.end(),
+                [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
+            if (earliest != queue_.end()) {
+                ImportJob job = std::move(*earliest);
+                queue_.erase(earliest);
+
+                // start idle timer first time we try to read to avoid falsely including setup time
+                if (idleStart_ == std::chrono::high_resolution_clock::time_point())
+                    idleStart_ = std::chrono::high_resolution_clock::now();
+
+                readStart_ = std::chrono::high_resolution_clock::now();
+                reader_->readVideoFrame(job->iFrame, job->input.buffer);
+                auto readEnd = std::chrono::high_resolution_clock::now();
+
+                // filtered update of utilisation_
+                if (readEnd != idleStart_)
+                {
+                    auto totalTime = (readEnd - idleStart_).count();
+                    auto readTime = (readEnd - readStart_).count();
+                    const double alpha = 0.9;
+                    utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)readTime / totalTime);
+                }
+                idleStart_ = readEnd;
+
+                return job;
+            }
+        }
+        catch (...) {
+            error_ = true;
+            throw;
+        }
+    }
+
+    return nullptr;
+}
+
+ImporterJobDecoder::ImporterJobDecoder(Decoder& decoder)
+    : decoder_(decoder), nDecodeJobs_(0)
+{
+}
+
+void ImporterJobDecoder::push(ImportJob job)
+{
+    std::lock_guard<std::mutex> guard(mutex_);
+    queue_.push_back(std::move(job));
+    nDecodeJobs_++;
+}
+
+ImportJob ImporterJobDecoder::decode()
+{
+    ImportJob job;
+
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        auto earliest = std::min_element(queue_.begin(), queue_.end(),
+            [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
+        if (earliest != queue_.end()) {
+            job = std::move(*earliest);
+            queue_.erase(earliest);
+            nDecodeJobs_--;
+        }
+    }
+
+    if (job)
+    {
+        job->codecJob->decode(job->input.buffer);
+        job->codecJob->convert();
+    }
+
+    return job;
+}
+
+void ImporterJobReader::close()
+{
+    reader_.reset(0);
+}
+
+ImporterWorker::ImporterWorker(std::atomic<bool>& error, ImporterJobFreeList& freeList, ImporterJobReader& reader, ImporterJobDecoder& decoder)
+    : quit_(false), error_(error), jobFreeList_(freeList), jobReader_(reader), jobDecoder_(decoder)
+{
+    worker_ = std::thread(worker_start, std::ref(*this));
+}
+
+ImporterWorker::~ImporterWorker()
+{
+    quit_ = true;
+    worker_.join();
+}
+
+// static public interface for std::thread
+void ImporterWorker::worker_start(ImporterWorker& worker)
+{
+    worker.run();
+}
+
+// private
+void ImporterWorker::run()
+{
+    while (!quit_)
+    {
+        // if we hit an error, we shouldn't keep participating
+        if (error_)
+        {
+            std::this_thread::sleep_for(1ms);
+            continue;
+        }
+
+        try {
+            ImportJob job = jobReader_.read();
+
+            if (!job)
+            {
+                std::this_thread::sleep_for(2ms);
+            }
+            else
+            {
+                // submit it to be written (frame may be out of order)
+                jobDecoder_.push(std::move(job));
+
+                // dequeue any decodes
+                do
+                {
+                    ImportJob decoded = jobDecoder_.decode();
+
+                    if (decoded)
+                    {
+                        decoded->onSuccess(*decoded->codecJob);
+
+                        jobFreeList_.free(std::move(decoded));
+                        break;
+                    }
+
+                    std::this_thread::sleep_for(1ms);
+                } while (!error_);  // an error in a different thread will abort this thread's need to read
+            }
+        }
+        catch (...)
+        {
+            //!!! should copy the exception and rethrow in main thread when it joins
+            error_ = true;
+        }
+    }
+}
+
+
+
+Importer::Importer(
+    std::unique_ptr<MovieReader> movieReader,
+    std::unique_ptr<Decoder> decoder)
+    : closed_(false),
+      decoder_(std::move(decoder)), jobDecoder_(*decoder_),
+      jobFreeList_(std::function<ImportJob()>([&]() {
+        return std::make_unique<ImportJob::element_type>(decoder_->create());
+      })),
+      jobReader_(std::move(movieReader)),
+      error_(false)
+{
+    concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io read
+
+    // assume 4 threads + 1 writing will not tax the system too much before we figure out its limits
+    size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
+    for (size_t i = 0; i < startingThreads; ++i)
+    {
+        workers_.push_back(std::make_unique<ImporterWorker>(error_, jobFreeList_, jobReader_, jobDecoder_));
+    }
+}
+
+Importer::~Importer()
+{
+    try
+    {
+        close();
+    }
+    catch (...)
+    {
+        //!!! not much we can do now;
+        //!!! users should call 'close' themselves if they need to catch errors
+    }
+}
+
+void Importer::close()
+{
+    if (!closed_)
+    {
+        // we don't want to retry closing on destruction if we throw an exception
+        closed_ = true;
+
+        // close the file.
+        jobReader_.close();
+
+        // wait for last jobs to complete. The last one does the last read. If something
+        // fails it will abort the others.
+        {
+            ImportWorkers empty;  // this must be destructed before reader_.close()
+            std::swap(workers_, empty);
+        }
+
+        if (error_)
+            throw std::runtime_error("error writing");
+    }
+}
+
+void Importer::requestFrame(int32_t iFrame,
+                            std::function<void(const DecoderJob&)> onSuccess,
+                            std::function<void(const DecoderJob&)> onFail)
+{
+    // throttle the caller - if the queue is getting too long we should wait
+    while ((jobDecoder_.nDecodeJobs() >= workers_.size() - 1)
+        && !expandWorkerPoolToCapacity()  // if we can, expand the pool
+        && !error_)
+    {
+        // otherwise wait for an opening
+        std::this_thread::sleep_for(2ms);
+    }
+
+    // worker threads can die while reading or encoding (eg dud file)
+    // this is the most likely spot where the error can be noted by the main thread
+    // TODO: should intercept and alert with the correct error reason
+    if (error_)
+        throw std::runtime_error("error while Importing");
+
+    ImportJob job = jobFreeList_.allocate();
+
+    job->iFrame = iFrame;
+    job->onSuccess = onSuccess;
+    job->onFail = onFail;
+
+    jobReader_.push(std::move(job));
+}
+
+// returns true if pool was expanded
+bool Importer::expandWorkerPoolToCapacity() const
+{
+    bool isNotThreadLimited = workers_.size() < concurrentThreadsSupported_;
+    bool isNotInputLimited = jobReader_.utilisation() < 0.99;
+    bool isNotBufferLimited = true;  // TODO: get memoryUsed < maxMemoryCapacity from Adobe API
+
+    if (isNotThreadLimited && isNotInputLimited && isNotBufferLimited) {
+        workers_.push_back(std::make_unique<ImporterWorker>(error_, jobFreeList_, jobReader_, jobDecoder_));
+        return true;
+    }
+    return false;
+}
+
+
+
+
+
+
+// helper to create movie reader wrapped around an imFileRef that the Adobe SDK
+// wishes to manage
+static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const std::wstring& filePath)
+{
+    HANDLE fileRef = CreateFileW(filePath.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    // Check to see if file is valid
+    if (fileRef == INVALID_HANDLE_VALUE)
+    {
+        auto error = GetLastError();
+
+        throw std::runtime_error(std::string("could not open ")
+                                 + to_string(filePath) + " - error " + std::to_string(error));
+    }
+
+    return std::pair<std::unique_ptr<MovieReader>, HANDLE>(
+        std::make_unique<MovieReader>(
+            CodecRegistry::codec().videoFormat(),
+            [&, fileRef](const uint8_t* buffer, size_t size) {
+                DWORD bytesReadLu;
+                BOOL ok = ReadFile(fileRef,
+                    (LPVOID)buffer, (DWORD)size,
+                    &bytesReadLu,
+                    NULL);
+                if (!ok)
+                    throw std::runtime_error("could not read");
+                return bytesReadLu;
+            },
+            [&, fileRef](int64_t offset, int whence) {
+                DWORD         dwMoveMethod;
+                LARGE_INTEGER distanceToMove;
+                distanceToMove.QuadPart = offset;
+
+                if (whence == SEEK_SET)
+                    dwMoveMethod = FILE_BEGIN;
+                else if (whence == SEEK_END)
+                    dwMoveMethod = FILE_END;
+                else if (whence == SEEK_CUR)
+                    dwMoveMethod = FILE_CURRENT;
+                else
+                    throw std::runtime_error("unhandled file seek mode");
+
+                BOOL ok = SetFilePointerEx(
+                    fileRef,
+                    distanceToMove,
+                    NULL,
+                    FILE_BEGIN);
+
+                if (!ok)
+                    throw std::runtime_error("could not read");
+
+                return 0;
+            },
+            [&](const char *msg) {
+                //!!! report here
+            },
+            [fileRef]() {
+                CloseHandle(fileRef);
+                return 0;
+            }
+        ),
+        fileRef);
+}
 
 static prMALError 
 ImporterInit(
@@ -80,86 +454,25 @@ ImporterOpenFile8(
         fileOpenRec8->privatedata = (void*)localRecH;
 
         // Construct it
-        new (*localRecH) ImporterLocalRec8;
-        (*localRecH)->movieReader = nullptr;  //!!! do in ctor
+        new (*localRecH) ImporterLocalRec8(fileOpenRec8->fileinfo.filepath);
     }
 
     // open the file
     try {
-        HANDLE hFileRef = CreateFileW(fileOpenRec8->fileinfo.filepath,
-            GENERIC_READ,
-            FILE_SHARE_READ,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
+        auto readerAndHandle = createMovieReader((*localRecH)->filePath);
+        (*localRecH)->movieReader = std::move(readerAndHandle.first);
+        *fileRef = readerAndHandle.second;
 
+        //!!! fileOpenRec8->fileinfo.fileref = fileRef;
+        fileOpenRec8->fileinfo.filetype = 'nlc';
 
-        // Check to see if file is valid
-        if (hFileRef == imInvalidHandleValue)
-        {
-            result = GetLastError();
+        (*localRecH)->importerID = fileOpenRec8->inImporterID;
 
-            // Make sure the file is closed if returning imBadFile.
-            // Otherwise, a lower priority importer will not be able to open it.
-            result =
-                imBadFile;
-        }
-        else
-        {
-            *fileRef = hFileRef;
-            fileOpenRec8->fileinfo.fileref = fileRef;
-            fileOpenRec8->fileinfo.filetype = 'nlc';
-        }
-
-        (*localRecH)->movieReader = std::make_unique<MovieReader>(
-            CodecRegistry::codec().videoFormat(),
-            [&, fileRef](const uint8_t* buffer, size_t size) {
-                DWORD bytesReadLu;
-                BOOL ok = ReadFile(*fileRef,
-                    (LPVOID)buffer, (DWORD)size, 
-                    &bytesReadLu,
-                    NULL);
-                if (!ok)
-                    throw std::runtime_error("could not read");
-                return bytesReadLu;
-            },
-            [&, fileRef](int64_t offset, int whence) {
-                DWORD         dwMoveMethod;
-                LARGE_INTEGER distanceToMove;
-                distanceToMove.QuadPart = offset;
-
-                if (whence == SEEK_SET)
-                    dwMoveMethod = FILE_BEGIN;
-                else if (whence == SEEK_END)
-                    dwMoveMethod = FILE_END;
-                else if (whence == SEEK_CUR)
-                    dwMoveMethod = FILE_CURRENT;
-                else
-                    throw std::runtime_error("unhandled file seek mode");
-
-                BOOL ok = SetFilePointerEx(
-                    *fileRef,
-                    distanceToMove,
-                    NULL,
-                    FILE_BEGIN);
-
-                if (!ok)
-                    throw std::runtime_error("could not read");
-
-                return 0;
-            },
-            [&](const char *msg) {
-                //!!! report here
-            }
-        );
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
             FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height())
             );
         (*localRecH)->decoder = CodecRegistry::codec().createDecoder(std::move(decoderParameters));
         (*localRecH)->decoderJob = (*localRecH)->decoder->create();
-
-
     }
     catch (...)
     {
@@ -170,7 +483,6 @@ ImporterOpenFile8(
 }
 
 
-//-------------------------------------------------------------------
 //-------------------------------------------------------------------
 //	"Quiet" the file (it's being closed, but you maintain your Private data).  
 //	
@@ -183,20 +495,9 @@ ImporterQuietFile(
     imFileRef			*fileRef,
     void				*privateData)
 {
-    // If file has not yet been closed
-#ifdef PRWIN_ENV
-    if (fileRef && *fileRef != imInvalidHandleValue)
-    {
-        ImporterLocalRec8H localRecH = (ImporterLocalRec8H)privateData;
-        (*localRecH)->movieReader.reset(0);
-
-        CloseHandle(*fileRef);
-        *fileRef = imInvalidHandleValue;
-    }
-#else
-    FSCloseFork(reinterpret_cast<intptr_t>(*SDKfileRef));
-    *SDKfileRef = imInvalidHandleValue;
-#endif
+    ImporterLocalRec8H localRecH = (ImporterLocalRec8H)privateData;
+    (*localRecH)->movieReader.reset(0);
+    *fileRef = imInvalidHandleValue;
 
     return malNoError;
 }
@@ -214,20 +515,13 @@ ImporterCloseFile(
 {
     ImporterLocalRec8H ldataH = reinterpret_cast<ImporterLocalRec8H>(privateData);
 
-    // If file has not yet been closed
-    if (imFileRef && *imFileRef != imInvalidHandleValue)
-    {
-        ImporterQuietFile(stdParms, imFileRef, privateData);
-    }
-
     // Remove the privateData handle.
     // CLEANUP - Destroy the handle we created to avoid memory leaks
-    if (ldataH && *ldataH && (*ldataH)->BasicSuite)
+    if (ldataH && *ldataH) //!!!  && (*ldataH)->BasicSuite)  either it was constructed, or its null.
     {
-        (*ldataH)->BasicSuite->ReleaseSuite(kPrSDKPPixCreatorSuite, kPrSDKPPixCreatorSuiteVersion);
-        (*ldataH)->BasicSuite->ReleaseSuite(kPrSDKPPixCacheSuite, kPrSDKPPixCacheSuiteVersion);
-        (*ldataH)->BasicSuite->ReleaseSuite(kPrSDKPPixSuite, kPrSDKPPixSuiteVersion);
-        (*ldataH)->BasicSuite->ReleaseSuite(kPrSDKTimeSuite, kPrSDKTimeSuiteVersion);
+        // !!! only reason to call this is because it zeroes imFileRef
+        ImporterQuietFile(stdParms, imFileRef, privateData);
+
         (*ldataH)->~ImporterLocalRec8();
         stdParms->piSuites->memFuncs->disposeHandle(reinterpret_cast<char**>(ldataH));
     }
@@ -351,11 +645,11 @@ ImporterGetInfo8(
         fileInfo8->accessModes = kRandomAccessImport;
     }
 
-    //!!!#ifdef PRWIN_ENV
-    //!!!fileInfo8->vidInfo.supportsAsyncIO            = kPrTrue;
-    //!!!#elif defined PRMAC_ENV
-    //!!!fileInfo8->vidInfo.supportsAsyncIO            = kPrFalse;
-    //!!!#endif
+    #ifdef PRWIN_ENV
+    fileInfo8->vidInfo.supportsAsyncIO            = kPrTrue;
+    #elif defined PRMAC_ENV
+    fileInfo8->vidInfo.supportsAsyncIO            = kPrFalse;
+    #endif
     fileInfo8->vidInfo.supportsGetSourceVideo    = kPrTrue;
     fileInfo8->vidInfo.hasPulldown               = kPrFalse;
     fileInfo8->hasDataRate                       = kPrFalse; //!!! should be able to do thiskPrTrue;
@@ -379,15 +673,7 @@ ImporterGetInfo8(
     stdParms->piSuites->memFuncs->lockHandle(reinterpret_cast<char**>(ldataH));
 
     // Acquire needed suites
-    (*ldataH)->memFuncs = stdParms->piSuites->memFuncs;
-    (*ldataH)->BasicSuite = stdParms->piSuites->utilFuncs->getSPBasicSuite();
-    if ((*ldataH)->BasicSuite)
-    {
-        (*ldataH)->BasicSuite->AcquireSuite (kPrSDKPPixCreatorSuite, kPrSDKPPixCreatorSuiteVersion, (const void**)&(*ldataH)->PPixCreatorSuite);
-        (*ldataH)->BasicSuite->AcquireSuite (kPrSDKPPixCacheSuite, kPrSDKPPixCacheSuiteVersion, (const void**)&(*ldataH)->PPixCacheSuite);
-        (*ldataH)->BasicSuite->AcquireSuite (kPrSDKPPixSuite, kPrSDKPPixSuiteVersion, (const void**)&(*ldataH)->PPixSuite);
-        (*ldataH)->BasicSuite->AcquireSuite (kPrSDKTimeSuite, kPrSDKTimeSuiteVersion, (const void**)&(*ldataH)->TimeSuite);
-    }
+    (*ldataH)->adobe = std::make_unique<AdobeImporterAPI>(stdParms->piSuites);
 
     //!!! // Initialize persistent storage
     //!!! (*ldataH)->audioPosition = 0;
@@ -419,8 +705,6 @@ ImporterGetInfo8(
 
     //!!! // Get audio info from header
     //!!! result = GetInfoAudio(ldataH, fileInfo8);
-
-    (*ldataH)->importerID = fileInfo8->vidInfo.importerID;
 
     stdParms->piSuites->memFuncs->unlockHandle(reinterpret_cast<char**>(ldataH));
 
@@ -462,8 +746,6 @@ ImporterGetSourceVideo(
     imSourceVideoRec    *sourceVideoRec)
 {
     prMALError        result      = malNoError;
-    csSDK_int32       theFrame    = 0,
-                      rowBytes    = 0;
     imFrameFormat    *frameFormat;
     char             *frameBuffer;
 
@@ -471,17 +753,20 @@ ImporterGetSourceVideo(
     ImporterLocalRec8H ldataH = reinterpret_cast<ImporterLocalRec8H>(sourceVideoRec->inPrivateData);
 
     PrTime ticksPerSecond = 0;
-    (*ldataH)->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
+    (*ldataH)->adobe->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
     double tFrame = (double)sourceVideoRec->inFrameTime / ticksPerSecond;
-    theFrame = static_cast<csSDK_int32>(tFrame * (*ldataH)->movieReader->frameRateNumerator() / (*ldataH)->movieReader->frameRateDenominator());
+    int32_t iFrame = static_cast<csSDK_int32>(tFrame * (*ldataH)->movieReader->frameRateNumerator() / (*ldataH)->movieReader->frameRateDenominator());
 
     //!!! cache usually returns 'true', even for frames that haven't been added to it yet
+    //!!! !!! this is probably due to the importerID being incorrect, as it was previously
+    //!!! !!! being set GetInfo8 from uninitialised data; should probably be set at FileOpen
+    //!!! !!!
     //!!!
     //!!! // Check to see if frame is already in cache
     //!!!
     //!!! result = (*ldataH)->PPixCacheSuite->GetFrameFromCache((*ldataH)->importerID,
     //!!!                                                         0,
-    //!!!                                                         theFrame,
+    //!!!                                                         iFrame,
     //!!!                                                         1,
     //!!!                                                         sourceVideoRec->inFrameFormats,
     //!!!                                                         sourceVideoRec->outFrame,
@@ -493,19 +778,18 @@ ImporterGetSourceVideo(
     {
         // Get parameters for ReadFrameToBuffer()
         frameFormat = &sourceVideoRec->inFrameFormats[0];
-        prRect theRect;
+        prRect rect;
         if (frameFormat->inFrameWidth == 0 && frameFormat->inFrameHeight == 0)
         {
             frameFormat->inFrameWidth = (*ldataH)->movieReader->width();
             frameFormat->inFrameHeight = (*ldataH)->movieReader->height();
         }
         // Windows and MacOS have different definitions of Rects, so use the cross-platform prSetRect
-        prSetRect (&theRect, 0, 0, frameFormat->inFrameWidth, frameFormat->inFrameHeight);
-        (*ldataH)->PPixCreatorSuite->CreatePPix(sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, frameFormat->inPixelFormat, &theRect);
-        (*ldataH)->PPixSuite->GetPixels(*sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, &frameBuffer);
-        csSDK_int32 bytesPerFrame = frameFormat->inFrameWidth * frameFormat->inFrameHeight * 4;
+        prSetRect (&rect, 0, 0, frameFormat->inFrameWidth, frameFormat->inFrameHeight);
+        (*ldataH)->adobe->PPixCreatorSuite->CreatePPix(sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, frameFormat->inPixelFormat, &rect);
+        (*ldataH)->adobe->PPixSuite->GetPixels(*sourceVideoRec->outFrame, PrPPixBufferAccess_ReadWrite, &frameBuffer);
 
-        (*ldataH)->movieReader->readVideoFrame(theFrame, (*ldataH)->readBuffer);
+        (*ldataH)->movieReader->readVideoFrame(iFrame, (*ldataH)->readBuffer);
         (*ldataH)->decoderJob->decode((*ldataH)->readBuffer);
         (*ldataH)->decoderJob->convert();
 
@@ -513,14 +797,14 @@ ImporterGetSourceVideo(
         int32_t stride;
 
         // If extra row padding is needed, add it
-        (*ldataH)->PPixSuite->GetRowBytes(*sourceVideoRec->outFrame, &stride);
+        (*ldataH)->adobe->PPixSuite->GetRowBytes(*sourceVideoRec->outFrame, &stride);
 
-        (*ldataH)->decoderJob->copyLocalToExternalToExternal(bgraBottomLeftOrigin, stride);
+        (*ldataH)->decoderJob->copyLocalToExternal(bgraBottomLeftOrigin, stride);
 
         //!!! (*ldataH)->PPixCacheSuite->AddFrameToCache((*ldataH)->importerID,
         //!!!                                             0,
         //!!!                                             *sourceVideoRec->outFrame,
-        //!!!                                             theFrame,
+        //!!!                                             iFrame,
         //!!!                                             NULL,
         //!!!                                            NULL);
 
@@ -530,6 +814,37 @@ ImporterGetSourceVideo(
     //!!! return result;
 }
 
+static prMALError
+ImporterCreateAsyncImporter(
+    imStdParms					*stdparms,
+    imAsyncImporterCreationRec	*asyncImporterCreationRec)
+{
+    prMALError		result = malNoError;
+
+    // Set entry point for async importer
+    asyncImporterCreationRec->outAsyncEntry = xAsyncImportEntry;
+
+    // Create and initialize async importer
+    // Deleted during aiClose
+    auto ldata = (*reinterpret_cast<ImporterLocalRec8H>(asyncImporterCreationRec->inPrivateData));
+    auto movieReaderAndFileRef = createMovieReader(ldata->filePath);
+    auto movieReader = std::move(movieReaderAndFileRef.first);
+    auto width = movieReader->width();
+    auto height = movieReader->height();
+    auto numerator = movieReader->frameRateNumerator();
+    auto denominator = movieReader->frameRateDenominator();
+  
+    AsyncImporter *asyncImporter = new AsyncImporter(
+        std::make_unique<AdobeImporterAPI>(stdparms->piSuites),
+        std::make_unique<Importer>(std::move(movieReader), std::move(ldata->decoder)),
+        width, height,
+        numerator, denominator
+    );
+
+    // Store importer as private data
+    asyncImporterCreationRec->outAsyncPrivateData = reinterpret_cast<void*>(asyncImporter);
+    return result;
+}
 
 PREMPLUGENTRY DllExport xImportEntry (
     csSDK_int32      selector,
@@ -670,12 +985,8 @@ PREMPLUGENTRY DllExport xImportEntry (
             break;
 
         case imCreateAsyncImporter:
-            //!!!#ifdef PRWIN_ENV
-            //!!!result = ImporterCreateAsyncImporter(stdParms,
-            //!!!                                    reinterpret_cast<imAsyncImporterCreationRec*>(param1));
-            //!!!#else
-            result =    imUnsupported;
-            //!!!#endif
+            result = ImporterCreateAsyncImporter(stdParms,
+                                                reinterpret_cast<imAsyncImporterCreationRec*>(param1));
             break;
     }
 
