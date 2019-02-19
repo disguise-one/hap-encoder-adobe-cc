@@ -59,7 +59,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         widthParam.paramType = exParamType_int;
         widthParam.flags = exParamFlag_none;
         widthValues.rangeMin.intValue = 16;
-        widthValues.rangeMax.intValue = 8192;
+        widthValues.rangeMax.intValue = 16384;
         widthValues.value.intValue = seqWidth.mInt32;
         widthValues.disabled = kPrFalse;
         widthValues.hidden = kPrFalse;
@@ -72,7 +72,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         heightParam.paramType = exParamType_int;
         heightParam.flags = exParamFlag_none;
         heightValues.rangeMin.intValue = 16;
-        heightValues.rangeMax.intValue = 8192;
+        heightValues.rangeMax.intValue = 16384;
         heightValues.value.intValue = seqHeight.mInt32;
         heightValues.disabled = kPrFalse;
         heightValues.hidden = kPrFalse;
@@ -122,27 +122,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
-        if (CodecRegistry::hasQuality())
-        {
-            exNewParamInfo qualityParam;
-            exParamValues qualityValues;
-            safeStrCpy(qualityParam.identifier, 256, ADBEVideoQuality);
-            qualityParam.paramType = exParamType_int;
-            qualityParam.flags = exParamFlag_none;
-
-            auto qualities = CodecRegistry::qualityDescriptions();
-            int worst = qualities.begin()->first;
-            int best = qualities.rbegin()->first;
-
-            qualityValues.rangeMin.intValue = worst;
-            qualityValues.rangeMax.intValue = best;
-            qualityValues.value.intValue = 4; // !!! TODO this is 'optimal' vs 'best' - replace with enum constants
-            qualityValues.disabled = kPrFalse;
-            qualityValues.hidden = kPrFalse;
-            qualityParam.paramValues = qualityValues;
-            exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
-        }
-
         // Audio parameters
         copyConvertStringLiteralIntoUTF16(TOP_AUDIO_PARAM_GROUP_NAME, tempString);
         exportParamSuite->AddParamGroup(exporterPluginID, mgroupIndex, ADBETopParamGroup, ADBEAudioTabGroup, tempString, kPrFalse, kPrFalse, kPrFalse);
@@ -173,7 +152,6 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         channelTypeParam.paramValues = channelTypeValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicAudioGroup, &channelTypeParam);
 
-        exportParamSuite->SetParamsVersion(exporterPluginID, 5);
         if (CodecRegistry::hasQuality())
         {
             exNewParamInfo qualityParam;
@@ -195,7 +173,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
             exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &qualityParam);
         }
 
-        exportParamSuite->SetParamsVersion(exporterPluginID, 5);
+        exportParamSuite->SetParamsVersion(exporterPluginID, 6);
     }
 
     return result;
