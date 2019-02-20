@@ -211,6 +211,8 @@ public:
 
 
     // codec properties
+    static std::string fileFormatName();
+    static std::string fileFormatShortName();
     static FileFormat fileFormat();
     //!!! these need to be broken out per codec subtype
     static VideoFormat videoFormat();

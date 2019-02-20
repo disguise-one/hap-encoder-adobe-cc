@@ -4,6 +4,7 @@
 #include "async_importer.hpp"
 #include "codec_registration.hpp"
 #include "importer.hpp"
+#include "prstring.hpp"
 
 using namespace std::chrono_literals;
 
@@ -386,25 +387,23 @@ ImporterInit(
     imStdParms        *stdParms, 
     imImportInfoRec    *importInfo)
 {
-    importInfo->setupOnDblClk        = kPrFalse;        // If user dbl-clicks file you imported, pop your setup dialog
-    //!!! importInfo->canSave              = kPrTrue;        // Can 'save as' files to disk, real file only
-    
-    //!!!// imDeleteFile8 is broken on MacOS when renaming a file using the Save Captured Files dialog
-    //!!!// So it is not recommended to set this on MacOS yet (bug 1627325)
-    //!!!#ifdef PRWIN_ENV
-    //!!!importInfo->canDelete            = kPrTrue;        // File importers only, use if you only if you have child files
-    //!!!#endif
-    
-    importInfo->dontCache            = kPrFalse;       // Don't let Premiere cache these files
-    //!!!importInfo->hasSetup             = kPrTrue;        // Set to kPrTrue if you have a setup dialog
-    importInfo->keepLoaded           = kPrFalse;       // If you MUST stay loaded use, otherwise don't: play nice
-    importInfo->priority             = 100;
-    //!!! importInfo->canTrim              = kPrTrue;
-    //!!! importInfo->canCalcSizes         = kPrTrue;
+    importInfo->setupOnDblClk = kPrFalse;
+    importInfo->canSave = kPrFalse;
+
+    // imDeleteFile8 is broken on MacOS when renaming a file using the Save Captured Files dialog
+    // So it is not recommended to set this on MacOS yet (bug 1627325)
+
+    importInfo->canDelete = kPrFalse;
+    importInfo->dontCache = kPrFalse;		// Don't let Premiere cache these files
+    importInfo->hasSetup = kPrFalse;		// Set to kPrTrue if you have a setup dialog
+    importInfo->keepLoaded = kPrFalse;		// If you MUST stay loaded use, otherwise don't: play nice
+    importInfo->priority = 100;
+    importInfo->canTrim = kPrFalse;
+    importInfo->canCalcSizes = kPrFalse;
     if (stdParms->imInterfaceVer >= IMPORTMOD_VERSION_6)
     {
         importInfo->avoidAudioConform = kPrTrue;
-    }                            
+    }
 
     return imIsCacheable;
 }
@@ -463,8 +462,8 @@ ImporterOpenFile8(
         (*localRecH)->movieReader = std::move(readerAndHandle.first);
         *fileRef = readerAndHandle.second;
 
-        //!!! fileOpenRec8->fileinfo.fileref = fileRef;
-        fileOpenRec8->fileinfo.filetype = 'nlc';
+        FileFormat fileFormat = CodecRegistry::fileFormat();
+        fileOpenRec8->fileinfo.filetype = reinterpret_cast<csSDK_int32&>(fileFormat);
 
         (*localRecH)->importerID = fileOpenRec8->inImporterID;
 
@@ -537,37 +536,70 @@ ImporterGetIndFormat(
     imIndFormatRec *indFormatRec)
 {
     prMALError    result        = malNoError;
-    char formatname[255]    = "NotchLC Format";
-    char shortname[32]      = "NotchLC";
-    char platformXten[256]  = "mov\0\0";
+    char platformXten[256]  = "MOV\0\0";
 
     switch(index)
     {
         //    Add a case for each filetype.
         
-    case 0:        
-        
-        indFormatRec->filetype = 'nlc'; //!!! CodecRegistry::codec().fileType();  //!!! 'MOOV';
+    case 0:
+        FileFormat fileFormat = CodecRegistry::fileFormat();
+        indFormatRec->filetype = reinterpret_cast<csSDK_int32&>(fileFormat);
 
-            indFormatRec->canWriteTimecode    = kPrTrue;
+        indFormatRec->canWriteTimecode    = kPrTrue;
 
-            #ifdef PRWIN_ENV
-            strcpy_s(indFormatRec->FormatName, sizeof (indFormatRec->FormatName), formatname);                 // The long name of the importer
-            strcpy_s(indFormatRec->FormatShortName, sizeof (indFormatRec->FormatShortName), shortname);        // The short (menu name) of the importer
-            strcpy_s(indFormatRec->PlatformExtension, sizeof (indFormatRec->PlatformExtension), platformXten); // The 3 letter extension
-            #else
-            strcpy(indFormatRec->FormatName, formatname);            // The Long name of the importer
-            strcpy(indFormatRec->FormatShortName, shortname);        // The short (menu name) of the importer
-            strcpy(indFormatRec->PlatformExtension, platformXten);   // The 3 letter extension
-            #endif
+        #ifdef PRWIN_ENV
+        strcpy_s(indFormatRec->FormatName, sizeof (indFormatRec->FormatName), CodecRegistry::fileFormatName().c_str());                 // The long name of the importer
+        strcpy_s(indFormatRec->FormatShortName, sizeof (indFormatRec->FormatShortName), CodecRegistry::fileFormatShortName().c_str());        // The short (menu name) of the importer
+        strcpy_s(indFormatRec->PlatformExtension, sizeof (indFormatRec->PlatformExtension), platformXten); // The 3 letter extension
+        #else
+        strcpy(indFormatRec->FormatName, formatname);            // The Long name of the importer
+        strcpy(indFormatRec->FormatShortName, shortname);        // The short (menu name) of the importer
+        strcpy(indFormatRec->PlatformExtension, platformXten);   // The 3 letter extension
+        #endif
 
-            break;
+        break;
         
     default:
         result = imBadFormatIndex;
     }
     return result;
 }
+
+std::wstring to_wstring(const std::string& str)
+{
+    return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
+}
+
+static prMALError
+ImporterGetSubTypeNames(
+    imStdParms     *stdParms,
+    csSDK_int32 fileType,
+    imSubTypeDescriptionRec **subTypeDescriptionRec)
+{
+    prMALError    result = malNoError;
+
+    csSDK_int32 supportedFileFormat = reinterpret_cast<csSDK_int32&>(CodecRegistry::fileFormat());
+
+    if (fileType = supportedFileFormat)
+    {
+        *subTypeDescriptionRec = (imSubTypeDescriptionRec *)stdParms->piSuites->memFuncs->newPtrClear(sizeof(imSubTypeDescriptionRec));
+
+        csSDK_int32 videoFormat = reinterpret_cast<csSDK_int32&>(CodecRegistry::videoFormat());
+        (*subTypeDescriptionRec)->subType = videoFormat;
+
+        // should use the subtype format here, but we don't break out codec subtypes atm
+        copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::fileFormatShortName()).c_str(),
+                                          (*subTypeDescriptionRec)->subTypeName);
+    }
+    else
+    {
+        result = imBadFormatIndex;
+    }
+    return result;
+}
+
+
 
 #if 0
 prMALError
@@ -930,6 +962,12 @@ PREMPLUGENTRY DllExport xImportEntry (
             result = ImporterGetIndFormat(stdParms, 
                                           reinterpret_cast<csSDK_size_t>(param1),
                                           reinterpret_cast<imIndFormatRec*>(param2));
+            break;
+
+        case imGetSubTypeNames:
+            result = ImporterGetSubTypeNames(stdParms,
+                reinterpret_cast<csSDK_int32>(param1),
+                reinterpret_cast<imSubTypeDescriptionRec**>(param2));
             break;
 
         case imSaveFile8:
