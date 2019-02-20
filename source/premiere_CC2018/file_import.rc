@@ -1,0 +1,10 @@
+// This is our FCC filetype
+
+// Needed for AfterEffects - otherwise we`re never passed files.
+1000 IMPT DISCARDABLE
+BEGIN
+	0x0000
+	FOUNDATION_FILE_IMPORT_FOUR_CC
+END
+
+	

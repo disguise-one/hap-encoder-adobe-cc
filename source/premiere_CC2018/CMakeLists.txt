@@ -11,6 +11,7 @@ target_sources(CodecPluginFoundation
         configure.hpp
         export_settings.cpp
         export_settings.hpp
+        file_import.rc
         freelist.hpp
         main.cpp
         main.hpp
