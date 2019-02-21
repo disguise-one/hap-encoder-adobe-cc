@@ -41,4 +41,12 @@ struct IOContextDeleter {
 };
 typedef std::unique_ptr<AVIOContext, IOContextDeleter> IOContext;
 
+struct DictDeleter {
+    void operator()(AVDictionary **dict)
+    {
+        av_dict_free(dict);
+    }
+};
+typedef std::unique_ptr<AVDictionary *, DictDeleter> Dictionary;
+
 #endif

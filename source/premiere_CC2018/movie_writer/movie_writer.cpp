@@ -96,10 +96,21 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     //writeHeader();
 }
 
-void MovieWriter::writeHeader()
+void MovieWriter::writeHeader(size_t reserveMetadataSpace)
 {
-    /* Write the stream header, if any. */
-    int ret = avformat_write_header(formatContext_.get(), nullptr); // this is where the mov file format trashes the videoStream_ timebase
+    Dictionary dict;
+    AVDictionary* dictptr(nullptr);
+    dict.reset(&dictptr);
+
+    // this was intended to avoid Adobe CC's post export copy step, where it's presumably embedding its metadata
+    // unfortunately it's not helping; maybe because Adobe CC is scanning the generated file prior to embedding 
+    // the data
+    // if (reserveMetadataSpace)
+    // {
+    //    av_dict_set(&dictptr, "xmp", std::string(reserveMetadataSpace * 2, ' ').c_str(), 0);
+    //}
+
+    int ret = avformat_write_header(formatContext_.get(), dict.get()); // this is where the mov file format trashes the videoStream_ timebase
     if (ret < 0) {
         throw std::runtime_error(std::string("Error occurred when writing header: ") + av_err2str(ret).c_str());
     }
