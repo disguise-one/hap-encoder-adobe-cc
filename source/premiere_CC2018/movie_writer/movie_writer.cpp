@@ -29,7 +29,7 @@ extern "C" {
 }
 // =======================================================
 MovieWriter::MovieWriter(VideoFormat videoFormat,
-    int width, int height,
+    int width, int height, int encodedBitDepth,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     MovieWriteCallback onWrite,
     MovieSeekCallback onSeek,
@@ -61,6 +61,7 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     videoStream_->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     videoStream_->codecpar->width = width;
     videoStream_->codecpar->height = height;
+    videoStream_->codecpar->bits_per_coded_sample = encodedBitDepth;
 
     /* timebase: This is the fundamental unit of time (in seconds) in terms
     * of which frame timestamps are represented. For fixed-fps content,

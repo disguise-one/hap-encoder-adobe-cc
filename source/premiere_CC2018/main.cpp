@@ -340,6 +340,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     std::unique_ptr<MovieWriter> movieWriter = std::make_unique<MovieWriter>(
         encoder->subType(),
         width.value.intValue, height.value.intValue,
+        encoder->encodedBitDepth(),
         frameRateNumerator, frameRateDenominator,
         [&, &error=error](const uint8_t* buffer, size_t size) {
             prMALError writeError = Write(file, (void *)buffer, (int32_t)size);

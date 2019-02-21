@@ -160,6 +160,7 @@ public:
 
     virtual VideoFormat subType() const { throw std::exception("not implemented"); }
     const EncoderParametersBase& parameters() const { return *parameters_; }
+    int encodedBitDepth() const { return (parameters_->alpha == withoutAlpha) ? 24 : 32; }
 
     virtual std::unique_ptr<EncoderJob> create()=0;
 
