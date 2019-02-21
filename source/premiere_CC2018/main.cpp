@@ -384,7 +384,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
     }
 
-    writer->writeHeader();
+    writer->writeHeader(exportInfoP->reserveMetaDataSpace);
 
     if (exportInfoP->exportAudio)
         renderAndWriteAllAudio(exportInfoP, error, writer);

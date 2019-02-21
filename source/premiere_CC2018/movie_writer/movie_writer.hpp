@@ -33,7 +33,7 @@ public:
     void addAudioStream(int numChannels, int sampleRate);
     void writeFrame(const uint8_t *data, size_t size);
     void writeAudioFrame(const uint8_t *data, size_t size, int64_t pts);
-    void writeHeader();
+    void writeHeader(size_t reserveMetadataSpace);
     void writeTrailer();
 
     void close(); // can throw. Call ahead of destruction if onClose errors must be caught externally.
