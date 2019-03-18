@@ -48,16 +48,10 @@ ExporterJobWriter::ExporterJobWriter(std::unique_ptr<MovieWriter> writer)
 {
 }
 
-void ExporterJobWriter::setFirstFrame(int64_t iFrame)
+void ExporterJobWriter::enqueueFrameWrite(int64_t iFrame)
 {
-    std::lock_guard<std::mutex> guard(mutex_);
-
-    if (nextFrameToWrite_)
-    {
-        throw std::runtime_error("setting first frame twice");   // this should be an assertion
-    }
-
-    nextFrameToWrite_ = std::make_unique<int64_t>(iFrame);
+    std::lock_guard<std::mutex> guard(frameOrderMutex_);
+    frameOrderQueue_.push(iFrame);
 }
 
 void ExporterJobWriter::push(ExportJob job)
@@ -68,6 +62,16 @@ void ExporterJobWriter::push(ExportJob job)
 
 ExportJob ExporterJobWriter::write()
 {
+    int64_t iFrameNextToWrite;
+    // careful to only lock frameOrderMutex_ briefly, as the dispatcher needs to return
+    {
+        std::lock_guard<std::mutex> guard(frameOrderMutex_);
+        if (!frameOrderQueue_.empty())
+            iFrameNextToWrite = frameOrderQueue_.front();
+        else
+            return nullptr;
+    }
+
     std::unique_lock<std::mutex> try_guard(mutex_, std::try_to_lock);
 
     if (try_guard.owns_lock())
@@ -75,7 +79,15 @@ ExportJob ExporterJobWriter::write()
         try {
             auto earliest = std::min_element(queue_.begin(), queue_.end(),
                 [](const auto& lhs, const auto& rhs) { return (*lhs).iFrame < (*rhs).iFrame; });
-            if (earliest != queue_.end() && nextFrameToWrite_ && (*earliest)->iFrame == *nextFrameToWrite_) {
+            if (earliest != queue_.end() && (*earliest)->iFrame == iFrameNextToWrite) {
+                // we and no-one else will attempt to write this frame, so dequeue from the frameOrderQueue_
+                // take care to lock and release frameOrderMutex_ quickly
+                // no-one else locks frameOrderMutex_ while holding mutex_, so this will not deadlock
+                {
+                    std::lock_guard<std::mutex> guard(frameOrderMutex_);
+                    frameOrderQueue_.pop();
+                }
+
                 ExportJob job = std::move(*earliest);
                 queue_.erase(earliest);
 
@@ -96,8 +108,6 @@ ExportJob ExporterJobWriter::write()
                     utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)writeTime / totalTime);
                 }
                 idleStart_ = writeEnd;
-
-                (*nextFrameToWrite_)++;
 
                 return job;
             }
@@ -264,16 +274,20 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     // TODO: get confirmation from Adobe that this assumption cannot be violated
     if (!currentFrame_) {
         currentFrame_ = std::make_unique<int64_t>(iFrame);
-        jobWriter_.setFirstFrame(iFrame);
     }
     else {
-        ++(*currentFrame_);
-        if (*currentFrame_ != iFrame)
+        // PremierePro can skip frames when there's no content
+        // we will do the same - but we won't skip backwards
+        if (*currentFrame_ >= iFrame)
         {
             // if this happens, this code needs revisiting
             throw std::runtime_error("plugin fault: frames delivered out of order");
         }
+        ++(*currentFrame_);
     }
+ 
+    // keep the writing order consistent with dispatches here
+    jobWriter_.enqueueFrameWrite(iFrame);
 
     // throttle the caller - if the queue is getting too long we should wait
     while ( (jobEncoder_.nEncodeJobs() >= workers_.size()-1)

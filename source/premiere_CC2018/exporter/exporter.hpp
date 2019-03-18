@@ -3,6 +3,7 @@
 #include <atomic>
 #include <list>
 #include <mutex>
+#include <queue>
 #include <thread>
 
 #include "../movie_writer/movie_writer.hpp"
@@ -52,12 +53,12 @@ class ExporterJobWriter
 public:
     ExporterJobWriter(std::unique_ptr<MovieWriter> writer);
 
-    void setFirstFrame(int64_t iFrame);
+    // frames may arrive out of order due to encoding taking varied lengths of time
     // we don't know the index of the first frame until the first frame is dispatched
-    // but the writer is created before then
-    // and the first frame to hit the writer may not be the first frame that was dispatched
-    // (it might take longer to encode)
-    // TODO: remove this hack.
+    // there can be jumps in sequence where there are no source frames (Premiere Pro can skip frames)
+    // so when the external host dispatches frames to us, we store the order they arrived, and write
+    // them out in that order
+    void enqueueFrameWrite(int64_t iFrame);
 
     void close();  // call ahead of destruction in order to recognise errors
 
@@ -71,12 +72,14 @@ private:
     std::mutex mutex_;
     bool error_;
     ExportJobQueue queue_;
-    std::unique_ptr<int64_t> nextFrameToWrite_;
     std::unique_ptr<MovieWriter> writer_;
     std::chrono::high_resolution_clock::time_point idleStart_;
     std::chrono::high_resolution_clock::time_point writeStart_;
 
     std::atomic<double> utilisation_;
+
+    std::mutex frameOrderMutex_;
+    std::queue<int64_t> frameOrderQueue_;
 };
 
 class ExporterWorker
