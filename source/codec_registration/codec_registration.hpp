@@ -69,6 +69,7 @@ struct DecoderParametersBase {
 
 typedef std::array<char, 4> FileFormat;
 typedef std::array<char, 4> VideoFormat;
+typedef std::array<char, 31> VideoEncoderName;
 
 class EncoderJob {
 public:
@@ -159,6 +160,7 @@ public:
     virtual ~Encoder() {};
 
     virtual VideoFormat subType() const { throw std::exception("not implemented"); }
+    virtual VideoEncoderName name() const { throw std::exception("not implemented"); }
     const EncoderParametersBase& parameters() const { return *parameters_; }
     int encodedBitDepth() const { return (parameters_->alpha == withoutAlpha) ? 24 : 32; }
 

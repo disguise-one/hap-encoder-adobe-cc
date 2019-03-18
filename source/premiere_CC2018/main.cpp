@@ -316,6 +316,8 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
+    int64_t maxFrames = double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator;
+
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
     std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
@@ -338,10 +340,11 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     auto Close = settings->exportFileSuite->Close;
 
     std::unique_ptr<MovieWriter> movieWriter = std::make_unique<MovieWriter>(
-        encoder->subType(),
+        encoder->subType(), encoder->name(),
         width.value.intValue, height.value.intValue,
         encoder->encodedBitDepth(),
         frameRateNumerator, frameRateDenominator,
+        maxFrames, exportInfoP->reserveMetaDataSpace,
         [&, &error=error](const uint8_t* buffer, size_t size) {
             prMALError writeError = Write(file, (void *)buffer, (int32_t)size);
             if (malNoError != writeError) {
@@ -385,7 +388,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
     }
 
-    writer->writeHeader(exportInfoP->reserveMetaDataSpace);
+    writer->writeHeader();
 
     if (exportInfoP->exportAudio)
         renderAndWriteAllAudio(exportInfoP, error, writer);
