@@ -135,8 +135,18 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     auto pluginId = instanceRecP->exporterPluginID;
     settings->reportError = [report, pluginId](const std::string& error) {
 
-        StringForPr title(L"HAP encoder plugin");
+        StringForPr title(L"HAP encoder plugin - ERROR");
         StringForPr detail(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error));
+
+        report(
+            pluginId, PrSDKErrorSuite2::kEventTypeError,
+            title.get(),
+            detail.get());
+    };
+    settings->logMessage = [report, pluginId](const std::string& message) {
+
+        StringForPr title(L"HAP encoder plugin");
+        StringForPr detail(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(message));
 
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
@@ -426,6 +436,8 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
 	exParamValues ticksPerFrame, width, height, includeAlphaChannel, quality;
 	PrTime ticksPerSecond;
+
+    settings->logMessage("codec implementation: " + CodecRegistry::logName());
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);

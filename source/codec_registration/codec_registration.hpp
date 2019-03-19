@@ -212,12 +212,18 @@ public:
     //!!! these need to be broken out per codec subtype
     static VideoFormat videoFormat();
 
+    // as much information about the codec that will be doing the job as possible - eg gpu vs cpu, codebase etc
+    // for output to log
+    static std::string logName();
+
     // quality settings
     static bool hasQuality();
     static std::map<int, std::string> qualityDescriptions();
 
 private:
     CodecRegistry();
+
+    static std::string logName_;  // !!! simplification; should be moved; also assert thread safety [depend on CC for this atm]
 };
 
 #endif

@@ -29,6 +29,7 @@ typedef struct ExportSettings
     std::unique_ptr<Exporter> exporter;
 	SPBasicSuite* spBasic;
     std::function<void(const std::string& error)> reportError;
+    std::function<void(const std::string& error)> logMessage;
     PrSDKExporterUtilitySuite* exporterUtilitySuite;
 	PrSDKExportParamSuite* exportParamSuite;
 	PrSDKExportProgressSuite* exportProgressSuite;
