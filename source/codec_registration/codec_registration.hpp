@@ -198,13 +198,16 @@ private:
 //   ctor / dtor - can wrap singleton initialisation / shutdown here
 //   create factory function
 
+typedef std::unique_ptr<Encoder, std::function<void(Encoder *)>> UniqueEncoder;
+typedef std::unique_ptr<Decoder, std::function<void(Decoder *)>> UniqueDecoder;
+
 class CodecRegistry {
 public:
     static const CodecRegistry& codec();
 
     // opportunity to customise based on parameters
-    std::function<std::unique_ptr<Encoder> (std::unique_ptr<EncoderParametersBase> parameters)> createEncoder;
-    std::function<std::unique_ptr<Decoder> (std::unique_ptr<DecoderParametersBase> parameters)> createDecoder;
+    std::function<UniqueEncoder (std::unique_ptr<EncoderParametersBase> parameters)> createEncoder;
+    std::function<UniqueDecoder (std::unique_ptr<DecoderParametersBase> parameters)> createDecoder;
 
 
     // codec properties

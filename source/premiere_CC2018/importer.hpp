@@ -49,7 +49,7 @@ typedef struct ImporterLocalRec8
 	//!!! PrAudioSample audioPosition;
     std::unique_ptr<MovieReader>   movieReader;
     std::vector<uint8_t>           readBuffer;
-    std::unique_ptr<Decoder>       decoder;
+    UniqueDecoder                  decoder;
     std::unique_ptr<DecoderJob>    decoderJob;
 
     std::unique_ptr<AdobeImporterAPI> adobe;       // adobe API, suites, importer ID
@@ -154,7 +154,7 @@ class Importer {
 public:
     Importer(
         std::unique_ptr<MovieReader> reader,
-        std::unique_ptr<Decoder> decoder
+        UniqueDecoder decoder
     );
     ~Importer();
 
@@ -173,7 +173,7 @@ private:
     size_t concurrentThreadsSupported_;
 
     mutable std::atomic<bool> error_;
-    std::unique_ptr<Decoder> decoder_;
+    UniqueDecoder decoder_;
 
     mutable ImporterJobFreeList jobFreeList_;
     mutable ImporterJobReader jobReader_;

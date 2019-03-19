@@ -375,7 +375,7 @@ static std::unique_ptr<Exporter> createExporter(
         quality
         );
 
-    std::unique_ptr<Encoder> encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
+    UniqueEncoder encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
 
     std::unique_ptr<MovieWriter> writer = std::make_unique<MovieWriter>(
         encoder->subType(), encoder->name(),

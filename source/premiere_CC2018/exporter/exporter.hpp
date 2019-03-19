@@ -106,7 +106,7 @@ class Exporter
 {
 public:
     Exporter(
-        std::unique_ptr<Encoder> encoder,
+        UniqueEncoder encoder,
         std::unique_ptr<MovieWriter> writer);
     ~Exporter();
 
@@ -125,7 +125,7 @@ private:
     size_t concurrentThreadsSupported_;
 
     mutable std::atomic<bool> error_;
-    std::unique_ptr<Encoder> encoder_;
+    UniqueEncoder encoder_;
 
     mutable ExporterJobFreeList jobFreeList_;
     mutable ExporterJobEncoder jobEncoder_;

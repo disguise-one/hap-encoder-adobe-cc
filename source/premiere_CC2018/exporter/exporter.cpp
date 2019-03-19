@@ -208,7 +208,7 @@ void ExporterWorker::run()
 
 
 Exporter::Exporter(
-    std::unique_ptr<Encoder> encoder,
+    UniqueEncoder encoder,
     std::unique_ptr<MovieWriter> movieWriter)
   : encoder_(std::move(encoder)), jobEncoder_(*encoder_),
     jobFreeList_(std::function<ExportJob ()>([&](){

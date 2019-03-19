@@ -210,7 +210,7 @@ void ImporterWorker::run()
 
 Importer::Importer(
     std::unique_ptr<MovieReader> movieReader,
-    std::unique_ptr<Decoder> decoder)
+    UniqueDecoder decoder)
     : closed_(false),
       decoder_(std::move(decoder)), jobDecoder_(*decoder_),
       jobFreeList_(std::function<ImportJob()>([&]() {
