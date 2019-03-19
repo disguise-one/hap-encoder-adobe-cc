@@ -300,6 +300,126 @@ static prMALError c_onFrameComplete(
     return malNoError;
 }
 
+static MovieFile createMovieFile(PrSDKExportFileSuite* exportFileSuite, csSDK_int32 fileObject,
+                                 MovieErrorCallback errorCallback)
+{
+    // cache some things
+    auto Write = exportFileSuite->Write;
+    auto Seek = exportFileSuite->Seek;
+    auto Close = exportFileSuite->Close;
+
+    MovieFile fileWrapper;
+    fileWrapper.onOpenForWrite = [=]() {
+        //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
+        //--- passed up to Adobe
+        prMALError error = exportFileSuite->Open(fileObject);
+        if (malNoError != error)
+            throw std::runtime_error("couldn't open output file");
+    };
+    fileWrapper.onWrite = [=](const uint8_t* buffer, size_t size) {
+        prMALError writeError = Write(fileObject, (void *)buffer, (int32_t)size);
+        if (malNoError != writeError) {
+            errorCallback("Could not write to file");
+            return -1;
+        }
+        return 0;
+    };
+    fileWrapper.onSeek = [=](int64_t offset, int whence) {
+        int64_t newPosition;
+        ExFileSuite_SeekMode seekMode;
+        if (whence == SEEK_SET)
+            seekMode = fileSeekMode_Begin;
+        else if (whence == SEEK_END)
+            seekMode = fileSeekMode_End;
+        else if (whence == SEEK_CUR)
+            seekMode = fileSeekMode_Current;
+        else
+            throw std::runtime_error("unhandled file seek mode");
+        prMALError seekError = Seek(fileObject, offset, newPosition, seekMode);
+        if (malNoError != seekError) {
+            errorCallback("Could not seek in file");
+            return -1;
+        }
+        return 0;
+    };
+    fileWrapper.onClose = [=]() {
+        return (malNoError == Close(fileObject)) ? 0 : -1;
+    };
+
+    return fileWrapper;
+}
+
+static std::unique_ptr<Exporter> createExporter(
+    const FrameDef& frameDef, CodecAlpha alpha, int quality,
+    int64_t frameRateNumerator, int64_t frameRateDenominator,
+    int64_t maxFrames, int32_t reserveMetadataSpace,
+    const MovieFile& file, MovieErrorCallback errorCallback,
+    bool withAudio, int sampleRate, int32_t numAudioChannels,
+    exDoExportRec* exportInfoP, prMALError& error,  //!!! not ideal passing these in
+    bool writeMoovTagEarly
+)
+{
+    std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
+        frameDef,
+        alpha,
+        quality
+        );
+
+    std::unique_ptr<Encoder> encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
+
+    std::unique_ptr<MovieWriter> writer = std::make_unique<MovieWriter>(
+        encoder->subType(), encoder->name(),
+        frameDef.width, frameDef.height,
+        encoder->encodedBitDepth(),
+        frameRateNumerator, frameRateDenominator,
+        maxFrames, reserveMetadataSpace,
+        file,
+        errorCallback,
+        writeMoovTagEarly   // writeMoovTagEarly
+        );
+
+    if (withAudio)
+    {
+        writer->addAudioStream(numAudioChannels, sampleRate);
+    }
+
+    writer->writeHeader();
+
+    if (withAudio)
+        renderAndWriteAllAudio(exportInfoP, error, writer.get());
+
+    return std::make_unique<Exporter>(std::move(encoder), std::move(writer));
+}
+
+void exportLoop(exDoExportRec* exportInfoP, prMALError& error)
+{
+    ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
+
+    ExportLoopRenderParams renderParams;
+
+    renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
+    renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
+    renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
+    renderParams.inStartTime = exportInfoP->startTime;
+    renderParams.inEndTime = exportInfoP->endTime;
+    renderParams.inReservedProgressPreRender = 0.0; //!!!
+    renderParams.inReservedProgressPostRender = 0.0; //!!!
+
+    prMALError multipassExportError = settings->exporterUtilitySuite->DoMultiPassExportLoop(
+        exportInfoP->exporterPluginID,
+        &renderParams,
+        1,  // number of passes
+        c_onFrameComplete,
+        settings
+    );
+    if (malNoError != multipassExportError)
+    {
+        if (error == malNoError)  // retain error if it was set in per-frame export
+            error = multipassExportError;
+        throw std::runtime_error("DoMultiPassExportLoop failed");
+    }
+}
+
 static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error)
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
@@ -313,115 +433,91 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     settings->exportParamSuite->GetParamValue(exID, 0, NOTCHLCIncludeAlphaChannel, &includeAlphaChannel);
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
+
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
     int64_t maxFrames = double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator;
-
+    
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
-    std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
-        FrameDef(width.value.intValue, height.value.intValue),
-        includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha,
-        clampedQuality
-    );
-    std::unique_ptr<Encoder> encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
 
-    //--- this error flag may be overwritten fairly deeply in callbacks so original error may be
-    //--- passed up to Adobe
-    error = settings->exportFileSuite->Open(exportInfoP->fileObject);
-    if (malNoError != error)
-        throw std::runtime_error("couldn't open output file");
+    FrameDef frameDef(width.value.intValue, height.value.intValue);
 
-    // cache some things
-    auto file = exportInfoP->fileObject;
-    auto Write = settings->exportFileSuite->Write;
-    auto Seek = settings->exportFileSuite->Seek;
-    auto Close = settings->exportFileSuite->Close;
+    CodecAlpha alpha = includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha;
 
-    std::unique_ptr<MovieWriter> movieWriter = std::make_unique<MovieWriter>(
-        encoder->subType(), encoder->name(),
-        width.value.intValue, height.value.intValue,
-        encoder->encodedBitDepth(),
-        frameRateNumerator, frameRateDenominator,
-        maxFrames, exportInfoP->reserveMetaDataSpace,
-        [&, &error=error](const uint8_t* buffer, size_t size) {
-            prMALError writeError = Write(file, (void *)buffer, (int32_t)size);
-            if (malNoError != writeError) {
-                settings->reportError("Could not write to file");
-                return -1;
-            }
-            return 0;
-        },
-        [&, &error=error](int64_t offset, int whence) {
-            int64_t newPosition;
-            ExFileSuite_SeekMode seekMode;
-            if (whence == SEEK_SET)
-                seekMode = fileSeekMode_Begin;
-            else if (whence == SEEK_END)
-                seekMode = fileSeekMode_End;
-            else if (whence == SEEK_CUR)
-                seekMode = fileSeekMode_Current;
-            else
-                throw std::runtime_error("unhandled file seek mode");
-            prMALError seekError = Seek(file, offset, newPosition, seekMode);
-            if (malNoError != seekError) {
-                settings->reportError("Could not seek in file");
-                return -1;
-            }
-            return 0;
-        },
-        [&, &error=error]() {
-            return (malNoError == Close(file)) ? 0 : -1;
-        },
-        [&](const char *msg) { settings->reportError(msg); } );
+    MovieErrorCallback errorCallback([&](const char *msg) { settings->reportError(msg); });
 
-    // TODO move this outside to DoExport()
-    auto writer = movieWriter.get();
+    MovieFile movieFile(createMovieFile(settings->exportFileSuite, exportInfoP->fileObject, errorCallback));
+
+    bool withAudio(false);
+    int32_t numAudioChannels(0);
+    int audioSampleRate(0);
     if (exportInfoP->exportAudio) 
     {
+        withAudio = true;
+
         exParamValues sampleRate, channelType;
         settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioRatePerSecond, &sampleRate);
         settings->exportParamSuite->GetParamValue(exID, 0, ADBEAudioNumChannels, &channelType);
-        csSDK_int32 numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
-            
-        writer->addAudioStream(numAudioChannels, (int)sampleRate.value.floatValue);
+        audioSampleRate = (int)sampleRate.value.floatValue;
+        numAudioChannels = GetNumberOfAudioChannels(channelType.value.intValue);
     }
 
-    writer->writeHeader();
-
-    if (exportInfoP->exportAudio)
-        renderAndWriteAllAudio(exportInfoP, error, writer);
-
     try {
-        settings->exporter = std::make_unique<Exporter>(std::move(encoder), std::move(movieWriter));
+        movieFile.onOpenForWrite();  //!!! move to writer
 
-        ExportLoopRenderParams renderParams;
-
-        renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
-        renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
-        renderParams.inFinalPixelFormat = PrPixelFormat_BGRA_4444_8u;
-        renderParams.inStartTime = exportInfoP->startTime;
-        renderParams.inEndTime = exportInfoP->endTime;
-        renderParams.inReservedProgressPreRender = 0.0; //!!!
-        renderParams.inReservedProgressPostRender = 0.0; //!!!
-
-        prMALError multipassExportError = settings->exporterUtilitySuite->DoMultiPassExportLoop(
-            exportInfoP->exporterPluginID,
-            &renderParams,
-            1,  // number of passes
-            c_onFrameComplete,
-            settings
+        settings->exporter = createExporter(
+            frameDef, alpha, clampedQuality,
+            frameRateNumerator, frameRateDenominator,
+            maxFrames,
+            exportInfoP->reserveMetaDataSpace,
+            movieFile, errorCallback,
+            withAudio, audioSampleRate, numAudioChannels,
+            exportInfoP, error,
+            true  // writeMoovTagEarly
         );
-        if (malNoError != multipassExportError)
-        {
-            if (error == malNoError)  // retain error if it was set in per-frame export
-                error = multipassExportError;
-            throw std::runtime_error("DoMultiPassExportLoop failed");
-        }
+
+        exportLoop(exportInfoP, error);
 
         // this may throw
-        settings->exporter->close();
+        try
+        {
+            settings->exporter->close();
+        }
+        catch (const MovieWriterInvalidData& ex)
+        {
+            // this will happen if we MovieWriter didn't guess large enough on header size.
+            //  => we have to guess a header size else Adobe will copy the file and rejig it
+            //     with the header at the start. This is unwanted but unavoidable if the header
+            //     isn't placed ahead of mdat
+            // => simplest way out is to redo the export, without the guess, and let adobe do its copy
+
+            // start with as clean a slate as possible
+            try {
+                settings->exporter.reset(nullptr);
+            }
+            catch (...)
+            {
+            }
+
+            movieFile.onOpenForWrite();  //!!! move to writer
+
+            settings->exporter = createExporter(
+                frameDef, alpha, clampedQuality,
+                frameRateNumerator, frameRateDenominator,
+                maxFrames,
+                exportInfoP->reserveMetaDataSpace,
+                movieFile, errorCallback,
+                withAudio, audioSampleRate, numAudioChannels,
+                exportInfoP, error,
+                false   // writeMoovTagEarly
+            );
+
+            exportLoop(exportInfoP, error);
+
+            settings->exporter->close();
+        }
     }
     catch (...)
     {

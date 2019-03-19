@@ -32,14 +32,13 @@ MovieWriter::MovieWriter(VideoFormat videoFormat, VideoEncoderName encoderName,
     int width, int height, int encodedBitDepth,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int32_t maxFrames, int32_t reserveMetadataSpace,
-    MovieWriteCallback onWrite,
-    MovieSeekCallback onSeek,
-    MovieCloseCallback onClose,
-    MovieErrorCallback onError)
+    MovieFile file, MovieErrorCallback onError,
+    bool writeMoovTagEarly)
     : maxFrames_(maxFrames), reserveMetadataSpace_(reserveMetadataSpace),
-      onWrite_(onWrite), onSeek_(onSeek), onClose_(onClose), onError_(onError),
+      onWrite_(file.onWrite), onSeek_(file.onSeek), onClose_(file.onClose), onError_(onError),
       audioStream_(nullptr),
-      iFrame_(0), closed_(false)
+      iFrame_(0), closed_(false), error_(false),
+      writeMoovTagEarly_(writeMoovTagEarly)
 {
     /* allocate the output media context */
     AVFormatContext *formatContext = avformat_alloc_context();
@@ -108,11 +107,15 @@ void MovieWriter::writeHeader()
     AVDictionary* movOptionsDictptr(nullptr);
     movOptions.reset(&movOptionsDictptr);
 
-    // avoid Adobe CC's post export copy step by giving ffmpeg enough info to put the moov header at
-    // the start, including metadata
-    auto predictedMoovSize = guessMoovSize();
-    av_dict_set(&formatContext_->metadata, "xmp", std::string(reserveMetadataSpace_, ' ').c_str(), 0);
-    av_dict_set(&movOptionsDictptr, "moov_size", std::to_string((int)(predictedMoovSize * 2)).c_str(), 0);
+    if (writeMoovTagEarly_)
+    {
+        // avoid Adobe CC's post export copy step by giving ffmpeg enough info to put the moov header at
+        // the start, including metadata
+        auto predictedMoovSize = guessMoovSize();
+
+        av_dict_set(&formatContext_->metadata, "xmp", std::string(reserveMetadataSpace_, ' ').c_str(), 0);
+        av_dict_set(&movOptionsDictptr, "moov_size", std::to_string((int)(predictedMoovSize * 2)).c_str(), 0);
+    }
 
     int ret = avformat_write_header(formatContext_.get(), movOptions.get()); // this is where the mov file format trashes the videoStream_ timebase
     if (ret < 0) {
@@ -252,7 +255,11 @@ void MovieWriter::writeTrailer()
     * av_write_trailer() may try to use memory that was freed on
     * av_codec_close(). */
     int ret = av_write_trailer(formatContext_.get());
-    if (ret < 0)
+    if (ret == AVERROR(EINVAL)) {
+        // this is the closest to knowing we didn't write enough header space
+        throw MovieWriterInvalidData();
+    } 
+    else if (ret < 0)
         throw std::runtime_error(std::string("Error writing trailer: ") + av_err2str(ret).c_str());
 }
 

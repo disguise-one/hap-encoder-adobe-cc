@@ -12,9 +12,16 @@ extern"C"
 #include <libavutil/opt.h>
 }
 
+// wrappers for libav-* objects
 #include "../movie/ffmpeg_helpers.hpp"
 
-// wrappers for libav-* objects
+class MovieWriterInvalidData : public std::runtime_error
+{
+public:
+    MovieWriterInvalidData() : std::runtime_error("invalid data")
+    {
+    }
+};
 
 // ffmpeg libavformat-based file writing
 class MovieWriter
@@ -25,10 +32,9 @@ public:
                 int encodedBitDepth,  // rgb=24, rgba=32 etc. Needs to be set correctly for some playback importers (eg After Effects) 
                 int64_t frameRateNumerator, int64_t frameRateDenominator,
                 int32_t maxFrames, int32_t reserveMetadataSpace,
-                MovieWriteCallback onWrite,
-                MovieSeekCallback onSeek,
-                MovieCloseCallback onClose,
-                MovieErrorCallback onError);
+                MovieFile file, MovieErrorCallback onError,
+                bool writeMoovTagEarly
+    );
     ~MovieWriter();
 
     //void addVideoStream(VideoFormat videoFormat, int width, int height, int64_t frameRateNumerator, int64_t frameRateDenominator);
@@ -52,6 +58,8 @@ private:
     MovieCloseCallback onClose_;
     MovieErrorCallback onError_;
 
+    bool writeMoovTagEarly_;
+
     // adapt writers that throw exceptions
     static int c_onWrite(void *context, uint8_t *data, int size);
     static int64_t c_onSeek(void *context, int64_t offset, int whence);
@@ -70,6 +78,7 @@ private:
     int64_t iFrame_;
 
     bool closed_;
+    bool error_;
 };
 
 
