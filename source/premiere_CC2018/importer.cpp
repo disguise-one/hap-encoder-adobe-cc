@@ -334,7 +334,7 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
 
     return std::pair<std::unique_ptr<MovieReader>, HANDLE>(
         std::make_unique<MovieReader>(
-            CodecRegistry::codec().videoFormat(),
+            CodecRegistry::codec()->videoFormat(),
             [&, fileRef](const uint8_t* buffer, size_t size) {
                 DWORD bytesReadLu;
                 BOOL ok = ReadFile(fileRef,
@@ -471,7 +471,7 @@ ImporterOpenFile8(
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
             FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height())
             );
-        (*localRecH)->decoder = CodecRegistry::codec().createDecoder(std::move(decoderParameters));
+        (*localRecH)->decoder = CodecRegistry::codec()->createDecoder(std::move(decoderParameters));
         (*localRecH)->decoderJob = (*localRecH)->decoder->create();
     }
     catch (...)
@@ -680,7 +680,7 @@ ImporterGetInfo8(
 
     // Get video info from header
     fileInfo8->hasVideo = kPrTrue;
-    fileInfo8->vidInfo.subType     = (csSDK_int32 &)(CodecRegistry::codec().videoFormat());
+    fileInfo8->vidInfo.subType     = (csSDK_int32 &)(CodecRegistry::codec()->videoFormat());
     fileInfo8->vidInfo.imageWidth  = (*ldataH)->movieReader->width();
     fileInfo8->vidInfo.imageHeight = (*ldataH)->movieReader->height();
     fileInfo8->vidInfo.depth       = 32;  //!!! lack of alpha should change this

@@ -203,7 +203,7 @@ typedef std::unique_ptr<Decoder, std::function<void(Decoder *)>> UniqueDecoder;
 
 class CodecRegistry {
 public:
-    static const CodecRegistry& codec();
+    static std::shared_ptr<CodecRegistry>& codec();
 
     // opportunity to customise based on parameters
     std::function<UniqueEncoder (std::unique_ptr<EncoderParametersBase> parameters)> createEncoder;
@@ -223,8 +223,10 @@ public:
     static bool hasQuality();
     static std::map<int, std::string> qualityDescriptions();
 
-private:
+    //!!! should be private
     CodecRegistry();
+private:
+    friend std::shared_ptr<CodecRegistry>;
 
     static std::string logName_;  // !!! simplification; should be moved; also assert thread safety [depend on CC for this atm]
 };

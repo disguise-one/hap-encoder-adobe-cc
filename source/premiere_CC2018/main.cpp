@@ -21,6 +21,10 @@ DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParm
 		result = startup(stdParmsP, reinterpret_cast<exExporterInfoRec*>(param1));
 		break;
 
+    case exSelShutdown:
+        CodecRegistry::codec().reset();
+        break;
+
 	case exSelBeginInstance:
 		result = beginInstance(stdParmsP, reinterpret_cast<exExporterInstanceRec*>(param1));
 		break;
@@ -75,6 +79,13 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
 {
     if (infoRec->exportReqIndex == 0)
     {
+        // singleton needed from here on
+        CodecRegistry::codec();
+
+        std::string logName = CodecRegistry::codec()->logName();
+        std::wstring logNameForPr(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(logName));
+
+
         infoRec->classID = HAP_VIDEOCLSS;
         infoRec->fileType = HAP_VIDEOFILETYPE;
         infoRec->hideInUI = kPrFalse;
@@ -88,7 +99,7 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         infoRec->wantsNoProgressBar = kPrFalse;
         infoRec->doesNotSupportAudioOnly = kPrTrue;
         infoRec->interfaceVersion = EXPORTMOD_VERSION;
-        copyConvertStringLiteralIntoUTF16(HAP_VIDEO_FILE_NAME, infoRec->fileTypeName);
+        copyConvertStringLiteralIntoUTF16(logNameForPr.c_str(), infoRec->fileTypeName);
         copyConvertStringLiteralIntoUTF16(HAP_VIDEOFILEEXT, infoRec->fileTypeDefaultExtension);
         return exportReturn_IterateExporter;
     }
@@ -375,7 +386,7 @@ static std::unique_ptr<Exporter> createExporter(
         quality
         );
 
-    UniqueEncoder encoder = CodecRegistry::codec().createEncoder(std::move(parameters));
+    UniqueEncoder encoder = CodecRegistry::codec()->createEncoder(std::move(parameters));
 
     std::unique_ptr<MovieWriter> writer = std::make_unique<MovieWriter>(
         encoder->subType(), encoder->name(),
