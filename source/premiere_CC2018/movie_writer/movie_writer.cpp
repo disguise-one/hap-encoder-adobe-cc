@@ -329,8 +329,11 @@ int64_t MovieWriter::guessMoovSize()
     // chunks than video frames wouldn't make sense (adjacent audio chunks could be combined without
     // problems, as the sample size is uniform).
 
-    auto n_video_chunks_guess = maxFrames_;
-    auto n_audio_chunks_guess = maxFrames_;
+    // things that are frame dependent have more overhead at lower end, so offset the number of frames by a constant
+    auto offsettedMaxFrames_ = maxFrames_ + 120;
+
+    auto n_video_chunks_guess = offsettedMaxFrames_;
+    auto n_audio_chunks_guess = offsettedMaxFrames_;
 
     // stsd
     //   sample description
@@ -361,7 +364,7 @@ int64_t MovieWriter::guessMoovSize()
 
     // stsz
     //   sample sizes. Frame sizes for video. Uniform for audio.
-    auto video_stsz = 8 + 4 + 4 + maxFrames_ * 4;
+    auto video_stsz = 8 + 4 + 4 + offsettedMaxFrames_ * 4;
     auto audio_stsz = 8 + 4 + 4 + 4;
 
     // co64, stco
