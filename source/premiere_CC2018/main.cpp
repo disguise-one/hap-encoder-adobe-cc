@@ -306,7 +306,8 @@ static prMALError c_onFrameComplete(
         if (malNoError != error)
             throw std::runtime_error("could not GetRowBytes on completed frame");
 
-        settings->exporter->dispatch(inFrameNumber, (uint8_t*)bgra_buffer, bgra_stride);
+        for (auto iFrame=inFrameNumber; iFrame<inFrameNumber + inFrameRepeatCount; ++iFrame)
+            settings->exporter->dispatch(iFrame, (uint8_t*)bgra_buffer, bgra_stride);
     }
     catch (const std::exception& ex)
     {
