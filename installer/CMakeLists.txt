@@ -31,8 +31,11 @@ set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_COMPONENTS_ALL presets user_guide plugin)
 
 # NSIS component specific settings
-set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\")
-set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\")
+set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\HAP")
+set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\HAP")
+SET(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS
+  "Delete \\\"$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\CodecPluginFoundation.prm\\\""
+   )
 
 # set(CPACK_INSTALL_COMMANDS, "magic command to get plugin directory and copy to it")
 # currently doing this by overriding template
