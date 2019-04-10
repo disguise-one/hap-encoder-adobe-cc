@@ -9,12 +9,18 @@
 
 struct FrameDef
 {
-    FrameDef(int width_, int height_)
-        : width(width_), height(height_)
+    FrameDef(int width_, int height_, bool isHighBitDepth_)
+        : width(width_), height(height_), isHighBitDepth(isHighBitDepth_)
     { }
 
     int width;
     int height;
+    bool isHighBitDepth;    // !!! enum would be better
+
+    size_t bytesPerPixel() const { return isHighBitDepth ? 16 : 4; }
+    bool hostFormat_u16() const { return false; }
+    bool hostFormat_f32() const { return isHighBitDepth; }
+    bool hostFormat_u8() const { return !isHighBitDepth; }
 };
 
 struct EncodeOutput
@@ -216,7 +222,7 @@ public:
     static FileFormat fileFormat();
     //!!! these need to be broken out per codec subtype
     static VideoFormat videoFormat();
-    static bool highBitDepth();
+    static bool isHighBitDepth();       // should host expect high bit depth from this codec
 
     // as much information about the codec that will be doing the job as possible - eg gpu vs cpu, codebase etc
     // for output to log

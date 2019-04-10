@@ -468,7 +468,8 @@ ImporterOpenFile8(
         (*localRecH)->importerID = fileOpenRec8->inImporterID;
 
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
-            FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height())
+            FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height(),
+                     CodecRegistry::isHighBitDepth())
             );
         (*localRecH)->decoder = CodecRegistry::codec()->createDecoder(std::move(decoderParameters));
         (*localRecH)->decoderJob = (*localRecH)->decoder->create();
@@ -562,6 +563,29 @@ ImporterGetIndFormat(
         
     default:
         result = imBadFormatIndex;
+    }
+    return result;
+}
+
+static prMALError
+ImporterGetIndPixelFormat(
+    imStdParms			*stdParms,
+    csSDK_size_t		idx,
+    imIndPixelFormatRec	*SDKIndPixelFormatRec)
+{
+    prMALError	result = malNoError;
+    ImporterLocalRec8H	ldataH = reinterpret_cast<ImporterLocalRec8H>(SDKIndPixelFormatRec->privatedata);
+
+    switch (idx)
+    {
+    case 0:
+        SDKIndPixelFormatRec->outPixelFormat = CodecRegistry().isHighBitDepth()
+            ? PrPixelFormat_BGRA_4444_32f : PrPixelFormat_BGRA_4444_8u;
+        break;
+
+    default:
+        result = imBadFormatIndex;
+        break;
     }
     return result;
 }
@@ -987,10 +1011,9 @@ PREMPLUGENTRY DllExport xImportEntry (
             break;
 
         case imGetIndPixelFormat:
-//barf            result = ImporterGetIndPixelFormat(stdParms,
-//barf                                               reinterpret_cast<csSDK_size_t>(param1),
-//barf                                               reinterpret_cast<imIndPixelFormatRec*>(param2));
-            result = imUnsupported;
+            result = ImporterGetIndPixelFormat(stdParms,
+                                               reinterpret_cast<csSDK_size_t>(param1),
+                                               reinterpret_cast<imIndPixelFormatRec*>(param2));
             break;
 
         // Importers that support the Premiere Pro 2.0 API must return malSupports8 for this selector
