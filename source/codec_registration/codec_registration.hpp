@@ -17,9 +17,9 @@ struct FrameDef
     int height;
     bool isHighBitDepth;    // !!! enum would be better
 
-    size_t bytesPerPixel() const { return isHighBitDepth ? 16 : 4; }
-    bool hostFormat_u16() const { return false; }
-    bool hostFormat_f32() const { return isHighBitDepth; }
+    size_t bytesPerPixel() const { return isHighBitDepth ? 8 : 4; }
+    bool hostFormat_u16() const { return isHighBitDepth; }
+    bool hostFormat_f32() const { return false; }
     bool hostFormat_u8() const { return !isHighBitDepth; }
 };
 
