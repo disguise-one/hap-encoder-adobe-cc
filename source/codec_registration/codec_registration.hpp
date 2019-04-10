@@ -214,6 +214,7 @@ public:
     static FileFormat fileFormat();
     //!!! these need to be broken out per codec subtype
     static VideoFormat videoFormat();
+    static bool highBitDepth();
 
     // as much information about the codec that will be doing the job as possible - eg gpu vs cpu, codebase etc
     // for output to log
