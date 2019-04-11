@@ -68,65 +68,69 @@ int32_t AsyncImporter::convertTimeToFrame(double t) const
 
 int AsyncImporter::OnInitiateAsyncRead(imSourceVideoRec& inSourceRec)
 {
-    PrTime ticksPerSecond = 0;
-    adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
-    double tFrame = (double)inSourceRec.inFrameTime / ticksPerSecond;
-    int32_t iFrame = convertTimeToFrame(tFrame);
+    try {
+        PrTime ticksPerSecond = 0;
+        adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
+        double tFrame = (double)inSourceRec.inFrameTime / ticksPerSecond;
+        int32_t iFrame = convertTimeToFrame(tFrame);
 
-    // Get parameters for ReadFrameToBuffer()
-    imFrameFormat *frameFormat = &inSourceRec.inFrameFormats[0];
-    char *frameBuffer;
-    prRect rect;
-    if (frameFormat->inFrameWidth == 0 && frameFormat->inFrameHeight == 0)
-    {
-        frameFormat->inFrameWidth = width_;
-        frameFormat->inFrameHeight = height_;
+        // Get parameters for ReadFrameToBuffer()
+        imFrameFormat *frameFormat = &inSourceRec.inFrameFormats[0];
+        char *frameBuffer;
+        prRect rect;
+        if (frameFormat->inFrameWidth == 0 && frameFormat->inFrameHeight == 0)
+        {
+            frameFormat->inFrameWidth = width_;
+            frameFormat->inFrameHeight = height_;
+        }
+        // Windows and MacOS have different definitions of Rects, so use the cross-platform prSetRect
+        prSetRect(&rect, 0, 0, frameFormat->inFrameWidth, frameFormat->inFrameHeight);
+        PPixHand adobeFrame;
+        adobe_->PPixCreatorSuite->CreatePPix(&adobeFrame, PrPPixBufferAccess_ReadWrite, frameFormat->inPixelFormat, &rect);
+        adobe_->PPixSuite->GetPixels(adobeFrame, PrPPixBufferAccess_ReadWrite, &frameBuffer);
+        // If extra row padding is needed, add it
+        csSDK_int32 stride;
+        adobe_->PPixSuite->GetRowBytes(adobeFrame, &stride);
+
+        auto frameRequest = new AsyncFrameRequest(iFrame, adobeFrame);
+
+        // Track the request
+        {
+            std::lock_guard<std::mutex> guard(requestsLock_);
+            requests_.push_back(frameRequest);
+        }
+
+        // Start loading it in memory asynchronously
+        importer_->requestFrame(
+            iFrame,
+            [&, frameBuffer, stride, adobeFrame, frameRequest](const DecoderJob& job) {
+                job.copyLocalToExternal((uint8_t *)frameBuffer, stride);
+                {
+                    std::lock_guard<std::mutex> guard(requestsLock_);
+                    frameRequest->adobeFramePromise.set_value(adobeFrame);
+                }
+            },
+            [&](const DecoderJob& job) {
+                // on fail, shift it from requests_ to failedRequests_
+                {
+                    std::lock_guard<std::mutex> guard(requestsLock_);
+                    std::swap(*std::find(requests_.begin(), requests_.end(), frameRequest), requests_.back());
+                    requests_.pop_back();
+                }
+                {
+                    std::lock_guard<std::mutex> guard(failedRequestsLock_);
+                    failedRequests_.push_back(frameRequest);
+                }
+            });
+
+        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
+        // ok to cleanup failed requests
+        serviceFailedRequests();
     }
-    // Windows and MacOS have different definitions of Rects, so use the cross-platform prSetRect
-    prSetRect(&rect, 0, 0, frameFormat->inFrameWidth, frameFormat->inFrameHeight);
-    PPixHand adobeFrame;
-    adobe_->PPixCreatorSuite->CreatePPix(&adobeFrame, PrPPixBufferAccess_ReadWrite, frameFormat->inPixelFormat, &rect);
-    adobe_->PPixSuite->GetPixels(adobeFrame, PrPPixBufferAccess_ReadWrite, &frameBuffer);
-    // If extra row padding is needed, add it
-    csSDK_int32 stride;
-    adobe_->PPixSuite->GetRowBytes(adobeFrame, &stride);
-
-    csSDK_int32 bytesPerFrame = frameFormat->inFrameWidth * frameFormat->inFrameHeight * 4;
-
-    auto frameRequest = new AsyncFrameRequest(iFrame, adobeFrame);
-
-    // Track the request
+    catch (...)
     {
-        std::lock_guard<std::mutex> guard(requestsLock_);
-        requests_.push_back(frameRequest);
+        return aiUnknownError;
     }
-
-    // Start loading it in memory asynchronously
-    importer_->requestFrame(
-        iFrame,
-        [&, frameBuffer, stride, adobeFrame, frameRequest](const DecoderJob& job) {
-            job.copyLocalToExternal((uint8_t *)frameBuffer, stride);
-            {
-                std::lock_guard<std::mutex> guard(requestsLock_);
-                frameRequest->adobeFramePromise.set_value(adobeFrame);
-            }
-        },
-        [&](const DecoderJob& job) {
-            // on fail, shift it from requests_ to failedRequests_
-            {
-                std::lock_guard<std::mutex> guard(requestsLock_);
-                std::swap(*std::find(requests_.begin(), requests_.end(), frameRequest), requests_.back());
-                requests_.pop_back();
-            }
-            {
-                std::lock_guard<std::mutex> guard(failedRequestsLock_);
-                failedRequests_.push_back(frameRequest);
-            }
-        });
-
-    // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-    // ok to cleanup failed requests
-    serviceFailedRequests();
 
     return aiNoError;
 }
@@ -142,26 +146,33 @@ void AsyncImporter::serviceFailedRequests()
 
 int AsyncImporter::OnFlush()
 {
-    // any 'OnGetFrame' that hasn't been actioned at this point is screwed
-    // !!! should maybe wait? if Adobe calls GetFrame, gets context switched, and we pull the rug out
-    // !!! by killing the requests - would this cause a failure?
-
-    // clear out requests
-    std::vector<AsyncFrameRequest *> owned;
+    try
     {
-        std::lock_guard<std::mutex> guard(requestsLock_);
-        std::swap(owned, requests_);
-    }
+        // any 'OnGetFrame' that hasn't been actioned at this point is screwed
+        // !!! should maybe wait? if Adobe calls GetFrame, gets context switched, and we pull the rug out
+        // !!! by killing the requests - would this cause a failure?
 
-    // fail them
+        // clear out requests
+        std::vector<AsyncFrameRequest *> owned;
+        {
+            std::lock_guard<std::mutex> guard(requestsLock_);
+            std::swap(owned, requests_);
+        }
+
+        // fail them
+        {
+            std::lock_guard<std::mutex> guard(failedRequestsLock_);
+            failedRequests_.insert(failedRequests_.end(), owned.begin(), owned.end());
+        }
+
+        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
+        // ok to cleanup failed requests
+        serviceFailedRequests();
+    }
+    catch (...)
     {
-        std::lock_guard<std::mutex> guard(failedRequestsLock_);
-        failedRequests_.insert(failedRequests_.end(), owned.begin(), owned.end());
+        return aiUnknownError;
     }
-
-    // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-    // ok to cleanup failed requests
-    serviceFailedRequests();
 
     return aiNoError;
 }
@@ -169,38 +180,45 @@ int AsyncImporter::OnFlush()
 
 int AsyncImporter::OnGetFrame(imSourceVideoRec* inSourceRec)
 {
-    PrTime ticksPerSecond = 0;
-    adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
-    double tFrame = (double)inSourceRec->inFrameTime / ticksPerSecond;
-    int32_t iFrame = convertTimeToFrame(tFrame);
-
-    std::unique_ptr<AsyncFrameRequest> frameRequest;
-
+    try
     {
-        std::lock_guard<std::mutex> guard(requestsLock_);
+        PrTime ticksPerSecond = 0;
+        adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
+        double tFrame = (double)inSourceRec->inFrameTime / ticksPerSecond;
+        int32_t iFrame = convertTimeToFrame(tFrame);
 
-        std::vector<AsyncFrameRequest *>::iterator foundRequest = std::find_if(
-            requests_.begin(), requests_.end(),
-            [&](auto r) { return r->frameNum == iFrame; });
+        std::unique_ptr<AsyncFrameRequest> frameRequest;
 
-        if (foundRequest == requests_.end()) {
-            *(inSourceRec->outFrame) = NULL;
-            return aiFrameNotFound;
+        {
+            std::lock_guard<std::mutex> guard(requestsLock_);
+
+            std::vector<AsyncFrameRequest *>::iterator foundRequest = std::find_if(
+                requests_.begin(), requests_.end(),
+                [&](auto r) { return r->frameNum == iFrame; });
+
+            if (foundRequest == requests_.end()) {
+                *(inSourceRec->outFrame) = NULL;
+                return aiFrameNotFound;
+            }
+
+            frameRequest.reset(*foundRequest);
+
+            // we own the request now, so remove it from the active list
+            std::swap(*foundRequest, requests_.back());
+            requests_.pop_back();
         }
 
-        frameRequest.reset(*foundRequest);
+        // wait for completion and return it to Adobe
+        *(inSourceRec->outFrame) = frameRequest->adobeFramePromise.get_future().get();
 
-        // we own the request now, so remove it from the active list
-        std::swap(*foundRequest, requests_.back());
-        requests_.pop_back();
+        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
+        // ok to cleanup failed requests
+        serviceFailedRequests();
     }
-
-    // wait for completion and return it to Adobe
-    *(inSourceRec->outFrame) = frameRequest->adobeFramePromise.get_future().get();
-
-    // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-    // ok to cleanup failed requests
-    serviceFailedRequests();
+    catch (...)
+    {
+        return aiUnknownError;
+    }
 
     return aiNoError;
 }
