@@ -96,8 +96,10 @@ MovieReader::MovieReader(
                     videoStreamIdx_ = (int)i;
                     width_ = codecpar->width;
                     height_ = codecpar->height;
-                    frameRateNumerator_ = stream->avg_frame_rate.num;
-                    frameRateDenominator_ = stream->avg_frame_rate.den;
+
+                    int64_t frameRateGCD = std::gcd(stream->r_frame_rate.num, stream->r_frame_rate.den);
+                    frameRateNumerator_ = (int)(stream->r_frame_rate.num / frameRateGCD);
+                    frameRateDenominator_ = (int)(stream->r_frame_rate.den / frameRateGCD);
                     numFrames_ = stream->nb_frames;
                 }
                 break;
