@@ -422,7 +422,7 @@ void exportLoop(exDoExportRec* exportInfoP, prMALError& error)
     renderParams.inRenderParamsSize = sizeof(ExportLoopRenderParams);
     renderParams.inRenderParamsVersion = kPrSDKExporterUtilitySuiteVersion;
     renderParams.inFinalPixelFormat = CodecRegistry().isHighBitDepth()
-        ? PrPixelFormat_BGRA_4444_32f  // PrPixelFormat_BGRA_4444_16u
+        ? PrPixelFormat_BGRA_4444_16u // PrPixelFormat_BGRA_4444_32f
         : PrPixelFormat_BGRA_4444_8u;
     renderParams.inStartTime = exportInfoP->startTime;
     renderParams.inEndTime = exportInfoP->endTime;

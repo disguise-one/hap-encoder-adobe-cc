@@ -580,7 +580,7 @@ ImporterGetIndPixelFormat(
     {
     case 0:
         SDKIndPixelFormatRec->outPixelFormat = CodecRegistry().isHighBitDepth()
-            ? PrPixelFormat_BGRA_4444_32f  // PrPixelFormat_BGRA_4444_16u
+            ? PrPixelFormat_BGRA_4444_16u // PrPixelFormat_BGRA_4444_32f
             : PrPixelFormat_BGRA_4444_8u;
         break;
 

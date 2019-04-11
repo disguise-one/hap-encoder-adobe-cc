@@ -6,21 +6,39 @@
 #include <map>
 
 // Details of frame
+enum FrameHostFormat
+{
+    frameHostFormat_u8,      // host is argb with 8-bits unsigned per channel
+    frameHostFormat_u16_32k, //         argb with 16-bits unsigned per channel normalised 0-1 -> 0->32768
+    frameHostFormat_f32      //         argb with float channel normalised ? - ? -> ? - ?
+};
 
 struct FrameDef
 {
     FrameDef(int width_, int height_, bool isHighBitDepth_)
-        : width(width_), height(height_), isHighBitDepth(isHighBitDepth_)
+        : width(width_), height(height_), isHighBitDepth(isHighBitDepth_),
+          hostFormat(isHighBitDepth_ ? frameHostFormat_u16_32k : frameHostFormat_u8)
     { }
 
     int width;
     int height;
-    bool isHighBitDepth;    // !!! enum would be better
+    FrameHostFormat hostFormat;
+    bool isHighBitDepth;    // !!! enum would be better; moving to this (hostFormat)
 
-    size_t bytesPerPixel() const { return isHighBitDepth ? 16 : 4; }
-    bool hostFormat_u16() const { return false; } // isHighBitDepth; }
-    bool hostFormat_f32() const { return isHighBitDepth; }
-    bool hostFormat_u8() const { return !isHighBitDepth; }
+    size_t bytesPerPixel() const {
+        switch (hostFormat) {
+        case frameHostFormat_u16_32k:
+            return 8;
+        case frameHostFormat_f32:
+            return 16;
+        case frameHostFormat_u8:
+        default:
+            return 4;
+        }
+    }
+    bool hostFormat_u16_32k() const { return hostFormat == frameHostFormat_u16_32k; }
+    bool hostFormat_f32() const { return hostFormat == frameHostFormat_f32;  }
+    bool hostFormat_u8() const { return hostFormat == frameHostFormat_u8; }
 };
 
 struct EncodeOutput
