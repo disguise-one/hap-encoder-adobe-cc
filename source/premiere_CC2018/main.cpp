@@ -470,7 +470,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 
     FrameDef frameDef(width.value.intValue, height.value.intValue,
         CodecRegistry::isHighBitDepth() ? ChannelFormat_UnsignedU16_32k : ChannelFormat_UnsignedU8, // we're going to request frames in keeping with the codec's high bit depth
-        false, // origin top left
+        FrameOrigin_BottomLeft,
         true   // bgra
     );
 

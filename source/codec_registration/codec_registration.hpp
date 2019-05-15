@@ -22,31 +22,37 @@ enum ChannelFormat : uint32_t
     ChannelFormat_Float32          // 32 bits 0 - 1.0f typically
 };
 
+enum FrameOrigin : uint32_t
+{
+    FrameOrigin_BottomLeft,
+    FrameOrigin_TopLeft,
+};
+
 struct FrameDef
 {
     FrameDef(int width_, int height_,
              ChannelFormat hostChannelFormat_,
-             bool isOriginTopLeft_, bool isBgra_)
+             FrameOrigin hostOrigin_, bool isBgra_)
         : width(width_), height(height_),
           hostChannelFormat(hostChannelFormat_),
-          isOriginTopLeft(isOriginTopLeft_), isBgra(isBgra_),
-          hostFormat(makeFormat(hostChannelFormat_, isOriginTopLeft_, isBgra_))
+          hostOrigin(hostOrigin_), isBgra(isBgra_),
+          hostFormat(makeFormat(hostChannelFormat_, hostOrigin_, isBgra_))
     { }
 
     int width;
     int height;
     FrameHostFormat hostFormat;
     ChannelFormat hostChannelFormat;
-    bool isOriginTopLeft;
+    FrameOrigin hostOrigin;
     bool isBgra;
 
     static FrameHostFormat
-    makeFormat(ChannelFormat hostChannelFormat, bool isOriginTopLeft, bool isBgra)
+    makeFormat(ChannelFormat hostChannelFormat, FrameOrigin hostOrigin, bool isBgra)
     {
-        if (ChannelFormat_UnsignedU16_32k==hostChannelFormat) {
-            if (isOriginTopLeft) {
+        if (ChannelFormat_UnsignedU16_32k == hostChannelFormat) {
+            if (FrameOrigin_TopLeft == hostOrigin) {
                 if (isBgra) {
-                    return frameHostFormat_bl_bgra_u16_32k;
+                    //
                 }
                 else {
                     return frameHostFormat_tl_rgba_u16_32k;
@@ -59,7 +65,7 @@ struct FrameDef
             }
         }
         else {
-            if (isOriginTopLeft) {
+            if (FrameOrigin_TopLeft == hostOrigin) {
                 //
             }
             else {
