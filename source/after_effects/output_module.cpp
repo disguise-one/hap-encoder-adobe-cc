@@ -458,7 +458,9 @@ My_StartAdding(
             movieFile.onOpenForWrite();  //!!! move to writer
 
             optionsUP->exporter = createExporter(
-                FrameDef(widthL, heightL, true, true, false),
+                FrameDef(widthL, heightL,
+                         ChannelFormat_UnsignedU16_32k, //!!! ERROR here - AEX will deliver whatever it likes, even if we tell it we want hight bit depth
+                         true, false),
                 withAlpha ? CodecAlpha::withAlpha : CodecAlpha::withoutAlpha,
                 clampedQuality,
                 frameRateNumerator,

@@ -6,7 +6,7 @@
 #include <map>
 
 // Details of frame
-enum FrameHostFormat
+enum FrameHostFormat : uint32_t
 {
     frameHostFormat_bl_bgra_u8,      // host is bgra with 8-bits unsigned per channel
     frameHostFormat_bl_bgra_u16_32k, //         bgra with 16-bits unsigned per channel normalised 0-1 -> 0->32768
@@ -14,25 +14,36 @@ enum FrameHostFormat
     frameHostFormat_tl_rgba_u16_32k, //         rgba with 16-bits unsigned per channel normalised 0-1 -> 0->32768
 };
 
+enum ChannelFormat : uint32_t
+{
+    ChannelFormat_UnsignedU8,      //  8 bits 0-255
+    ChannelFormat_UnsignedU16_32k, // 16 bits 0-32768  (not 32767; matches AEX)
+    ChannelFormat_UnsignedU16,     // 16 bits 0-65535
+    ChannelFormat_Float32          // 32 bits 0 - 1.0f typically
+};
+
 struct FrameDef
 {
-    FrameDef(int width_, int height_, bool isHighBitDepth_, bool isOriginTopLeft_, bool isBgra_)
+    FrameDef(int width_, int height_,
+             ChannelFormat hostChannelFormat_,
+             bool isOriginTopLeft_, bool isBgra_)
         : width(width_), height(height_),
-          isHighBitDepth(isHighBitDepth_), isOriginTopLeft(isOriginTopLeft_), isBgra(isBgra_),
-          hostFormat(makeFormat(isHighBitDepth_, isOriginTopLeft_, isBgra_))
+          hostChannelFormat(hostChannelFormat_),
+          isOriginTopLeft(isOriginTopLeft_), isBgra(isBgra_),
+          hostFormat(makeFormat(hostChannelFormat_, isOriginTopLeft_, isBgra_))
     { }
 
     int width;
     int height;
     FrameHostFormat hostFormat;
-    bool isHighBitDepth;    // !!! enum would be better; moving to this (hostFormat)
+    ChannelFormat hostChannelFormat;
     bool isOriginTopLeft;
     bool isBgra;
 
     static FrameHostFormat
-    makeFormat(bool isHighBitDepth, bool isOriginTopLeft, bool isBgra)
+    makeFormat(ChannelFormat hostChannelFormat, bool isOriginTopLeft, bool isBgra)
     {
-        if (isHighBitDepth) {
+        if (ChannelFormat_UnsignedU16_32k==hostChannelFormat) {
             if (isOriginTopLeft) {
                 if (isBgra) {
                     return frameHostFormat_bl_bgra_u16_32k;
