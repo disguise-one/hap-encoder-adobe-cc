@@ -23,5 +23,6 @@ add_subdirectory(external/adobe)
 # documentation
 # add_subdirectory(doc)
 
-# plugin
+# plugins
 add_subdirectory(source/premiere_CC2018)
+add_subdirectory(source)

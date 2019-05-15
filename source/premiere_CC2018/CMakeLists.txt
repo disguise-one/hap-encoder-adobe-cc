@@ -52,7 +52,7 @@ target_link_libraries(CodecPluginFoundation
     PRIVATE
         CodecRegistration
         Codec
-        AdobeSdk
+        AdobePremiereSdk
         ffmpeg::libavformat
         ffmpeg::libavcodec
         ffmpeg::libavutil
