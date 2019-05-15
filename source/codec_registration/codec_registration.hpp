@@ -8,37 +8,74 @@
 // Details of frame
 enum FrameHostFormat
 {
-    frameHostFormat_u8,      // host is argb with 8-bits unsigned per channel
-    frameHostFormat_u16_32k, //         argb with 16-bits unsigned per channel normalised 0-1 -> 0->32768
-    frameHostFormat_f32      //         argb with float channel normalised ? - ? -> ? - ?
+    frameHostFormat_bl_bgra_u8,      // host is bgra with 8-bits unsigned per channel
+    frameHostFormat_bl_bgra_u16_32k, //         bgra with 16-bits unsigned per channel normalised 0-1 -> 0->32768
+    frameHostFormat_bl_bgra_f32,     //         bgra with float channel normalised ? - ? -> ? - ?
+    frameHostFormat_tl_rgba_u16_32k, //         rgba with 16-bits unsigned per channel normalised 0-1 -> 0->32768
 };
 
 struct FrameDef
 {
-    FrameDef(int width_, int height_, bool isHighBitDepth_)
-        : width(width_), height(height_), isHighBitDepth(isHighBitDepth_),
-          hostFormat(isHighBitDepth_ ? frameHostFormat_u16_32k : frameHostFormat_u8)
+    FrameDef(int width_, int height_, bool isHighBitDepth_, bool isOriginTopLeft_, bool isBgra_)
+        : width(width_), height(height_),
+          isHighBitDepth(isHighBitDepth_), isOriginTopLeft(isOriginTopLeft_), isBgra(isBgra_),
+          hostFormat(makeFormat(isHighBitDepth_, isOriginTopLeft_, isBgra_))
     { }
 
     int width;
     int height;
     FrameHostFormat hostFormat;
     bool isHighBitDepth;    // !!! enum would be better; moving to this (hostFormat)
+    bool isOriginTopLeft;
+    bool isBgra;
+
+    static FrameHostFormat
+    makeFormat(bool isHighBitDepth, bool isOriginTopLeft, bool isBgra)
+    {
+        if (isHighBitDepth) {
+            if (isOriginTopLeft) {
+                if (isBgra) {
+                    return frameHostFormat_bl_bgra_u16_32k;
+                }
+                else {
+                    return frameHostFormat_tl_rgba_u16_32k;
+                }
+            }
+            else {
+                if (isBgra) {
+                    return frameHostFormat_bl_bgra_u16_32k;
+                }
+            }
+        }
+        else {
+            if (isOriginTopLeft) {
+                //
+            }
+            else {
+                if (isBgra) {
+                    return frameHostFormat_bl_bgra_u8;
+                }
+            }
+        }
+        throw std::runtime_error("unhandled format options");
+    }
 
     size_t bytesPerPixel() const {
         switch (hostFormat) {
-        case frameHostFormat_u16_32k:
+        case frameHostFormat_bl_bgra_u16_32k:
+        case frameHostFormat_tl_rgba_u16_32k:
             return 8;
-        case frameHostFormat_f32:
+        case frameHostFormat_bl_bgra_f32:
             return 16;
-        case frameHostFormat_u8:
+        case frameHostFormat_bl_bgra_u8:
         default:
             return 4;
         }
     }
-    bool hostFormat_u16_32k() const { return hostFormat == frameHostFormat_u16_32k; }
-    bool hostFormat_f32() const { return hostFormat == frameHostFormat_f32;  }
-    bool hostFormat_u8() const { return hostFormat == frameHostFormat_u8; }
+    bool hostFormat_bl_bgra_u16_32k() const { return hostFormat == frameHostFormat_bl_bgra_u16_32k; }
+    bool hostFormat_bl_bgra_f32() const { return hostFormat == frameHostFormat_bl_bgra_f32;  }
+    bool hostFormat_bl_bgra_u8() const { return hostFormat == frameHostFormat_bl_bgra_u8; }
+    bool hostFormat_tl_rgba_u16_32k() const { return hostFormat == frameHostFormat_tl_rgba_u16_32k;  }
 };
 
 struct EncodeOutput
@@ -101,11 +138,11 @@ public:
 
     // respond to a new incoming frame in the main thread; returns as fast as possible
     void copyExternalToLocal(
-        const uint8_t *bgraBottomLeftOrigin,
+        const uint8_t *data,
         size_t stride)
     {
         doCopyExternalToLocal(
-            bgraBottomLeftOrigin,
+            data,
             stride);
     }
 
@@ -126,7 +163,7 @@ public:
 private:
     // derived EncoderJob classes  must implement these
     virtual void doCopyExternalToLocal(
-        const uint8_t *bgraBottomLeftOrigin,
+        const uint8_t *data,
         size_t stride) = 0;
 
     virtual void doConvert() = 0;
@@ -156,11 +193,11 @@ public:
 
     // deliver the texture
     void copyLocalToExternal(
-        uint8_t *bgraBottomLeftOrigin,
+        uint8_t *data,
         size_t stride) const
     {
         doCopyLocalToExternal(
-            bgraBottomLeftOrigin,
+            data,
             stride);
     }
 
@@ -169,7 +206,7 @@ private:
     virtual void doConvert() = 0;
     // derived EncoderJob classes  must implement these
     virtual void doCopyLocalToExternal(
-        uint8_t *bgraBottomLeftOrigin,
+        uint8_t *data,
         size_t stride) const = 0;
 
     DecoderJob(const DecoderJob& rhs) = delete;

@@ -468,7 +468,10 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
 
-    FrameDef frameDef(width.value.intValue, height.value.intValue, CodecRegistry::isHighBitDepth());
+    FrameDef frameDef(width.value.intValue, height.value.intValue, CodecRegistry::isHighBitDepth(),
+        false, // origin top left
+        true   // bgra
+    );
 
     CodecAlpha alpha = includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha;
 

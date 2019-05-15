@@ -469,7 +469,10 @@ ImporterOpenFile8(
 
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
             FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height(),
-                     CodecRegistry::isHighBitDepth())
+                     CodecRegistry::isHighBitDepth(),
+                     false,  // origin top left
+                     true    // bgra
+                    )
             );
         (*localRecH)->decoder = CodecRegistry::codec()->createDecoder(std::move(decoderParameters));
         (*localRecH)->decoderJob = (*localRecH)->decoder->create();

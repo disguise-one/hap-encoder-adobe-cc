@@ -264,7 +264,7 @@ void Exporter::close()
 }
 
 
-void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_data, size_t stride) const
+void Exporter::dispatch(int64_t iFrame, const uint8_t* data, size_t stride) const
 {
     // it is not clear from the docs whether or not frames are completed and passed in strict order
     // nevertheless we must make that assumption because
@@ -313,7 +313,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* bgra_bottom_left_origin_d
     //
     // TODO: may be able to use Adobe's addRef at a higher level and pipe it through for a minor
     //       performance gain
-    job->codecJob->copyExternalToLocal(bgra_bottom_left_origin_data, stride);
+    job->codecJob->copyExternalToLocal(data, stride);
 
     jobEncoder_.push(std::move(job));
 }
