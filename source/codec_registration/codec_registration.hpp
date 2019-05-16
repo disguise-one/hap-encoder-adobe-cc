@@ -6,32 +6,27 @@
 #include <map>
 
 // Details of frame
-enum FrameHostFormat : uint32_t
-{
-    frameHostFormat_bl_bgra_u8,      // host is bgra with 8-bits unsigned per channel
-    frameHostFormat_bl_bgra_u16_32k, //         bgra with 16-bits unsigned per channel normalised 0-1 -> 0->32768
-    frameHostFormat_bl_bgra_f32,     //         bgra with float channel normalised ? - ? -> ? - ?
-    frameHostFormat_tl_argb_u16_32k, //         rgba with 16-bits unsigned per channel normalised 0-1 -> 0->32768
-};
+
+// ChannelFormat, ChannelLayout and FrameOrigin are designed to be | combined
 
 enum ChannelFormat : uint32_t
 {
-    ChannelFormat_UnsignedU8,      //  8 bits 0-255
-    ChannelFormat_UnsignedU16_32k, // 16 bits 0-32768  (not 32767; matches AEX)
-    ChannelFormat_UnsignedU16,     // 16 bits 0-65535
-    ChannelFormat_Float32          // 32 bits 0 - 1.0f typically
+    ChannelFormat_U8      = 0x01,      //  8 bits 0-255
+    ChannelFormat_U16_32k = 0x02,      // 16 bits 0-32768  (not 32767; matches AEX)
+    ChannelFormat_U16     = 0x03,      // 16 bits 0-65535
+    ChannelFormat_F32     = 0x04       // 32 bits 0 - 1.0f typically
 };
 
 enum ChannelLayout : uint32_t
 {
-    ChannelLayout_ARGB,
-    ChannelLayout_BGRA
+    ChannelLayout_ARGB = 0x0100,
+    ChannelLayout_BGRA = 0x0200
 };
 
 enum FrameOrigin : uint32_t
 {
-    FrameOrigin_BottomLeft,
-    FrameOrigin_TopLeft,
+    FrameOrigin_BottomLeft = 0x010000,
+    FrameOrigin_TopLeft    = 0x020000,
 };
 
 struct FrameDef
@@ -41,64 +36,27 @@ struct FrameDef
              FrameOrigin hostOrigin_, ChannelLayout hostChannelLayout_)
         : width(width_), height(height_),
           hostChannelFormat(hostChannelFormat_),
-          hostOrigin(hostOrigin_), hostChannelLayout(hostChannelLayout_),
-          hostFormat(makeFormat(hostChannelFormat_, hostOrigin_, hostChannelLayout_))
+          hostOrigin(hostOrigin_), hostChannelLayout(hostChannelLayout_)
     { }
 
     int width;
     int height;
-    FrameHostFormat hostFormat;
     ChannelFormat hostChannelFormat;
     ChannelLayout hostChannelLayout;
     FrameOrigin hostOrigin;
 
-    static FrameHostFormat
-    makeFormat(ChannelFormat hostChannelFormat, FrameOrigin hostOrigin, ChannelLayout hostChannelLayout)
-    {
-        if (ChannelFormat_UnsignedU16_32k == hostChannelFormat) {
-            if (FrameOrigin_TopLeft == hostOrigin) {
-                if (hostChannelLayout) {
-                    //
-                }
-                else {
-                    return frameHostFormat_tl_argb_u16_32k;
-                }
-            }
-            else {
-                if (hostChannelLayout) {
-                    return frameHostFormat_bl_bgra_u16_32k;
-                }
-            }
-        }
-        else {
-            if (FrameOrigin_TopLeft == hostOrigin) {
-                //
-            }
-            else {
-                if (hostChannelLayout) {
-                    return frameHostFormat_bl_bgra_u8;
-                }
-            }
-        }
-        throw std::runtime_error("unhandled format options");
-    }
-
     size_t bytesPerPixel() const {
-        switch (hostFormat) {
-        case frameHostFormat_bl_bgra_u16_32k:
-        case frameHostFormat_tl_argb_u16_32k:
+        switch (hostChannelFormat) {
+        case ChannelFormat_U16:
+        case ChannelFormat_U16_32k:
             return 8;
-        case frameHostFormat_bl_bgra_f32:
+        case ChannelFormat_F32:
             return 16;
-        case frameHostFormat_bl_bgra_u8:
+        case ChannelFormat_U8:
         default:
             return 4;
         }
     }
-    bool hostFormat_bl_bgra_u16_32k() const { return hostFormat == frameHostFormat_bl_bgra_u16_32k; }
-    bool hostFormat_bl_bgra_f32() const { return hostFormat == frameHostFormat_bl_bgra_f32;  }
-    bool hostFormat_bl_bgra_u8() const { return hostFormat == frameHostFormat_bl_bgra_u8; }
-    bool hostFormat_tl_argb_u16_32k() const { return hostFormat == frameHostFormat_tl_argb_u16_32k;  }
 };
 
 struct EncodeOutput

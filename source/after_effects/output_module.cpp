@@ -459,7 +459,7 @@ My_StartAdding(
 
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
-                         ChannelFormat_UnsignedU16_32k, //!!! ERROR here - AEX will deliver whatever it likes, even if we tell it we want hight bit depth
+                         ChannelFormat_U16_32k, //!!! ERROR here - AEX will deliver whatever it likes, even if we tell it we want hight bit depth
                          FrameOrigin_TopLeft,
                          ChannelLayout_ARGB),
                 withAlpha ? CodecAlpha::withAlpha : CodecAlpha::withoutAlpha,

@@ -469,7 +469,7 @@ ImporterOpenFile8(
 
         auto decoderParameters = std::make_unique<DecoderParametersBase>(
             FrameDef((*localRecH)->movieReader->width(), (*localRecH)->movieReader->height(),
-                     CodecRegistry::isHighBitDepth() ? ChannelFormat_UnsignedU16_32k : ChannelFormat_UnsignedU8, // we're going to try to deliver something in keeping with the codec's high bit depth
+                     CodecRegistry::isHighBitDepth() ? ChannelFormat_U16_32k : ChannelFormat_U8, // we're going to try to deliver something in keeping with the codec's high bit depth
                      FrameOrigin_BottomLeft,
                      ChannelLayout_BGRA      // bgra
                     )
