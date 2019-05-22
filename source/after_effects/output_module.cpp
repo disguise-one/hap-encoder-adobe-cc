@@ -443,6 +443,20 @@ My_StartAdding(
 
         try {
             bool withAlpha = (alpha.alpha != AEIO_Alpha_NONE);
+            ChannelFormat format;
+            switch (depth) {
+            case 32:
+                format = ChannelFormat_U8;
+                break;
+            case 64:
+                format = ChannelFormat_U16_32k;
+                break;
+            case 128:
+                format = ChannelFormat_F32;   // (?)
+                break;
+            default:
+                throw std::runtime_error("unsupported depth");
+            }
             int clampedQuality = std::clamp(4, 1, 5);  //!!! 4 is optimal; replace with enum
             int64_t frameRateNumerator = fps;
             int64_t frameRateDenominator = A_Fixed_ONE;
@@ -459,7 +473,7 @@ My_StartAdding(
 
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
-                         ChannelFormat_U16_32k, //!!! ERROR here - AEX will deliver whatever it likes, even if we tell it we want hight bit depth
+                         format,
                          FrameOrigin_TopLeft,
                          ChannelLayout_ARGB),
                 withAlpha ? CodecAlpha::withAlpha : CodecAlpha::withoutAlpha,
@@ -646,7 +660,10 @@ My_GetDepths(
         together different AEIO_SupportedDepthFlags.
     */
     
-    *which =	AEIO_SupportedDepthFlags_DEPTH_64;		// 16-bit with alpha
+    *which =
+        AEIO_SupportedDepthFlags_DEPTH_32 |
+        AEIO_SupportedDepthFlags_DEPTH_64 |  // 16-bit with alpha
+        AEIO_SupportedDepthFlags_DEPTH_128;  // float (?)
 
     return A_Err_NONE; 
 };
