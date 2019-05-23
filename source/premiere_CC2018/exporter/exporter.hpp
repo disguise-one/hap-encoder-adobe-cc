@@ -115,7 +115,7 @@ public:
     void close();
     
     // thread safe to be called 'on frame rendered'
-    void dispatch(int64_t iFrame, const uint8_t* data, size_t stride) const;
+    void dispatch(int64_t iFrame, const uint8_t* data, size_t stride, FrameFormat format) const;
 
 private:
     bool closed_;

@@ -443,16 +443,18 @@ My_StartAdding(
 
         try {
             bool withAlpha = (alpha.alpha != AEIO_Alpha_NONE);
-            ChannelFormat format;
+
+            //!!! this is irrelevant - AEX will deliver whatever it 'thinks best' later
+            FrameFormat format(FrameOrigin_TopLeft | ChannelLayout_ARGB);
             switch (depth) {
             case 32:
-                format = ChannelFormat_U8;
+                format |= ChannelFormat_U8;
                 break;
             case 64:
-                format = ChannelFormat_U16_32k;
+                format |= ChannelFormat_U16_32k;
                 break;
             case 128:
-                format = ChannelFormat_F32;   // (?)
+                format |= ChannelFormat_F32;   // (?)
                 break;
             default:
                 throw std::runtime_error("unsupported depth");
@@ -473,9 +475,7 @@ My_StartAdding(
 
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
-                         format,
-                         FrameOrigin_TopLeft,
-                         ChannelLayout_ARGB),
+                         format),
                 withAlpha ? CodecAlpha::withAlpha : CodecAlpha::withoutAlpha,
                 clampedQuality,
                 frameRateNumerator,
@@ -521,18 +521,50 @@ My_AddFrame(
     if (!optionsUP)
         return A_Err_PARAMETER;
 
-    char* rgba_buffer_tl = (char *)wP->data; //!!! PF_GET_PIXEL_DATA16(wP, nullptr, PF_Pixel16**(&bgra_buffer));
-    int32_t rgba_stride = wP->rowbytes;
-    if (!rgba_buffer_tl)
-        return A_Err_PARAMETER; //  throw std::runtime_error("could not GetPixels on completed frame");
-
-    try {
-        for (auto iFrame = frame_index; iFrame < frame_index + frames; ++iFrame)
-            optionsUP->exporter->dispatch(iFrame, (uint8_t*)rgba_buffer_tl, rgba_stride);
-    }
-    catch (...)
     {
-        return A_Err_PARAMETER;  //!!! AE generally hard crashes in event of errors
+        // Begin scope here to ensure 'suites' is valid for duration
+
+        // PF_WorldSuite2 not supplied in AEGP_SuiteHandler (why?), but seems only way to query image format (why?)
+        // AEIO isn't provided with a PF_InData so the documented accessors won't work.
+        // AEGP_SuiteScoper needs a PF_InData (but not really)
+        PF_InData hack;
+        hack.pica_basicP = const_cast<SPBasicSuite*>(basic_dataP->pica_basicP);
+        _PF_UtilCallbacks hack2;
+        hack2.ansi.sprintf = suites.ANSICallbacksSuite1()->sprintf;
+        hack.utils = &hack2;
+        AEFX_SuiteScoper<PF_WorldSuite2> worldSuite2(&hack, kPFWorldSuite, kPFWorldSuiteVersion2);
+
+        PF_PixelFormat pixelFormat;
+        worldSuite2->PF_GetPixelFormat(wP, &pixelFormat);
+
+        FrameFormat format(FrameOrigin_TopLeft | ChannelLayout_ARGB);
+        switch (pixelFormat) {
+        case PF_PixelFormat_ARGB32:
+            format |= ChannelFormat_U8;
+            break;
+        case PF_PixelFormat_ARGB64:
+            format |= ChannelFormat_U16_32k;
+            break;
+        case PF_PixelFormat_ARGB128:
+            format |= ChannelFormat_F32;   // (?)
+            break;
+        default:
+            throw std::runtime_error("unsupported depth");
+        }
+
+        char* rgba_buffer_tl = (char *)wP->data; //!!! PF_GET_PIXEL_DATA16(wP, nullptr, PF_Pixel16**(&bgra_buffer));
+        if (!rgba_buffer_tl)
+            return A_Err_PARAMETER; //  throw std::runtime_error("could not GetPixels on completed frame");
+        auto rgba_stride = wP->rowbytes;
+
+        try {
+            for (auto iFrame = frame_index; iFrame < frame_index + frames; ++iFrame)
+                optionsUP->exporter->dispatch(iFrame, (uint8_t*)rgba_buffer_tl, rgba_stride, format);
+        }
+        catch (...)
+        {
+            return A_Err_PARAMETER;  //!!! AE generally hard crashes in event of errors
+        }
     }
 
     return err; 

@@ -10,6 +10,7 @@
 #include "AE_Macros.h"
 #include "AE_EffectCBSuites.h"
 #include "AEGP_SuiteHandler.h"
+#include "AEFX_SuiteHandlerTemplate.h"
 
 // This entry point is exported through the PiPL (.r file)
 extern "C" DllExport AEGP_PluginInitFuncPrototype EntryPointFunc;

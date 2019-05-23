@@ -7,7 +7,12 @@
 
 // Details of frame
 
-// ChannelFormat, ChannelLayout and FrameOrigin are designed to be | combined
+// ChannelFormat, ChannelLayout and FrameOrigin are | combined into FrameFormat
+typedef uint32_t FrameFormat;
+
+#define ChannelFormatMask 0xFF
+#define ChannelLayoutMask 0xFF00
+#define FrameOriginMask 0xFF0000
 
 enum ChannelFormat : uint32_t
 {
@@ -29,24 +34,24 @@ enum FrameOrigin : uint32_t
     FrameOrigin_TopLeft    = 0x020000,
 };
 
+
 struct FrameDef
 {
     FrameDef(int width_, int height_,
-             ChannelFormat hostChannelFormat_,
-             FrameOrigin hostOrigin_, ChannelLayout hostChannelLayout_)
-        : width(width_), height(height_),
-          hostChannelFormat(hostChannelFormat_),
-          hostOrigin(hostOrigin_), hostChannelLayout(hostChannelLayout_)
+             FrameFormat format_)
+        : width(width_), height(height_), format(format_)
     { }
 
     int width;
     int height;
-    ChannelFormat hostChannelFormat;
-    ChannelLayout hostChannelLayout;
-    FrameOrigin hostOrigin;
+    FrameFormat format;
+
+    ChannelFormat channelFormat() const { return (ChannelFormat) (format & ChannelFormatMask); }
+    ChannelLayout channelLayout() const{ return (ChannelLayout) (format & ChannelLayoutMask); }
+    FrameOrigin origin() const { return (FrameOrigin) (format & FrameOriginMask); };
 
     size_t bytesPerPixel() const {
-        switch (hostChannelFormat) {
+        switch (channelFormat()) {
         case ChannelFormat_U16:
         case ChannelFormat_U16_32k:
             return 8;
@@ -120,11 +125,13 @@ public:
     // respond to a new incoming frame in the main thread; returns as fast as possible
     void copyExternalToLocal(
         const uint8_t *data,
-        size_t stride)
+        size_t stride,
+        FrameFormat format)
     {
         doCopyExternalToLocal(
             data,
-            stride);
+            stride,
+            format);
     }
 
     // encoding steps
@@ -145,7 +152,8 @@ private:
     // derived EncoderJob classes  must implement these
     virtual void doCopyExternalToLocal(
         const uint8_t *data,
-        size_t stride) = 0;
+        size_t stride,
+        FrameFormat format) = 0;
 
     virtual void doConvert() = 0;
     virtual void doEncode(EncodeOutput& out) = 0;

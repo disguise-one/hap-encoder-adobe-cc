@@ -307,7 +307,7 @@ static prMALError c_onFrameComplete(
             throw std::runtime_error("could not GetRowBytes on completed frame");
 
         for (auto iFrame=inFrameNumber; iFrame<inFrameNumber + inFrameRepeatCount; ++iFrame)
-            settings->exporter->dispatch(iFrame, (uint8_t*)bgra_buffer, bgra_stride);
+            settings->exporter->dispatch(iFrame, (uint8_t*)bgra_buffer, bgra_stride, 0);  //!!! could support multiple formats here
     }
     catch (const std::exception& ex)
     {
@@ -468,11 +468,9 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
 
-    FrameDef frameDef(width.value.intValue, height.value.intValue,
-        CodecRegistry::isHighBitDepth() ? ChannelFormat_U16_32k : ChannelFormat_U8, // we're going to request frames in keeping with the codec's high bit depth
-        FrameOrigin_BottomLeft,
-        ChannelLayout_BGRA   // bgra
-    );
+    ChannelFormat channelFormat(CodecRegistry::isHighBitDepth() ? ChannelFormat_U16_32k : ChannelFormat_U8); // we're going to request frames in keeping with the codec's high bit depth
+    FrameFormat format(channelFormat | FrameOrigin_BottomLeft | ChannelLayout_BGRA);
+    FrameDef frameDef(width.value.intValue, height.value.intValue, format);
 
     CodecAlpha alpha = includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha;
 
