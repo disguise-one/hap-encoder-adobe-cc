@@ -1,5 +1,10 @@
 #include <codecvt>
 #include <new>
+#include <sstream>
+
+#include <nlohmann/json.hpp>
+// for convenience
+using json = nlohmann::json;
 
 #include "../premiere_CC2018/exporter/exporter.hpp"
 #include "codec_registration.hpp"
@@ -8,7 +13,7 @@
 
 static AEGP_PluginID S_mem_id = 0;
 
-static A_Err DeathHook(	
+static A_Err DeathHook(
     AEGP_GlobalRefcon unused1 ,
     AEGP_DeathRefcon unused2)
 {
@@ -29,15 +34,31 @@ std::string to_string(const std::wstring& fromUTF16)
 
 struct OutputOptions
 {
-    OutputOptions() : width(1920), height(1080), quality(1) {}
+    OutputOptions() : quality(3) {}
     ~OutputOptions() {}
 
-    int width;
-    int height;
-    int quality;
+    int        quality;
 
+    // we're forced to store the entire output module context here, including temporary state
+    // appears to be no other per-module supplied spot, and we don't want to use static globals
     std::unique_ptr<Exporter> exporter;
 };
+
+void to_json(json& j, const OutputOptions& o) {
+    if (CodecRegistry::codec()->hasQuality) {
+        j = json{ {"quality", o.quality} };
+    }
+    else {
+        j = json{};
+    }
+}
+
+void from_json(const json& j, OutputOptions& o) {
+    auto codec = CodecRegistry::codec();
+    if (codec->hasQuality) {
+        j.at("quality").get_to(o.quality);
+    }
+}
 
 
 // we need to get a local structure, OutputOptions, which will be associated with an
@@ -159,42 +180,54 @@ static std::unique_ptr<Exporter> createExporter(
     return std::make_unique<Exporter>(std::move(encoder), std::move(writer));
 }
 
-static A_Err	
+static A_Err
 My_InitOutputSpec(
-    AEIO_BasicData			*basic_dataP,
-    AEIO_OutSpecH			outH, 
-    A_Boolean				*user_interacted)
+    AEIO_BasicData *basic_dataP,
+    AEIO_OutSpecH   outH,
+    A_Boolean      *user_interacted)
 {
-    A_Err						err				= A_Err_NONE;
-    AEIO_Handle					new_optionsH	= NULL, 
-                                old_optionsH	= 0;
-    OutputOptions	*new_optionsP,
-                    *old_optionsP;
-    AEGP_SuiteHandler			suites(basic_dataP->pica_basicP);
+    A_Err       err = A_Err_NONE;
+    AEIO_Handle new_optionsH = NULL,
+                old_optionsH = 0;
+    OutputOptions  *new_optionsP;
+    char           *old_optionsP;
+    AEGP_SuiteHandler suites(basic_dataP->pica_basicP);
 
     ERR(suites.IOOutSuite4()->AEGP_GetOutSpecOptionsHandle(outH, reinterpret_cast<void**>(&old_optionsH)));
 
     if (!err) {
-        ERR(suites.MemorySuite1()->AEGP_NewMemHandle(	S_mem_id, 
-                                                       "InitOutputSpec options", 
-                                                       sizeof(OutputOptions),
-                                                       AEGP_MemFlag_CLEAR, 
-                                                       &new_optionsH));
+        ERR(suites.MemorySuite1()->AEGP_NewMemHandle(S_mem_id,
+            "InitOutputSpec options",
+            sizeof(OutputOptions),
+            AEGP_MemFlag_CLEAR,
+            &new_optionsH));
         if (!err && new_optionsH) {
             ERR(suites.MemorySuite1()->AEGP_LockMemHandle(new_optionsH, reinterpret_cast<void**>(&new_optionsP)));
 
             if (!err && new_optionsP) {
+                new (new_optionsP) OutputOptions();
 
                 if (!old_optionsH) {
-                    new (new_optionsP) OutputOptions;
-                } else {
+                    // old code constructed here, but we do so above because we always want a
+                    // constructed object, even if the the following code fails
+                }
+                else {
+                    AEGP_MemSize old_options_size;
+                    ERR(suites.MemorySuite1()->AEGP_GetMemHandleSize(old_optionsH, &old_options_size));
                     ERR(suites.MemorySuite1()->AEGP_LockMemHandle(old_optionsH, reinterpret_cast<void**>(&old_optionsP)));
 
                     if (!err && new_optionsP && old_optionsP) {
-                        memcpy(new_optionsP, old_optionsP, sizeof(OutputOptions));
-
-                        *user_interacted = FALSE;  // output options have changed
-
+                        std::string s(old_optionsP, old_options_size);
+                        try {
+                            json j(s);
+                            from_json(j, *new_optionsP);
+                            *user_interacted = FALSE;
+                        }
+                        catch (...)
+                        {
+                            // error = badly serialised data; indicate we're replacing it
+                            *user_interacted = TRUE;
+                        }
 
                         ERR(suites.MemorySuite1()->AEGP_UnlockMemHandle(old_optionsH));
                     }
@@ -205,30 +238,35 @@ My_InitOutputSpec(
             }
         }
     }
-    if (old_optionsH){
+    if (old_optionsH) {
         ERR(suites.MemorySuite1()->AEGP_FreeMemHandle(old_optionsH));
     }
     return err;
 }
 
-static A_Err	
+
+static A_Err    
 My_GetFlatOutputOptions(
-    AEIO_BasicData	*basic_dataP,
-    AEIO_OutSpecH	outH, 
-    AEIO_Handle		*new_optionsPH)
+    AEIO_BasicData    *basic_dataP,
+    AEIO_OutSpecH    outH, 
+    AEIO_Handle        *new_optionsPH)
 {
-    A_Err						err				= A_Err_NONE;
-    AEIO_Handle					old_optionsH	= NULL;
+    A_Err                        err                = A_Err_NONE;
+    AEIO_Handle                    old_optionsH    = NULL;
     OutputOptions *new_optionsP;
-    AEGP_SuiteHandler			suites(basic_dataP->pica_basicP);
+    AEGP_SuiteHandler            suites(basic_dataP->pica_basicP);
 
     OutputOptionsUP old_optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
     if (!old_optionsUP)
         return A_Err_PARAMETER;
 
+
+    json j(*old_optionsUP);
+    std::string s = j.dump();
+
     ERR(suites.MemorySuite1()->AEGP_NewMemHandle( S_mem_id, 
                                                     "flat optionsH", 
-                                                    sizeof(OutputOptions),
+                                                    s.size() + 1,
                                                     AEGP_MemFlag_CLEAR, 
                                                     new_optionsPH));
     if (!err && *new_optionsPH) {
@@ -237,7 +275,7 @@ My_GetFlatOutputOptions(
         if (!err && new_optionsP && old_optionsUP) {
             // Convert the old unflat structure into a separate flat structure for output
             // In this case, we just do a simple copy
-            memcpy(new_optionsP, old_optionsUP.get(), sizeof(OutputOptions));
+            memcpy(new_optionsP, &s[0], s.size() + 1);
 
             ERR(suites.MemorySuite1()->AEGP_UnlockMemHandle(*new_optionsPH));
         }

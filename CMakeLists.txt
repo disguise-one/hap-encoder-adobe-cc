@@ -17,8 +17,7 @@ else()
 endif()
 
 # library dependencies
-add_subdirectory(external/ffmpeg)
-add_subdirectory(external/adobe)
+add_subdirectory(external)
 
 # documentation
 # add_subdirectory(doc)

@@ -39,12 +39,13 @@ endif(MSVC)
 
 target_link_libraries(NotchLCAEXPlugin
     PRIVATE
+        AdobeAfterEffectsSdk
         CodecRegistration
         Codec
-        AdobeAfterEffectsSdk
         ffmpeg::libavformat
         ffmpeg::libavcodec
         ffmpeg::libavutil
+        nlohmann_json::nlohmann_json
 	# need this for ffmpeg on windows; TODO: get rid of it
         $<$<PLATFORM_ID:Windows>:bcrypt>
         $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
