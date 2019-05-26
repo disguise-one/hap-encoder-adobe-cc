@@ -9,9 +9,11 @@ target_sources(NotchLCAEXPlugin
         after_effects/output_module.cpp
         after_effects/output_module.h
         after_effects/output_module.cpp
+        after_effects/ui.h
         after_effects/win/output_module.rc
         after_effects/win/output_module_temp.rc
         after_effects/win/resource.h
+        after_effects/win/ui.cpp
         premiere_CC2018/configure.hpp
         premiere_CC2018/freelist.hpp
         premiere_CC2018/targetver.h

@@ -10,6 +10,7 @@ using json = nlohmann::json;
 #include "codec_registration.hpp"
 
 #include "output_module.h"
+#include "ui.h"
 
 static AEGP_PluginID S_mem_id = 0;
 
@@ -219,8 +220,8 @@ My_InitOutputSpec(
                     if (!err && new_optionsP && old_optionsP) {
                         std::string s(old_optionsP, old_options_size);
                         try {
-                            json j(s);
-                            from_json(j, *new_optionsP);
+                            auto j = json::parse(s);
+                            j.get_to(*new_optionsP);
                             *user_interacted = FALSE;
                         }
                         catch (...)
@@ -315,17 +316,25 @@ My_UserOptionsDialog(
     AEGP_SuiteHandler			suites(basic_dataP->pica_basicP);
     AEIO_Handle					optionsH		= NULL, 
                                 old_optionsH	= 0;
-    OutputOptions *optionsP;
+    {
+        OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
+        if (!optionsUP)
+            return A_Err_PARAMETER;
 
-    ERR(suites.IOOutSuite4()->AEGP_GetOutSpecOptionsHandle(outH, reinterpret_cast<void**>(&optionsH)));
-    if (!err){
-        ERR(suites.MemorySuite1()->AEGP_LockMemHandle(optionsH, reinterpret_cast<void**>(&optionsP)));
+        // get platform handles
+        HWND hwndOwner = NULL;
+        hwndOwner = GetForegroundWindow();
+        if (NULL==hwndOwner)
+            suites.UtilitySuite6()->AEGP_GetMainHWND((void *)&hwndOwner);
 
-        basic_dataP->msg_func(0, "todo: quality option here");
+        if (ui_OutDialog(optionsUP->quality, (void *)&hwndOwner))
+            *user_interacted0 = TRUE;
+        else
+            *user_interacted0 = FALSE;
 
-        ERR(suites.MemorySuite1()->AEGP_UnlockMemHandle(optionsH));
-
-        ERR(suites.IOOutSuite4()->AEGP_SetOutSpecOptionsHandle(outH, optionsH, reinterpret_cast<void**>(&old_optionsH)));
+        // if (!err) {
+        //    ERR(suites.IOOutSuite4()->AEGP_SetOutSpecOptionsHandle(outH, optionsH, reinterpret_cast<void**>(&old_optionsH)));
+        //}
     }
 
     return err;
@@ -342,7 +351,14 @@ My_GetOutputInfo(
 
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->name, "filename");
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->type, "MOV (NotchLC)");
-    suites.ANSICallbacksSuite1()->strcpy(verbiageP->sub_type, "No codecs supported in this sample");
+
+    OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
+    if (!optionsUP)
+        return A_Err_PARAMETER;
+    std::string qualityAsString = CodecRegistry::codec()->qualityDescriptions()[optionsUP->quality];
+
+    suites.ANSICallbacksSuite1()->strcpy(verbiageP->sub_type,
+                                         (std::string("NotchLC by 10bit FX\rQuality setting: ") + qualityAsString).c_str());
     return err;
 };
 
