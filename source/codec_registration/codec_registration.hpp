@@ -273,8 +273,11 @@ public:
     static std::string logName();
 
     // quality settings
+
+    // qualities are ordered integers, not necessarily starting at 0 nor contiguous
     static bool hasQuality();
     static std::map<int, std::string> qualityDescriptions();
+    static int defaultQuality();
 
     //!!! should be private
     CodecRegistry();

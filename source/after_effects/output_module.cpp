@@ -35,7 +35,7 @@ std::string to_string(const std::wstring& fromUTF16)
 
 struct OutputOptions
 {
-    OutputOptions() : quality(3) {}
+    OutputOptions() : quality(CodecRegistry::defaultQuality()) {}
     ~OutputOptions() {}
 
     int        quality;
