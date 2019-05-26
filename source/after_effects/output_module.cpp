@@ -246,9 +246,10 @@ My_GetFlatOutputOptions(
     return err;
 }
 
-static A_Err	
+
+static A_Err    
 My_DisposeOutputOptions(
-    AEIO_BasicData	*basic_dataP,
+    AEIO_BasicData    *basic_dataP,
     void			*optionsPV)
 { 
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
@@ -442,19 +443,34 @@ My_StartAdding(
             return A_Err_PARAMETER;
 
         try {
-            bool withAlpha = (alpha.alpha != AEIO_Alpha_NONE);
+            CodecAlpha codecAlpha;
 
             //!!! this is irrelevant - AEX will deliver whatever it 'thinks best' later
             FrameFormat format(FrameOrigin_TopLeft | ChannelLayout_ARGB);
             switch (depth) {
+            case 24:
+                format |= ChannelFormat_U8;
+                codecAlpha = withoutAlpha;
+                break;
             case 32:
                 format |= ChannelFormat_U8;
+                codecAlpha = withAlpha;
+                break;
+            case 48:
+                format |= ChannelFormat_U16_32k;
+                codecAlpha = withoutAlpha;
                 break;
             case 64:
                 format |= ChannelFormat_U16_32k;
+                codecAlpha = withAlpha;
+                break;
+            case 96:
+                format |= ChannelFormat_F32;   // (?)
+                codecAlpha = withoutAlpha;
                 break;
             case 128:
                 format |= ChannelFormat_F32;   // (?)
+                codecAlpha = withAlpha;
                 break;
             default:
                 throw std::runtime_error("unsupported depth");
@@ -476,7 +492,7 @@ My_StartAdding(
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
                          format),
-                withAlpha ? CodecAlpha::withAlpha : CodecAlpha::withoutAlpha,
+                codecAlpha,
                 clampedQuality,
                 frameRateNumerator,
                 frameRateDenominator,
@@ -693,9 +709,12 @@ My_GetDepths(
     */
     
     *which =
+        AEIO_SupportedDepthFlags_DEPTH_24 |
         AEIO_SupportedDepthFlags_DEPTH_32 |
+        AEIO_SupportedDepthFlags_DEPTH_48 |  // 16-bit without alpha
         AEIO_SupportedDepthFlags_DEPTH_64 |  // 16-bit with alpha
-        AEIO_SupportedDepthFlags_DEPTH_128;  // float (?)
+        AEIO_SupportedDepthFlags_DEPTH_96 |  // float without alpha (?)
+        AEIO_SupportedDepthFlags_DEPTH_128;  // float with alpha (?)
 
     return A_Err_NONE; 
 };
