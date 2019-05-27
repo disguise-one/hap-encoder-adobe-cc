@@ -74,6 +74,7 @@ struct ImportJobImpl
     std::function<void(const DecoderJob&)> onSuccess;
     std::function<void(const DecoderJob&)> onFail;
 
+    bool failed;  // mark as failed; forward through rest of pipeline without processing
     std::unique_ptr<DecoderJob> codecJob;
     DecodeInput input;
 };

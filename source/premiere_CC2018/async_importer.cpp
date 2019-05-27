@@ -106,26 +106,16 @@ int AsyncImporter::OnInitiateAsyncRead(imSourceVideoRec& inSourceRec)
             [&, frameBuffer, stride, adobeFrame, frameRequest](const DecoderJob& job) {
                 job.copyLocalToExternal((uint8_t *)frameBuffer, stride);
                 {
-                    std::lock_guard<std::mutex> guard(requestsLock_);
-                    frameRequest->adobeFramePromise.set_value(adobeFrame);
+                    bool failed = false;
+                    frameRequest->adobeFramePromise.set_value(std::make_pair(adobeFrame, failed));
                 }
             },
-            [&](const DecoderJob& job) {
-                // on fail, shift it from requests_ to failedRequests_
+            [&, adobeFrame, frameRequest](const DecoderJob& job) {
                 {
-                    std::lock_guard<std::mutex> guard(requestsLock_);
-                    std::swap(*std::find(requests_.begin(), requests_.end(), frameRequest), requests_.back());
-                    requests_.pop_back();
-                }
-                {
-                    std::lock_guard<std::mutex> guard(failedRequestsLock_);
-                    failedRequests_.push_back(frameRequest);
+                    bool failed = true;
+                    frameRequest->adobeFramePromise.set_value(std::make_pair(adobeFrame, failed));
                 }
             });
-
-        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-        // ok to cleanup failed requests
-        serviceFailedRequests();
     }
     catch (...)
     {
@@ -133,15 +123,6 @@ int AsyncImporter::OnInitiateAsyncRead(imSourceVideoRec& inSourceRec)
     }
 
     return aiNoError;
-}
-
-void AsyncImporter::serviceFailedRequests()
-{
-    std::lock_guard<std::mutex> guard(failedRequestsLock_);
-    for (auto &i : failedRequests_) {
-        adobe_->PPixSuite->Dispose(i->adobeFrame);   // !!! hack
-        delete i;
-    }
 }
 
 int AsyncImporter::OnFlush()
@@ -159,15 +140,12 @@ int AsyncImporter::OnFlush()
             std::swap(owned, requests_);
         }
 
-        // fail them
+        for (auto &request : owned)
         {
-            std::lock_guard<std::mutex> guard(failedRequestsLock_);
-            failedRequests_.insert(failedRequests_.end(), owned.begin(), owned.end());
+            std::pair<PPixHand, bool> completed = request->adobeFramePromise.get_future().get();
+            adobe_->PPixSuite->Dispose(completed.first);   // !!! hack
+            delete request;
         }
-
-        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-        // ok to cleanup failed requests
-        serviceFailedRequests();
     }
     catch (...)
     {
@@ -187,7 +165,7 @@ int AsyncImporter::OnGetFrame(imSourceVideoRec* inSourceRec)
         double tFrame = (double)inSourceRec->inFrameTime / ticksPerSecond;
         int32_t iFrame = convertTimeToFrame(tFrame);
 
-        std::unique_ptr<AsyncFrameRequest> frameRequest;
+        AsyncFrameRequest *frameRequest;
 
         {
             std::lock_guard<std::mutex> guard(requestsLock_);
@@ -201,19 +179,27 @@ int AsyncImporter::OnGetFrame(imSourceVideoRec* inSourceRec)
                 return aiFrameNotFound;
             }
 
-            frameRequest.reset(*foundRequest);
+            frameRequest = *foundRequest;
 
-            // we own the request now, so remove it from the active list
+            // one way or another the request will be dispatched in this function
             std::swap(*foundRequest, requests_.back());
             requests_.pop_back();
         }
 
         // wait for completion and return it to Adobe
-        *(inSourceRec->outFrame) = frameRequest->adobeFramePromise.get_future().get();
+        std::pair<PPixHand, bool> completed = frameRequest->adobeFramePromise.get_future().get();
+        delete frameRequest;
 
-        // we've been called from Adobe's context (ie we're not in a worker thread) so assume it's
-        // ok to cleanup failed requests
-        serviceFailedRequests();
+        bool failed = completed.second;
+        if (failed)
+        {
+            adobe_->PPixSuite->Dispose(completed.first);
+            return aiFrameNotFound;
+        }
+        else {
+
+            *(inSourceRec->outFrame) = completed.first;
+        }
     }
     catch (...)
     {

@@ -22,7 +22,7 @@ struct AsyncFrameRequest
     int32_t frameNum;
 
     PPixHand adobeFrame;
-    std::promise<PPixHand> adobeFramePromise;
+    std::promise<std::pair<PPixHand, bool> > adobeFramePromise;  // second is 'failed'
 };
 
 PREMPLUGENTRY xAsyncImportEntry(int inSelector, void *inParam);
@@ -45,8 +45,6 @@ public:
     int OnFlush();
     int OnGetFrame(imSourceVideoRec* inFrameRec);
 private:
-    void serviceFailedRequests();
-
     std::unique_ptr<AdobeImporterAPI> adobe_;
     std::unique_ptr<Importer> importer_;
 
@@ -57,9 +55,6 @@ private:
 
     std::mutex requestsLock_;
     std::vector<AsyncFrameRequest *> requests_;
-
-    std::mutex failedRequestsLock_;
-    std::vector<AsyncFrameRequest *> failedRequests_;
 };
 
 #endif

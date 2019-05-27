@@ -74,19 +74,25 @@ ImportJob ImporterJobReader::read()
                     idleStart_ = std::chrono::high_resolution_clock::now();
 
                 readStart_ = std::chrono::high_resolution_clock::now();
-                reader_->readVideoFrame(job->iFrame, job->input.buffer);
-                auto readEnd = std::chrono::high_resolution_clock::now();
+                
+                try {
+                    reader_->readVideoFrame(job->iFrame, job->input.buffer);
+                    auto readEnd = std::chrono::high_resolution_clock::now();
 
-                // filtered update of utilisation_
-                if (readEnd != idleStart_)
-                {
-                    auto totalTime = (readEnd - idleStart_).count();
-                    auto readTime = (readEnd - readStart_).count();
-                    const double alpha = 0.9;
-                    utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)readTime / totalTime);
+                    // filtered update of utilisation_
+                    if (readEnd != idleStart_)
+                    {
+                        auto totalTime = (readEnd - idleStart_).count();
+                        auto readTime = (readEnd - readStart_).count();
+                        const double alpha = 0.9;
+                        utilisation_ = (1.0 - alpha) * utilisation_ + alpha * ((double)readTime / totalTime);
+                    }
+                    idleStart_ = readEnd;
                 }
-                idleStart_ = readEnd;
-
+                catch (...)
+                {
+                    job->failed = true;
+                }
                 return job;
             }
         }
@@ -126,10 +132,16 @@ ImportJob ImporterJobDecoder::decode()
         }
     }
 
-    if (job)
+    if (job && !job->failed)
     {
-        job->codecJob->decode(job->input.buffer);
-        job->codecJob->convert();
+        try {
+            job->codecJob->decode(job->input.buffer);
+            job->codecJob->convert();
+        }
+        catch (...)
+        {
+            job->failed = true;
+        }
     }
 
     return job;
@@ -163,13 +175,6 @@ void ImporterWorker::run()
 {
     while (!quit_)
     {
-        // if we hit an error, we shouldn't keep participating
-        if (error_)
-        {
-            std::this_thread::sleep_for(1ms);
-            continue;
-        }
-
         try {
             ImportJob job = jobReader_.read();
 
@@ -179,7 +184,7 @@ void ImporterWorker::run()
             }
             else
             {
-                // submit it to be written (frame may be out of order)
+                // submit it to be decoded (frame may be out of order)
                 jobDecoder_.push(std::move(job));
 
                 // dequeue any decodes
@@ -189,8 +194,14 @@ void ImporterWorker::run()
 
                     if (decoded)
                     {
-                        decoded->onSuccess(*decoded->codecJob);
-
+                        if (decoded->failed)
+                        {
+                            decoded->onFail(*decoded->codecJob);
+                        }
+                        else
+                        {
+                            decoded->onSuccess(*decoded->codecJob);
+                        }
                         jobFreeList_.free(std::move(decoded));
                         break;
                     }
@@ -203,6 +214,7 @@ void ImporterWorker::run()
         {
             //!!! should copy the exception and rethrow in main thread when it joins
             error_ = true;
+            throw;
         }
     }
 }
@@ -222,7 +234,7 @@ Importer::Importer(
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io read
 
-    // assume 4 threads + 1 writing will not tax the system too much before we figure out its limits
+    // assume 4 threads + 1 serialising will not tax the system too much before we figure out its limits
     size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
     for (size_t i = 0; i < startingThreads; ++i)
     {
@@ -261,7 +273,7 @@ void Importer::close()
         }
 
         if (error_)
-            throw std::runtime_error("error writing");
+            throw std::runtime_error("error on close");
     }
 }
 
@@ -289,6 +301,7 @@ void Importer::requestFrame(int32_t iFrame,
     job->iFrame = iFrame;
     job->onSuccess = onSuccess;
     job->onFail = onFail;
+    job->failed = false;
 
     jobReader_.push(std::move(job));
 }
