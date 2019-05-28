@@ -482,6 +482,48 @@ My_StartAdding(
         ERR(suites.IOOutSuite4()->AEGP_GetOutSpecStartFrame(outH, &start_frameL));
     }
 
+#if 0
+    // Get ICC color profile information
+    A_Boolean shouldEmbedICC(false);
+    AEGP_ColorProfileP color_profileP(nullptr);
+    std::unique_ptr<const AEGP_ColorProfileP, std::function<void(const AEGP_ColorProfileP *)> > color_profileUP;
+    AEGP_MemHandle icc_profileH;
+    std::unique_ptr<AEGP_MemHandle, std::function<void(AEGP_MemHandle *)> > icc_profileUP;
+    
+    std::vector<uint8_t> icc_color_profile;
+
+    if (!err) {
+        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecShouldEmbedICCProfile(outH, &shouldEmbedICC));
+        if (!err && shouldEmbedICC) {
+            ERR(suites.IOOutSuite4()->AEGP_GetNewOutSpecColorProfile(basic_dataP->aegp_plug_id, outH, &color_profileP));
+            if (!err) {
+                color_profileUP = std::move(std::unique_ptr<const AEGP_ColorProfileP, std::function<void(const AEGP_ColorProfileP *)> >(
+                    &color_profileP,
+                    [&](const AEGP_ColorProfileP* c) { suites.ColorSettingsSuite2()->AEGP_DisposeColorProfile(*c); }));
+
+                ERR(suites.ColorSettingsSuite2()->AEGP_GetNewICCProfileFromColorProfile(
+                    basic_dataP->aegp_plug_id,
+                    *color_profileUP,
+                    &icc_profileH));
+                icc_profileUP = std::move(std::unique_ptr<AEGP_MemHandle, std::function<void(AEGP_MemHandle *)> >(
+                    &icc_profileH,
+                    [&](const AEGP_MemHandle* h) { suites.MemorySuite1()->AEGP_FreeMemHandle(*h); }));
+
+
+                AEGP_MemSize icc_profile_size;
+                ERR(suites.MemorySuite1()->AEGP_GetMemHandleSize(*icc_profileUP, &icc_profile_size));
+                uint8_t *ptr;
+                ERR(suites.MemorySuite1()->AEGP_LockMemHandle(*icc_profileUP, (void **)&ptr));
+                if (!err) {
+                    icc_color_profile.resize(icc_profile_size);
+                    memcpy(&icc_color_profile[0], ptr, icc_profile_size);
+                    ERR(suites.MemorySuite1()->AEGP_UnlockMemHandle(*icc_profileUP));
+                }
+            }
+        }
+    }
+#endif
+
     if (!err) {
         ERR(suites.IOOutSuite4()->AEGP_GetOutSpecFilePath(outH, &file_pathH, &file_reservedB));
 
@@ -830,6 +872,9 @@ ConstructModuleInfo(
                                             // AEIO_MFlag_NO_TIME;
                                             // AEIO_MFlag_CAN_DO_MARKERS	|
                                             // AEIO_MFlag_HAS_AUX_DATA;
+#if 0
+        info->flags2                    =   AEIO_MFlag2_SUPPORTS_ICC_PROFILES;
+#endif
 
         info->read_kinds[0].mac.type			=	'NLC_';
         info->read_kinds[0].mac.creator			=	AEIO_ANY_CREATOR;
