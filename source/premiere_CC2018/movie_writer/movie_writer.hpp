@@ -23,6 +23,12 @@ public:
     }
 };
 
+enum AudioEncoding
+{
+    AudioEncoding_Unsigned_PCM,
+    AudioEncoding_Signed_PCM
+};
+
 // ffmpeg libavformat-based file writing
 class MovieWriter
 {
@@ -38,7 +44,7 @@ public:
     ~MovieWriter();
 
     //void addVideoStream(VideoFormat videoFormat, int width, int height, int64_t frameRateNumerator, int64_t frameRateDenominator);
-    void addAudioStream(int numChannels, int sampleRate);
+    void addAudioStream(int numChannels, int sampleRate, int bytesPerSample, AudioEncoding encoding);
     void writeFrame(const uint8_t *data, size_t size);
     void writeAudioFrame(const uint8_t *data, size_t size, int64_t pts);
     void writeHeader();

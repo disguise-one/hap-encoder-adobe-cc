@@ -60,6 +60,9 @@ public:
     // them out in that order
     void enqueueFrameWrite(int64_t iFrame);
 
+    // !!! temporary hack for aex audio
+    void dispatch_audio_at_end(const uint8_t *audio, size_t size);
+
     void close();  // call ahead of destruction in order to recognise errors
 
     void push(ExportJob job);
@@ -80,6 +83,9 @@ private:
 
     std::mutex frameOrderMutex_;
     std::queue<int64_t> frameOrderQueue_;
+
+    // !!! temporary hack for aex audio to be written just prior to footer
+    std::vector<uint8_t> audioBuffer_;
 };
 
 class ExporterWorker
@@ -116,6 +122,9 @@ public:
     
     // thread safe to be called 'on frame rendered'
     void dispatch(int64_t iFrame, const uint8_t* data, size_t stride, FrameFormat format) const;
+
+    // !!! temporary hack for aex audio
+    void dispatch_audio_at_end(const uint8_t *audio, size_t size);
 
 private:
     bool closed_;

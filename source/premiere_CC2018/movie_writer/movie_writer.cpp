@@ -191,7 +191,7 @@ int64_t MovieWriter::c_onSeek(void *context, int64_t seekPos, int whence)
     }
 }
 
-void MovieWriter::addAudioStream(int numChannels, int sampleRate)
+void MovieWriter::addAudioStream(int numChannels, int sampleRate, int bytesPerSample, AudioEncoding encoding)
 {
     audioStream_ = avformat_new_stream(formatContext_.get(), NULL);
     if (!audioStream_)
@@ -199,8 +199,43 @@ void MovieWriter::addAudioStream(int numChannels, int sampleRate)
 
     audioStream_->id = formatContext_->nb_streams - 1;
     audioStream_->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    audioStream_->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
-    audioStream_->codecpar->format = AV_SAMPLE_FMT_S16;
+
+    auto &codec_id = audioStream_->codecpar->codec_id;
+    auto &format = audioStream_->codecpar->format;
+    if (encoding == AudioEncoding_Signed_PCM)
+    {
+        switch (bytesPerSample) {
+        case 1:
+            codec_id = AV_CODEC_ID_PCM_S8;
+            format = AV_SAMPLE_FMT_U8;
+            break;
+        case 2:
+            codec_id = AV_CODEC_ID_PCM_S16LE;
+            format = AV_SAMPLE_FMT_S16;
+            break;
+        case 4:
+            codec_id = AV_CODEC_ID_PCM_S32LE;
+            format = AV_SAMPLE_FMT_S32;
+            break;
+        }
+    }
+    else if (encoding == AudioEncoding_Unsigned_PCM)
+    {
+        switch (bytesPerSample) {
+        case 1:
+            codec_id = AV_CODEC_ID_PCM_U8;
+            format = AV_SAMPLE_FMT_U8;
+            break;
+        case 2:
+            codec_id = AV_CODEC_ID_PCM_S16LE;
+            format = AV_SAMPLE_FMT_S16;
+            break;
+        case 4:
+            codec_id = AV_CODEC_ID_PCM_S32LE;
+            format = AV_SAMPLE_FMT_S32;
+            break;
+        }
+    }
     audioStream_->codecpar->channels = numChannels;
     audioStream_->codecpar->channel_layout = av_get_default_channel_layout(numChannels);
     audioStream_->codecpar->sample_rate = sampleRate;

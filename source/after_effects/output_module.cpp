@@ -143,7 +143,7 @@ static std::unique_ptr<Exporter> createExporter(
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int64_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
-    bool withAudio, int sampleRate, int32_t numAudioChannels,
+    bool withAudio, int sampleRate, int32_t numAudioChannels, int32_t audioBytesPerSample, AudioEncoding audioEncoding,
     bool writeMoovTagEarly
 )
 {
@@ -168,15 +168,10 @@ static std::unique_ptr<Exporter> createExporter(
 
     if (withAudio)
     {
-        writer->addAudioStream(numAudioChannels, sampleRate);
+        writer->addAudioStream(numAudioChannels, sampleRate, audioBytesPerSample, audioEncoding);
     }
 
     writer->writeHeader();
-
-#if 0
-    if (withAudio)
-        renderAndWriteAllAudio(exportInfoP, error, writer.get());
-#endif
 
     return std::make_unique<Exporter>(std::move(encoder), std::move(writer));
 }
@@ -432,6 +427,9 @@ My_StartAdding(
     A_long				widthL 		= 	0,	
                         heightL 	= 	0;
     A_FpLong			soundRateF	=	0.0;
+    AEIO_SndChannels    num_channels;
+    AEIO_SndSampleSize  bytes_per_sample;
+    AEIO_SndEncoding    snd_encoding;
     A_char				name[AEGP_MAX_PATH_SIZE] = {'\0'};
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
 
@@ -452,27 +450,13 @@ My_StartAdding(
     ERR(suites.IOOutSuite4()->AEGP_GetOutSpecFPS(outH, &fps));
     ERR(suites.IOOutSuite4()->AEGP_GetOutSpecAlphaLabel(outH, &alpha));
 
-#if 0
-    // If video
-    if (!err && name && widthL && heightL) {
-        header.hasVideo		=	TRUE;
-
-        if (depth > 32){
-            header.rowbytesLu	=	(unsigned long)(8 * widthL);
-        } else {
-            header.rowbytesLu	=	(unsigned long)(4 * widthL);
-        }
-    }
-
     if (!err && soundRateF > 0) {
-        header.hasAudio		=	TRUE;
-        header.rateF		=	soundRateF;
-        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundChannels(outH, &header.num_channels));
-        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundSampleSize(outH, &header.bytes_per_sample));
+        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundChannels(outH, &num_channels));
+        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundSampleSize(outH, &bytes_per_sample));
+        ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundEncoding(outH, &snd_encoding));
 
-        header.encoding		=	AEIO_E_UNSIGNED_PCM;
+        // need to ensure encoding AEIO_E_UNSIGNED_PCM;
     }
-#endif
 
     // Get timecode
     if (!err) {
@@ -577,9 +561,11 @@ My_StartAdding(
             int64_t maxFrames = (int64_t)duration.value * fps / A_Fixed_ONE / duration.scale;
             int64_t reserveMetadataSpace = 0;
             auto movieErrorCallback = [](...) {};
-            bool withAudio = false;
-            int64_t sampleRate = 0;
-            int numAudioChannels = 0;
+            bool withAudio = (soundRateF > 0);
+            int64_t sampleRate = soundRateF;
+            int numAudioChannels = num_channels;
+            int audioBytesPerSample = bytes_per_sample;
+            AudioEncoding audioEncoding = ((snd_encoding == AEIO_E_UNSIGNED_PCM) ? AudioEncoding_Unsigned_PCM : AudioEncoding_Signed_PCM);
 
             auto movieFile = createMovieFile(filePath, [](...) {});
 
@@ -599,6 +585,8 @@ My_StartAdding(
                 withAudio,
                 sampleRate,
                 numAudioChannels,
+                audioBytesPerSample,
+                audioEncoding,
                 false // writeMoovTagEarly
             );
         }
@@ -754,7 +742,6 @@ My_Flush(
     return A_Err_NONE; 
 };
 
-#if 0
 static A_Err	
 My_AddSoundChunk(
     AEIO_BasicData	*basic_dataP,
@@ -765,24 +752,22 @@ My_AddSoundChunk(
 { 
     A_Err err		= A_Err_NONE, err2 = A_Err_NONE;
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
-    
-    AEIO_Handle					optionsH = NULL;
-    IO_FlatFileOutputOptions	*optionsP = NULL;
-    
-    ERR(suites.IOOutSuite4()->AEGP_GetOutSpecOptionsHandle(outH, reinterpret_cast<void**>(&optionsH)));
+    OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
+    if (!optionsUP)
+        return A_Err_PARAMETER;
 
-    if (!err && optionsH) {
-        ERR(suites.MemorySuite1()->AEGP_LockMemHandle(optionsH, reinterpret_cast<void**>(&optionsP)));
-        if (!err) {
-            A_char report[AEGP_MAX_ABOUT_STRING_SIZE] = {'\0'};
-            suites.ANSICallbacksSuite1()->sprintf(report, "NotchLC : Pretended to write %d samples of audio requested.", num_samplesLu); 
-            ERR(suites.UtilitySuite3()->AEGP_ReportInfo(	basic_dataP->aegp_plug_id, report));
-        }
+    AEIO_SndChannels    num_channels;
+    AEIO_SndSampleSize  bytes_per_sample;
+    ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundChannels(outH, &num_channels));
+    ERR(suites.IOOutSuite4()->AEGP_GetOutSpecSoundSampleSize(outH, &bytes_per_sample));
+    if (!err) {
+        optionsUP->exporter->dispatch_audio_at_end(
+            reinterpret_cast<const uint8_t *>(dataPV),
+            num_channels * num_samplesLu * bytes_per_sample);
     }
-    ERR2(suites.MemorySuite1()->AEGP_UnlockMemHandle(optionsH));
+
     return err; 
 };
-#endif
 
 static A_Err	
 My_Idle(
@@ -865,10 +850,11 @@ ConstructModuleInfo(
         
         info->num_aux_extensionsS		=	0;
 
-        info->flags						=	AEIO_MFlag_OUTPUT			| 
-                                            AEIO_MFlag_FILE				|
-                                            AEIO_MFlag_VIDEO; //			| 
-                                            // AEIO_MFlag_AUDIO			|
+        info->flags						=	AEIO_MFlag_OUTPUT           | 
+                                            AEIO_MFlag_FILE             |
+                                            AEIO_MFlag_VIDEO            | 
+                                            AEIO_MFlag_AUDIO            |
+                                            AEIO_MFlag_CANT_SOUND_INTERLEAVE; //			|
                                             // AEIO_MFlag_NO_TIME;
                                             // AEIO_MFlag_CAN_DO_MARKERS	|
                                             // AEIO_MFlag_HAS_AUX_DATA;
@@ -894,7 +880,7 @@ ConstructFunctionBlock(
 {
     if (funcs) {
         funcs->AEIO_AddFrame				=	My_AddFrame;
-        // !!! funcs->AEIO_AddSoundChunk			=	My_AddSoundChunk;
+        funcs->AEIO_AddSoundChunk			=	My_AddSoundChunk;
         funcs->AEIO_DisposeOutputOptions	=	My_DisposeOutputOptions;
         funcs->AEIO_EndAdding				=	My_EndAdding;
         funcs->AEIO_Flush					=	My_Flush;

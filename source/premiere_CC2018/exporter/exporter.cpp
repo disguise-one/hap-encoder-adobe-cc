@@ -54,6 +54,12 @@ void ExporterJobWriter::enqueueFrameWrite(int64_t iFrame)
     frameOrderQueue_.push(iFrame);
 }
 
+// !!! buffer for write-out at end
+void ExporterJobWriter::dispatch_audio_at_end(const uint8_t *audio, size_t size)
+{
+    audioBuffer_.insert(audioBuffer_.end(), audio, audio + size);
+}
+
 void ExporterJobWriter::push(ExportJob job)
 {
     std::lock_guard<std::mutex> guard(mutex_);
@@ -125,6 +131,9 @@ void ExporterJobWriter::close()
 {
     if (!error_)
     {
+        if (audioBuffer_.size())
+            writer_->writeAudioFrame(&audioBuffer_[0], audioBuffer_.size(), 0);
+
         writer_->writeTrailer();
     }
 
@@ -316,6 +325,12 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* data, size_t stride, Fram
     job->codecJob->copyExternalToLocal(data, stride, format);
 
     jobEncoder_.push(std::move(job));
+}
+
+// !!! buffer for write-out at end
+void Exporter::dispatch_audio_at_end(const uint8_t *audio, size_t size)
+{
+    jobWriter_.dispatch_audio_at_end(audio, size);
 }
 
 // returns true if pool was expanded

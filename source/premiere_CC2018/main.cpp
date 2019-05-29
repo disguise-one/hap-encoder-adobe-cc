@@ -402,7 +402,7 @@ static std::unique_ptr<Exporter> createExporter(
 
     if (withAudio)
     {
-        writer->addAudioStream(numAudioChannels, sampleRate);
+        writer->addAudioStream(numAudioChannels, sampleRate, 2, AudioEncoding_Signed_PCM);
     }
 
     writer->writeHeader();
