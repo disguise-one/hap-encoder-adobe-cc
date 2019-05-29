@@ -830,8 +830,10 @@ ImporterGetSourceVideo(
 
     PrTime ticksPerSecond = 0;
     (*ldataH)->adobe->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
-    double tFrame = (double)sourceVideoRec->inFrameTime / ticksPerSecond;
-    int32_t iFrame = static_cast<csSDK_int32>(tFrame * (*ldataH)->movieReader->frameRateNumerator() / (*ldataH)->movieReader->frameRateDenominator());
+    int64_t num = sourceVideoRec->inFrameTime * (*ldataH)->movieReader->frameRateNumerator();
+    int64_t den = ticksPerSecond * (*ldataH)->movieReader->frameRateDenominator();
+    int32_t iFrame = (int32_t)(num / den);
+
 
     //!!! cache usually returns 'true', even for frames that haven't been added to it yet
     //!!! !!! this is probably due to the importerID being incorrect, as it was previously

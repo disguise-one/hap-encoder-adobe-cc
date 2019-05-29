@@ -60,19 +60,19 @@ AsyncImporter::~AsyncImporter()
 {
 }
 
-int32_t AsyncImporter::convertTimeToFrame(double t) const
+int32_t AsyncImporter::convertTimeToFrame(int64_t time_numerator, int64_t time_denominator) const
 {
-    return (int32_t)(t * frameRateNumerator_ / frameRateDenominator_);
+    int64_t num = time_numerator * frameRateNumerator_;
+    int64_t den = time_denominator * frameRateDenominator_;
+    return (int32_t)(num / den);
 }
-
 
 int AsyncImporter::OnInitiateAsyncRead(imSourceVideoRec& inSourceRec)
 {
     try {
         PrTime ticksPerSecond = 0;
         adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
-        double tFrame = (double)inSourceRec.inFrameTime / ticksPerSecond;
-        int32_t iFrame = convertTimeToFrame(tFrame);
+        int32_t iFrame = convertTimeToFrame(inSourceRec.inFrameTime, ticksPerSecond);
 
         // Get parameters for ReadFrameToBuffer()
         imFrameFormat *frameFormat = &inSourceRec.inFrameFormats[0];
@@ -162,8 +162,7 @@ int AsyncImporter::OnGetFrame(imSourceVideoRec* inSourceRec)
     {
         PrTime ticksPerSecond = 0;
         adobe_->TimeSuite->GetTicksPerSecond(&ticksPerSecond);
-        double tFrame = (double)inSourceRec->inFrameTime / ticksPerSecond;
-        int32_t iFrame = convertTimeToFrame(tFrame);
+        int32_t iFrame = convertTimeToFrame(inSourceRec->inFrameTime, ticksPerSecond);
 
         AsyncFrameRequest *frameRequest;
 

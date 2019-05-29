@@ -38,7 +38,7 @@ public:
         int32_t width, int32_t height,
         int32_t frameRateNumerator, int32_t frameRateDenominator);
 
-    int32_t convertTimeToFrame(double t) const;
+    int32_t convertTimeToFrame(int64_t time_numerator, int64_t time_denominator) const;
 
     ~AsyncImporter();
     int OnInitiateAsyncRead(imSourceVideoRec& inSourceRec);
