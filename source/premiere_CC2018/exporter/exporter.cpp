@@ -131,8 +131,12 @@ void ExporterJobWriter::close()
 {
     if (!error_)
     {
+        writer_->flush();
+
         if (audioBuffer_.size())
             writer_->writeAudioFrame(&audioBuffer_[0], audioBuffer_.size(), 0);
+
+        writer_->flush();
 
         writer_->writeTrailer();
     }

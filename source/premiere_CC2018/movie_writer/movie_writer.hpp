@@ -47,6 +47,7 @@ public:
     void addAudioStream(int numChannels, int sampleRate, int bytesPerSample, AudioEncoding encoding);
     void writeFrame(const uint8_t *data, size_t size);
     void writeAudioFrame(const uint8_t *data, size_t size, int64_t pts);
+    void flush();        // internally frames are not written immediately but are queued
     void writeHeader();
     void writeTrailer();
 

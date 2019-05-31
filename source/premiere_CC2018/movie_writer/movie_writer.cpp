@@ -107,6 +107,11 @@ void MovieWriter::writeHeader()
     AVDictionary* movOptionsDictptr(nullptr);
     movOptions.reset(&movOptionsDictptr);
 
+    // !!! bugfix - editlist processing on read discards last frame entry
+    // !!! TODO: find out why ffmpeg mov.c is doing this
+    av_dict_set(&movOptionsDictptr, "use_editlist", "0", 0);
+    // !!!
+
     if (writeMoovTagEarly_)
     {
         // avoid Adobe CC's post export copy step by giving ffmpeg enough info to put the moov header at
@@ -280,6 +285,15 @@ void MovieWriter::writeAudioFrame(const uint8_t *data, size_t size, int64_t pts)
     if (ret < 0)
     {
         throw std::runtime_error(std::string("Error while writing audio frame: ") + av_err2str(ret).c_str());
+    }
+}
+
+void MovieWriter::flush()
+{
+    int ret = av_interleaved_write_frame(formatContext_.get(), nullptr);
+    if (ret < 0)
+    {
+        throw std::runtime_error(std::string("Error flushing queued interleaved frames: ") + av_err2str(ret).c_str());
     }
 }
 
