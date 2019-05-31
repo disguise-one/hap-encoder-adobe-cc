@@ -63,7 +63,18 @@ MovieReader::MovieReader(
         formatContext->iformat = &ff_mov_demuxer;
         formatContext->pb = ioContext_.get();
 
-        ret = avformat_open_input(&formatContext, NULL, NULL, NULL);
+        // !!! bugfix - editlist processing on read discards last frame entry
+        // !!! TODO: find out why ffmpeg mov.c mov_fix_index is doing this
+        AVDictionary* movOptionsDictptr(nullptr);
+        av_dict_set(&movOptionsDictptr, "ignore_editlist", "1", 0);
+        // !!!
+
+        ret = avformat_open_input(&formatContext, NULL, NULL, &movOptionsDictptr);
+
+        // !!!
+        av_dict_free(&movOptionsDictptr);
+        // !!!
+
         if (ret < 0) {
             throw std::runtime_error("format could not open input");
         }
