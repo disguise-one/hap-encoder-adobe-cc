@@ -177,7 +177,7 @@ static std::unique_ptr<Exporter> createExporter(
 }
 
 static A_Err
-My_InitOutputSpec(
+AEIO_InitOutputSpec(
     AEIO_BasicData *basic_dataP,
     AEIO_OutSpecH   outH,
     A_Boolean      *user_interacted)
@@ -242,7 +242,7 @@ My_InitOutputSpec(
 
 
 static A_Err    
-My_GetFlatOutputOptions(
+AEIO_GetFlatOutputOptions(
     AEIO_BasicData    *basic_dataP,
     AEIO_OutSpecH    outH, 
     AEIO_Handle        *new_optionsPH)
@@ -282,7 +282,7 @@ My_GetFlatOutputOptions(
 
 
 static A_Err    
-My_DisposeOutputOptions(
+AEIO_DisposeOutputOptions(
     AEIO_BasicData    *basic_dataP,
     void			*optionsPV)
 { 
@@ -301,7 +301,7 @@ My_DisposeOutputOptions(
 };
 
 static A_Err	
-My_UserOptionsDialog(
+AEIO_UserOptionsDialog(
     AEIO_BasicData			*basic_dataP,
     AEIO_OutSpecH			outH, 
     const PF_EffectWorld	*sample0,
@@ -336,7 +336,7 @@ My_UserOptionsDialog(
 };
 
 static A_Err	
-My_GetOutputInfo(
+AEIO_GetOutputInfo(
     AEIO_BasicData		*basic_dataP,
     AEIO_OutSpecH		outH,
     AEIO_Verbiage		*verbiageP)
@@ -359,7 +359,7 @@ My_GetOutputInfo(
 
     
 static A_Err	
-My_OutputInfoChanged(
+AEIO_OutputInfoChanged(
     AEIO_BasicData		*basic_dataP,
     AEIO_OutSpecH		outH)
 {
@@ -405,7 +405,7 @@ My_OutputInfoChanged(
 }
 
 static A_Err	
-My_SetOutputFile(
+AEIO_SetOutputFile(
     AEIO_BasicData		*basic_dataP,
     AEIO_OutSpecH		outH, 
     const A_UTF16Char	*file_pathZ)
@@ -414,7 +414,7 @@ My_SetOutputFile(
 }
 
 static A_Err	
-My_StartAdding(
+AEIO_StartAdding(
     AEIO_BasicData		*basic_dataP,
     AEIO_OutSpecH		outH, 
     A_long				flags)
@@ -433,7 +433,7 @@ My_StartAdding(
     A_char				name[AEGP_MAX_PATH_SIZE] = {'\0'};
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
 
-    AEGP_ProjectH		my_projH		= 0;
+    AEGP_ProjectH		projH		= 0;
     AEGP_TimeDisplay3	time_display;
     A_long				start_frameL	= 0;
 
@@ -460,8 +460,8 @@ My_StartAdding(
 
     // Get timecode
     if (!err) {
-        ERR(suites.ProjSuite6()->AEGP_GetProjectByIndex(0, &my_projH));
-        ERR(suites.ProjSuite6()->AEGP_GetProjectTimeDisplay(my_projH, &time_display));
+        ERR(suites.ProjSuite6()->AEGP_GetProjectByIndex(0, &projH));
+        ERR(suites.ProjSuite6()->AEGP_GetProjectTimeDisplay(projH, &time_display));
 
         ERR(suites.IOOutSuite4()->AEGP_GetOutSpecStartFrame(outH, &start_frameL));
     }
@@ -599,7 +599,7 @@ My_StartAdding(
 };
 
 static A_Err	
-My_AddFrame(
+AEIO_AddFrame(
     AEIO_BasicData			*basic_dataP,
     AEIO_OutSpecH			outH, 
     A_long					frame_index, 
@@ -671,7 +671,7 @@ My_AddFrame(
 };
                                 
 static A_Err	
-My_EndAdding(
+AEIO_EndAdding(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH			outH, 
     A_long					flags)
@@ -697,7 +697,7 @@ My_EndAdding(
 };
 
 static A_Err	
-My_OutputFrame(
+AEIO_OutputFrame(
     AEIO_BasicData			*basic_dataP,
     AEIO_OutSpecH			outH, 
     const PF_EffectWorld	*wP)
@@ -713,7 +713,7 @@ My_OutputFrame(
 };
 
 static A_Err	
-My_WriteLabels(
+AEIO_WriteLabels(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH	outH, 
     AEIO_LabelFlags	*written)
@@ -722,7 +722,7 @@ My_WriteLabels(
 };
 
 static A_Err	
-My_GetSizes(
+AEIO_GetSizes(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH	outH, 
     A_u_longlong	*free_space, 
@@ -732,7 +732,7 @@ My_GetSizes(
 };
 
 static A_Err	
-My_Flush(
+AEIO_Flush(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH	outH)
 { 
@@ -743,7 +743,7 @@ My_Flush(
 };
 
 static A_Err	
-My_AddSoundChunk(
+AEIO_AddSoundChunk(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH	outH, 
     const A_Time	*start, 
@@ -770,7 +770,7 @@ My_AddSoundChunk(
 };
 
 static A_Err	
-My_Idle(
+AEIO_Idle(
     AEIO_BasicData			*basic_dataP,
     AEIO_ModuleSignature	sig,
     AEIO_IdleFlags			*idle_flags0)
@@ -780,7 +780,7 @@ My_Idle(
 
 
 static A_Err	
-My_GetDepths(
+AEIO_GetDepths(
     AEIO_BasicData			*basic_dataP,
     AEIO_OutSpecH			outH, 
     AEIO_SupportedDepthFlags		*which)
@@ -801,7 +801,7 @@ My_GetDepths(
 };
 
 static A_Err	
-My_GetOutputSuffix(
+AEIO_GetOutputSuffix(
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH	outH, 
     A_char			*suffix)
@@ -811,7 +811,7 @@ My_GetOutputSuffix(
 
 
 static A_Err	
-My_SetUserData(                
+AEIO_SetUserData(                
     AEIO_BasicData	*basic_dataP,
     AEIO_OutSpecH			outH,
     A_u_long				typeLu,
@@ -879,25 +879,25 @@ ConstructFunctionBlock(
     AEIO_FunctionBlock4	*funcs)
 {
     if (funcs) {
-        funcs->AEIO_AddFrame				=	My_AddFrame;
-        funcs->AEIO_AddSoundChunk			=	My_AddSoundChunk;
-        funcs->AEIO_DisposeOutputOptions	=	My_DisposeOutputOptions;
-        funcs->AEIO_EndAdding				=	My_EndAdding;
-        funcs->AEIO_Flush					=	My_Flush;
-        funcs->AEIO_GetDepths				=	My_GetDepths;
-        funcs->AEIO_GetOutputInfo			=	My_GetOutputInfo;
-        funcs->AEIO_GetOutputSuffix			=	My_GetOutputSuffix;
-        funcs->AEIO_GetSizes				=	My_GetSizes;
-        funcs->AEIO_Idle					=	My_Idle;
-        funcs->AEIO_OutputFrame				=	My_OutputFrame;
-        funcs->AEIO_SetOutputFile			=	My_SetOutputFile;
-        funcs->AEIO_SetUserData				=	My_SetUserData;
-        funcs->AEIO_StartAdding				=	My_StartAdding;
-        funcs->AEIO_UserOptionsDialog		=	My_UserOptionsDialog;
-        funcs->AEIO_WriteLabels				=	My_WriteLabels;
-        funcs->AEIO_InitOutputSpec			=	My_InitOutputSpec;
-        funcs->AEIO_GetFlatOutputOptions	=	My_GetFlatOutputOptions;
-        funcs->AEIO_OutputInfoChanged		=	My_OutputInfoChanged;
+        funcs->AEIO_AddFrame				=	AEIO_AddFrame;
+        funcs->AEIO_AddSoundChunk			=	AEIO_AddSoundChunk;
+        funcs->AEIO_DisposeOutputOptions	=	AEIO_DisposeOutputOptions;
+        funcs->AEIO_EndAdding				=	AEIO_EndAdding;
+        funcs->AEIO_Flush					=	AEIO_Flush;
+        funcs->AEIO_GetDepths				=	AEIO_GetDepths;
+        funcs->AEIO_GetOutputInfo			=	AEIO_GetOutputInfo;
+        funcs->AEIO_GetOutputSuffix			=	AEIO_GetOutputSuffix;
+        funcs->AEIO_GetSizes				=	AEIO_GetSizes;
+        funcs->AEIO_Idle					=	AEIO_Idle;
+        funcs->AEIO_OutputFrame				=	AEIO_OutputFrame;
+        funcs->AEIO_SetOutputFile			=	AEIO_SetOutputFile;
+        funcs->AEIO_SetUserData				=	AEIO_SetUserData;
+        funcs->AEIO_StartAdding				=	AEIO_StartAdding;
+        funcs->AEIO_UserOptionsDialog		=	AEIO_UserOptionsDialog;
+        funcs->AEIO_WriteLabels				=	AEIO_WriteLabels;
+        funcs->AEIO_InitOutputSpec			=	AEIO_InitOutputSpec;
+        funcs->AEIO_GetFlatOutputOptions	=	AEIO_GetFlatOutputOptions;
+        funcs->AEIO_OutputInfoChanged		=	AEIO_OutputInfoChanged;
 
         return A_Err_NONE;
     } else {
