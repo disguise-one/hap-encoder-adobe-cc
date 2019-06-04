@@ -555,7 +555,7 @@ AEIO_StartAdding(
             default:
                 throw std::runtime_error("unsupported depth");
             }
-            int clampedQuality = std::clamp(4, 1, 5);  //!!! 4 is optimal; replace with enum
+            int clampedQuality = std::clamp(optionsUP->quality, 1, 5);  //!!! 4 is optimal; replace with enum
             int64_t frameRateNumerator = fps;
             int64_t frameRateDenominator = A_Fixed_ONE;
             int64_t maxFrames = (int64_t)duration.value * fps / A_Fixed_ONE / duration.scale;
@@ -788,7 +788,7 @@ AEIO_GetDepths(
     /*	Enumerate possible output depths by OR-ing 
         together different AEIO_SupportedDepthFlags.
     */
-    
+
     *which =
         AEIO_SupportedDepthFlags_DEPTH_24 |
         AEIO_SupportedDepthFlags_DEPTH_32 |
