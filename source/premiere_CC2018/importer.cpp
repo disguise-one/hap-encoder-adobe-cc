@@ -657,7 +657,6 @@ ImporterGetSubTypeNames(
 
 
 
-#if 0
 prMALError
 GetInfoAudio(
     ImporterLocalRec8H    ldataH,
@@ -665,39 +664,28 @@ GetInfoAudio(
 {
     prMALError returnValue = malNoError;
 
-    if((**ldataH).theFile.hasAudio)
+    if((*ldataH)->movieReader->hasAudio())
     {
         SDKFileInfo8->hasAudio                = kPrTrue;
 
-        // Importer API doesn't use channel-type enum from compiler API - need to map them
-        if ((**ldataH).theFile.channelType == kPrAudioChannelType_Mono)
-        {
-            SDKFileInfo8->audInfo.numChannels = 1;
-        }
-        else if ((**ldataH).theFile.channelType == kPrAudioChannelType_Stereo)
-        {
-            SDKFileInfo8->audInfo.numChannels = 2;
-        }
-        else if ((**ldataH).theFile.channelType == kPrAudioChannelType_51)
-        {
-            SDKFileInfo8->audInfo.numChannels = 6;
-        }
-        else
-        {
-            returnValue = imBadFile;
-        }
+        int numChannels, sampleRate, bytesPerSample;
+        AudioEncoding encoding;
+        (*ldataH)->movieReader->getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
 
-        SDKFileInfo8->audInfo.sampleRate    = (float)(**ldataH).theFile.sampleRate;
-        // 32 bit float only for now
-        SDKFileInfo8->audInfo.sampleType    = kPrAudioSampleType_32BitFloat;
-        SDKFileInfo8->audDuration            = (**ldataH).theFile.numSampleFrames;
 
-        #ifdef MULTISTREAM_AUDIO_TESTING
-        if (!returnValue)
-        {
-            returnValue = MultiStreamAudioTesting(ldataH, SDKFileInfo8);
-        }
-        #endif
+        SDKFileInfo8->audInfo.numChannels = numChannels;
+        SDKFileInfo8->audInfo.sampleRate = sampleRate;
+        std::map<std::pair<int, AudioEncoding>, PrAudioSampleType> bpsAndSignToPrAudioSampleType{
+            {{1, AudioEncoding_Signed_PCM}, kPrAudioSampleType_8BitTwosInt},
+            {{2, AudioEncoding_Signed_PCM}, kPrAudioSampleType_16BitInt},
+            {{4, AudioEncoding_Signed_PCM}, kPrAudioSampleType_32BitInt},
+            {{1, AudioEncoding_Unsigned_PCM}, kPrAudioSampleType_8BitInt},
+            {{2, AudioEncoding_Unsigned_PCM}, kPrAudioSampleType_16BitInt},
+            {{4, AudioEncoding_Unsigned_PCM}, kPrAudioSampleType_32BitInt}
+        }; // these are used for display purposes
+
+        SDKFileInfo8->audInfo.sampleType = bpsAndSignToPrAudioSampleType[{bytesPerSample, encoding}];
+        SDKFileInfo8->audDuration = sampleRate * (*ldataH)->movieReader->numFrames();
     }
     else
     {
@@ -705,7 +693,7 @@ GetInfoAudio(
     }
     return returnValue;
 }
-#endif
+
 
 /* 
     Populate the imFileInfoRec8 structure describing this file instance
@@ -763,9 +751,6 @@ ImporterGetInfo8(
     // Acquire needed suites
     (*ldataH)->adobe = std::make_unique<AdobeImporterAPI>(stdParms->piSuites);
 
-    //!!! // Initialize persistent storage
-    //!!! (*ldataH)->audioPosition = 0;
-
     // Get video info from header
     fileInfo8->hasVideo = kPrTrue;
     fileInfo8->vidInfo.subType     = (csSDK_int32 &)(CodecRegistry::codec()->videoFormat());
@@ -776,28 +761,78 @@ ImporterGetInfo8(
 
     fileInfo8->vidInfo.alphaType = alphaStraight;
 
-    //!!!if (SDKFileInfo8->vidInfo.depth == 32)
-    //!!!{
-    //!!!    SDKFileInfo8->vidInfo.alphaType = alphaStraight;
-    //!!!}
-    //!!!else
-    //!!!{
-    //!!!    SDKFileInfo8->vidInfo.alphaType = alphaNone;
-    //!!!}
-
     fileInfo8->vidInfo.pixelAspectNum = 1;
     fileInfo8->vidInfo.pixelAspectDen = 1;
     fileInfo8->vidScale               = (csSDK_int32)(*ldataH)->movieReader->frameRateNumerator();
     fileInfo8->vidSampleSize          = (csSDK_int32)(*ldataH)->movieReader->frameRateDenominator();
     fileInfo8->vidDuration            = (int32_t)((*ldataH)->movieReader->numFrames() * fileInfo8->vidSampleSize);
 
-    //!!! // Get audio info from header
-    //!!! result = GetInfoAudio(ldataH, fileInfo8);
+    // Get audio info from header
+    result = GetInfoAudio(ldataH, fileInfo8);
 
     stdParms->piSuites->memFuncs->unlockHandle(reinterpret_cast<char**>(ldataH));
 
     return result;
 }
+
+template<typename T>
+static void deinterleave(const T* source, int nChannels, int nSamples, float **dest)
+{
+    double half_range = 0.5 * (std::numeric_limits<T>::max() - std::numeric_limits<T>::min());
+    double scale = 1.0 / half_range;
+    double offset = -scale * std::numeric_limits<T>::min() - 1;
+
+    for (auto channel = 0; channel != nChannels; ++channel)
+    {
+        const T* s = &source[channel];
+        float *d = dest[channel];
+        for (int i = 0; i < nSamples; ++i) {
+            *d = *s * scale + offset;
+            s += nChannels;
+            ++d;
+        }
+    }
+}
+
+static prMALError
+ImporterImportAudio7(
+    imStdParms *stdParms,
+    imFileRef   fileRef,
+    imImportAudioRec7 *importAudioRec7)
+{
+    prMALError result = malNoError;
+    ImporterLocalRec8H ldataH = NULL;
+    ldataH = reinterpret_cast<ImporterLocalRec8H>(importAudioRec7->privateData);
+    
+    std::vector<uint8_t> buffer;
+    (*ldataH)->movieReader->readAudio(importAudioRec7->position, importAudioRec7->size, buffer);
+
+    int numChannels, sampleRate, bytesPerSample;
+    AudioEncoding encoding;
+    (*ldataH)->movieReader->getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
+
+    if ((bytesPerSample == 1) && (encoding == AudioEncoding_Signed_PCM)) {
+        deinterleave((int8_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+    else if ((bytesPerSample == 2) && (encoding == AudioEncoding_Signed_PCM)) {
+        deinterleave((int16_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+    else if ((bytesPerSample == 4) && (encoding == AudioEncoding_Signed_PCM)) {
+        deinterleave((int32_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+    else if ((bytesPerSample == 1) && (encoding == AudioEncoding_Unsigned_PCM)) {
+        deinterleave((uint8_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+    else if ((bytesPerSample == 2) && (encoding == AudioEncoding_Unsigned_PCM)) {
+        deinterleave((uint16_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+    else if ((bytesPerSample == 4) && (encoding == AudioEncoding_Unsigned_PCM)) {
+        deinterleave((uint32_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+    }
+
+    return result;
+}
+
 
 #if 0
 static prMALError 
@@ -970,10 +1005,9 @@ PREMPLUGENTRY DllExport xImportEntry (
             break;
 
         case imImportAudio7:
-//barf            result = ImporterImportAudio7(stdParms, 
-//barf                                          reinterpret_cast<imFileRef>(param1),
-//barf                                          reinterpret_cast<imImportAudioRec7*>(param2));
-            result = imUnsupported;
+            result = ImporterImportAudio7(stdParms, 
+                                          reinterpret_cast<imFileRef>(param1),
+                                          reinterpret_cast<imImportAudioRec7*>(param2));
             break;
 
         case imOpenFile8:

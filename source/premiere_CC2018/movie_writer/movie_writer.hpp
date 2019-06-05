@@ -23,12 +23,6 @@ public:
     }
 };
 
-enum AudioEncoding
-{
-    AudioEncoding_Unsigned_PCM,
-    AudioEncoding_Signed_PCM
-};
-
 // ffmpeg libavformat-based file writing
 class MovieWriter
 {

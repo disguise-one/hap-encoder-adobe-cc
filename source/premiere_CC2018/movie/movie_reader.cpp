@@ -59,7 +59,7 @@ MovieReader::MovieReader(
         }
         ioContext_.reset(ioContext);
 
-        /* allocate the output media context */
+        /* allocate the io media context */
         AVFormatContext *formatContext = avformat_alloc_context();
         formatContext->iformat = &ff_mov_demuxer;
         formatContext->pb = ioContext_.get();
@@ -160,6 +160,59 @@ void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
         }
     }
 }
+
+void MovieReader::getAudioParams(int &numChannels, int &sampleRate, int &bytesPerSample, AudioEncoding &encoding)
+{
+    if (!hasAudio())
+        throw std::runtime_error("no audio");
+
+    AVStream *stream = formatContext_->streams[audioStreamIdx_];
+
+    getAVCodecParams(*stream->codecpar, numChannels, sampleRate, bytesPerSample, encoding);
+}
+
+void MovieReader::readAudio(int64_t pos, int64_t size, std::vector<uint8_t>& buffer)
+{
+    if (!hasAudio())
+        throw std::runtime_error("no audio");
+
+    if (!audioCache_.size())
+    {
+        AVStream *stream = formatContext_->streams[audioStreamIdx_];
+
+        AVPacket pkt;
+        int64_t pos(0);
+        while (pos<stream->duration) {
+            int ret = av_seek_frame(formatContext_.get(), audioStreamIdx_, pos, AVSEEK_FLAG_ANY);
+            if (ret < 0)
+                throw std::runtime_error(std::string("could not seek to start of audio - " + av_err2str(ret)));
+
+            while (true) {
+                ret = av_read_frame(formatContext_.get(), &pkt);
+                if (ret < 0)
+                    throw std::runtime_error(std::string("could not read audio frame - " + av_err2str(ret)));
+                else if (pkt.stream_index == audioStreamIdx_) {
+                    audioCache_.insert(audioCache_.end(), pkt.data, pkt.data + pkt.size);
+                    pos += pkt.duration;
+                    av_packet_unref(&pkt);
+                    break;
+                }
+                else {
+                    av_packet_unref(&pkt);
+                }
+            }
+        }
+    }
+
+    int numChannels, sampleRate, bytesPerSample;
+    AudioEncoding encoding;
+    getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
+
+    int bytesPerFrame = bytesPerSample * numChannels;
+    buffer.clear();
+    buffer.insert(buffer.begin(), &audioCache_[bytesPerFrame * pos], &audioCache_[bytesPerFrame * (pos + size)]);
+}
+
 
 MovieReader::~MovieReader()
 {

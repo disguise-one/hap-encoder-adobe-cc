@@ -22,6 +22,8 @@ public:
 
     void readVideoFrame(int iFrame, std::vector<uint8_t>& frame);
     bool hasAudio() const { return audioStreamIdx_ != -1;  }
+    void getAudioParams(int &numChannels, int &sampleRate, int &bytesPerSample, AudioEncoding &encoding);
+    void readAudio(int64_t samplePos, int64_t size, std::vector<uint8_t> &audio_);
 
     int64_t fileSize() const { return fileSize_; }  // this is used by avio seek :(
 
@@ -59,6 +61,8 @@ private:
     MovieSeekCallback onSeek_;
     MovieErrorCallback onError_;
     MovieCloseCallback onClose_;
+
+    std::vector<uint8_t> audioCache_;
 };
 
 #endif   // MOVIE_WRITER_HPP
