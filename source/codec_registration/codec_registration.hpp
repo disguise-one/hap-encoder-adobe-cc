@@ -121,6 +121,7 @@ typedef std::array<char, 31> VideoEncoderName;
 class EncoderJob {
 public:
     EncoderJob() {}
+    virtual ~EncoderJob() {};
 
     // respond to a new incoming frame in the main thread; returns as fast as possible
     void copyExternalToLocal(
@@ -165,6 +166,7 @@ private:
 class DecoderJob {
 public:
     DecoderJob() {}
+    virtual ~DecoderJob() {};
 
     // encoding steps
 
