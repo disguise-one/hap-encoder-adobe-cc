@@ -668,13 +668,10 @@ GetInfoAudio(
     {
         SDKFileInfo8->hasAudio                = kPrTrue;
 
-        int numChannels, sampleRate, bytesPerSample;
-        AudioEncoding encoding;
-        (*ldataH)->movieReader->getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
+        auto audioDef = (*ldataH)->movieReader->audioDef();
 
-
-        SDKFileInfo8->audInfo.numChannels = numChannels;
-        SDKFileInfo8->audInfo.sampleRate = sampleRate;
+        SDKFileInfo8->audInfo.numChannels = audioDef.numChannels;
+        SDKFileInfo8->audInfo.sampleRate = audioDef.sampleRate;
         std::map<std::pair<int, AudioEncoding>, PrAudioSampleType> bpsAndSignToPrAudioSampleType{
             {{1, AudioEncoding_Signed_PCM}, kPrAudioSampleType_8BitTwosInt},
             {{2, AudioEncoding_Signed_PCM}, kPrAudioSampleType_16BitInt},
@@ -684,8 +681,8 @@ GetInfoAudio(
             {{4, AudioEncoding_Unsigned_PCM}, kPrAudioSampleType_32BitInt}
         }; // these are used for display purposes
 
-        SDKFileInfo8->audInfo.sampleType = bpsAndSignToPrAudioSampleType[{bytesPerSample, encoding}];
-        SDKFileInfo8->audDuration = sampleRate * (*ldataH)->movieReader->numFrames();
+        SDKFileInfo8->audInfo.sampleType = bpsAndSignToPrAudioSampleType[{audioDef.bytesPerSample, audioDef.encoding}];
+        SDKFileInfo8->audDuration = (*ldataH)->movieReader->numAudioFrames();
     }
     else
     {
@@ -804,31 +801,49 @@ ImporterImportAudio7(
     ImporterLocalRec8H ldataH = NULL;
     ldataH = reinterpret_cast<ImporterLocalRec8H>(importAudioRec7->privateData);
     
-    std::vector<uint8_t> buffer;
-    (*ldataH)->movieReader->readAudio(importAudioRec7->position, importAudioRec7->size, buffer);
+    // !!! near end we're asked to read beyond the duration we provided in GetInfoAudio :(
+    // !!! don't fail in that case
+    auto numFrames = (*ldataH)->movieReader->numAudioFrames();
+    auto safePosition = std::min(importAudioRec7->position, numFrames);
+    auto safeSize = std::min((int64_t)importAudioRec7->size, numFrames - safePosition);
 
-    int numChannels, sampleRate, bytesPerSample;
-    AudioEncoding encoding;
-    (*ldataH)->movieReader->getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
+    std::vector<uint8_t> buffer;
+    (*ldataH)->movieReader->readAudio(safePosition, safeSize, buffer);
+
+    auto audioDef = (*ldataH)->movieReader->audioDef();
+    int numChannels = audioDef.numChannels;
+    int sampleRate = audioDef.sampleRate;
+    int bytesPerSample = audioDef.bytesPerSample;
+    AudioEncoding encoding = audioDef.encoding;
 
     if ((bytesPerSample == 1) && (encoding == AudioEncoding_Signed_PCM)) {
-        deinterleave((int8_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((int8_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
     else if ((bytesPerSample == 2) && (encoding == AudioEncoding_Signed_PCM)) {
-        deinterleave((int16_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((int16_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
     else if ((bytesPerSample == 4) && (encoding == AudioEncoding_Signed_PCM)) {
-        deinterleave((int32_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((int32_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
     else if ((bytesPerSample == 1) && (encoding == AudioEncoding_Unsigned_PCM)) {
-        deinterleave((uint8_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((uint8_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
     else if ((bytesPerSample == 2) && (encoding == AudioEncoding_Unsigned_PCM)) {
-        deinterleave((uint16_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((uint16_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
     else if ((bytesPerSample == 4) && (encoding == AudioEncoding_Unsigned_PCM)) {
-        deinterleave((uint32_t*)&buffer[0], numChannels, importAudioRec7->size, importAudioRec7->buffer);
+        deinterleave((uint32_t*)&buffer[0], numChannels, safeSize, importAudioRec7->buffer);
     }
+
+    // !!! assign 0's for dud read
+    if (importAudioRec7->size > safeSize)
+    {
+        for (size_t iChannel = 0; iChannel < numChannels; ++iChannel) {
+            auto channel = importAudioRec7->buffer[iChannel];
+            std::fill(channel + safeSize, channel + importAudioRec7->size, 0.0);
+        }
+    }
+    // !!!
 
     return result;
 }
@@ -979,35 +994,36 @@ PREMPLUGENTRY DllExport xImportEntry (
 {
     prMALError result = imUnsupported;
 
-    switch (selector)
-    {
+    try {
+        switch (selector)
+        {
         case imInit:
-            result = ImporterInit(stdParms, 
-                                  reinterpret_cast<imImportInfoRec*>(param1));
+            result = ImporterInit(stdParms,
+                reinterpret_cast<imImportInfoRec*>(param1));
             break;
 
-        // To be demonstrated
-        // case imShutdown:
+            // To be demonstrated
+            // case imShutdown:
 
         case imGetPrefs8:
-            result = ImporterGetPrefs8(stdParms, 
-                                       reinterpret_cast<imFileAccessRec8*>(param1),
-                                       reinterpret_cast<imGetPrefsRec*>(param2));
+            result = ImporterGetPrefs8(stdParms,
+                reinterpret_cast<imFileAccessRec8*>(param1),
+                reinterpret_cast<imGetPrefsRec*>(param2));
             break;
 
-        // To be demonstrated
-        // case imSetPrefs:
+            // To be demonstrated
+            // case imSetPrefs:
 
         case imGetInfo8:
             result = ImporterGetInfo8(stdParms,
-                                      reinterpret_cast<imFileAccessRec8*>(param1), 
-                                      reinterpret_cast<imFileInfoRec8*>(param2));
+                reinterpret_cast<imFileAccessRec8*>(param1),
+                reinterpret_cast<imFileInfoRec8*>(param2));
             break;
 
         case imImportAudio7:
-            result = ImporterImportAudio7(stdParms, 
-                                          reinterpret_cast<imFileRef>(param1),
-                                          reinterpret_cast<imImportAudioRec7*>(param2));
+            result = ImporterImportAudio7(stdParms,
+                reinterpret_cast<imFileRef>(param1),
+                reinterpret_cast<imImportAudioRec7*>(param2));
             break;
 
         case imOpenFile8:
@@ -1037,23 +1053,23 @@ PREMPLUGENTRY DllExport xImportEntry (
             break;
 
         case imAnalysis:
-//barf            result = ImporterAnalysis(stdParms,
-//barf                                      reinterpret_cast<imFileRef>(param1),
-//barf                                      reinterpret_cast<imAnalysisRec*>(param2));
+            //barf            result = ImporterAnalysis(stdParms,
+            //barf                                      reinterpret_cast<imFileRef>(param1),
+            //barf                                      reinterpret_cast<imAnalysisRec*>(param2));
             result = imUnsupported;
             break;
 
         case imDataRateAnalysis:
-//barf            result = ImporterDataRateAnalysis(stdParms,
-//barf                                              reinterpret_cast<imFileRef>(param1),
-//barf                                              reinterpret_cast<imDataRateAnalysisRec*>(param2));
+            //barf            result = ImporterDataRateAnalysis(stdParms,
+            //barf                                              reinterpret_cast<imFileRef>(param1),
+            //barf                                              reinterpret_cast<imDataRateAnalysisRec*>(param2));
             result = imUnsupported;
             break;
 
         case imGetIndFormat:
-            result = ImporterGetIndFormat(stdParms, 
-                                          reinterpret_cast<csSDK_size_t>(param1),
-                                          reinterpret_cast<imIndFormatRec*>(param2));
+            result = ImporterGetIndFormat(stdParms,
+                reinterpret_cast<csSDK_size_t>(param1),
+                reinterpret_cast<imIndFormatRec*>(param2));
             break;
 
         case imGetSubTypeNames:
@@ -1065,7 +1081,7 @@ PREMPLUGENTRY DllExport xImportEntry (
         case imSaveFile8:
             result = imUnsupported;
             break;
-            
+
         case imDeleteFile8:
             result = imUnsupported;
             break;
@@ -1080,11 +1096,11 @@ PREMPLUGENTRY DllExport xImportEntry (
 
         case imGetIndPixelFormat:
             result = ImporterGetIndPixelFormat(stdParms,
-                                               reinterpret_cast<csSDK_size_t>(param1),
-                                               reinterpret_cast<imIndPixelFormatRec*>(param2));
+                reinterpret_cast<csSDK_size_t>(param1),
+                reinterpret_cast<imIndPixelFormatRec*>(param2));
             break;
 
-        // Importers that support the Premiere Pro 2.0 API must return malSupports8 for this selector
+            // Importers that support the Premiere Pro 2.0 API must return malSupports8 for this selector
         case imGetSupports8:
             result = malSupports8;
             break;
@@ -1102,21 +1118,29 @@ PREMPLUGENTRY DllExport xImportEntry (
             break;
 
         case imGetPreferredFrameSize:
-//barf            result = ImporterPreferredFrameSize(stdParms,
-//barf                                                reinterpret_cast<imPreferredFrameSizeRec*>(param1));
+            //barf            result = ImporterPreferredFrameSize(stdParms,
+            //barf                                                reinterpret_cast<imPreferredFrameSizeRec*>(param1));
             result = imUnsupported;
             break;
 
         case imGetSourceVideo:
             result = ImporterGetSourceVideo(stdParms,
-                                            reinterpret_cast<imFileRef>(param1),
-                                            reinterpret_cast<imSourceVideoRec*>(param2));
+                reinterpret_cast<imFileRef>(param1),
+                reinterpret_cast<imSourceVideoRec*>(param2));
             break;
 
         case imCreateAsyncImporter:
             result = ImporterCreateAsyncImporter(stdParms,
-                                                reinterpret_cast<imAsyncImporterCreationRec*>(param1));
+                reinterpret_cast<imAsyncImporterCreationRec*>(param1));
             break;
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        // !!! appears to be no way to provide an import error string
+        OutputDebugString((CodecRegistry::codec()->logName() + " error - " + ex.what()).c_str());
+
+        result = malUnknownError;
     }
 
     return result;

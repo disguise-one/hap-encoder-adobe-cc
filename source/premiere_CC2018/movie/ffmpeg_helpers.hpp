@@ -65,6 +65,14 @@ enum AudioEncoding
     AudioEncoding_Signed_PCM
 };
 
+struct AudioDef
+{
+    int numChannels;
+    int sampleRate;
+    int bytesPerSample;
+    AudioEncoding encoding;
+};
+
 inline void setAVCodecParams(
     int numChannels, int sampleRate, int bytesPerSample, AudioEncoding encoding,
     AVCodecParameters& codecpar)
@@ -113,10 +121,14 @@ inline void setAVCodecParams(
     codecpar.sample_rate = sampleRate;
 }
 
-inline void getAVCodecParams(
-    const AVCodecParameters& codecpar,
-    int &numChannels, int &sampleRate, int &bytesPerSample, AudioEncoding &encoding)
+inline AudioDef getAVCodecParams(
+    const AVCodecParameters& codecpar)
 {
+    int numChannels;
+    int sampleRate;
+    int bytesPerSample;
+    AudioEncoding encoding;
+
     auto &format = codecpar.format;
 
     numChannels = codecpar.channels;
@@ -149,6 +161,8 @@ inline void getAVCodecParams(
         encoding = AudioEncoding_Unsigned_PCM;
         break;
     }
+
+    return AudioDef{ numChannels, sampleRate, bytesPerSample, encoding };
 }
 
 #endif

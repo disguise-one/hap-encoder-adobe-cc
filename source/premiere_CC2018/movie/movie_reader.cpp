@@ -122,6 +122,19 @@ MovieReader::MovieReader(
 
         if (videoStreamIdx_ == -1)
             throw std::runtime_error("could not find video stream");
+
+        if (audioStreamIdx_ != -1)
+        {
+            AVStream *stream = formatContext_->streams[audioStreamIdx_];
+            audioDef_ = getAVCodecParams(*stream->codecpar);
+            int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+            audioCache_ = std::make_unique<SampleCache>(
+                stream->duration, bytesPerFrame,
+                [this](size_t frame, uint8_t *into_begin, size_t into_size)->SampleCache::Range {
+                    return loadAudio(frame, into_begin, into_size);
+                }
+            );
+        }
     }
     catch (...)
     {
@@ -161,56 +174,54 @@ void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
     }
 }
 
-void MovieReader::getAudioParams(int &numChannels, int &sampleRate, int &bytesPerSample, AudioEncoding &encoding)
-{
-    if (!hasAudio())
-        throw std::runtime_error("no audio");
-
-    AVStream *stream = formatContext_->streams[audioStreamIdx_];
-
-    getAVCodecParams(*stream->codecpar, numChannels, sampleRate, bytesPerSample, encoding);
-}
-
 void MovieReader::readAudio(int64_t pos, int64_t size, std::vector<uint8_t>& buffer)
 {
     if (!hasAudio())
         throw std::runtime_error("no audio");
 
-    if (!audioCache_.size())
-    {
-        AVStream *stream = formatContext_->streams[audioStreamIdx_];
+    if (pos + size > audioCache_->numFrames())
+        throw std::runtime_error("attempt to read past end of audio");
 
-        AVPacket pkt;
-        int64_t pos(0);
-        while (pos<stream->duration) {
-            int ret = av_seek_frame(formatContext_.get(), audioStreamIdx_, pos, AVSEEK_FLAG_ANY);
+    const uint8_t *samples = audioCache_->get(SampleCache::Range(pos, pos + size));
+    int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+
+    buffer.clear();
+    buffer.assign(samples, samples + size*bytesPerFrame);
+}
+
+SampleCache::Range MovieReader::loadAudio(size_t frame, uint8_t *into_begin, size_t into_size)
+{
+    AVStream *stream = formatContext_->streams[audioStreamIdx_];
+    int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+
+    AVPacket pkt;
+    while (frame < (size_t)stream->duration) {
+        int ret = av_seek_frame(formatContext_.get(), audioStreamIdx_, frame, AVSEEK_FLAG_ANY);
+        if (ret < 0)
+            throw std::runtime_error(std::string("could not seek to start of audio - " + av_err2str(ret)));
+
+        while (true) {
+            ret = av_read_frame(formatContext_.get(), &pkt);
             if (ret < 0)
-                throw std::runtime_error(std::string("could not seek to start of audio - " + av_err2str(ret)));
-
-            while (true) {
-                ret = av_read_frame(formatContext_.get(), &pkt);
-                if (ret < 0)
-                    throw std::runtime_error(std::string("could not read audio frame - " + av_err2str(ret)));
-                else if (pkt.stream_index == audioStreamIdx_) {
-                    audioCache_.insert(audioCache_.end(), pkt.data, pkt.data + pkt.size);
-                    pos += pkt.duration;
-                    av_packet_unref(&pkt);
-                    break;
-                }
-                else {
-                    av_packet_unref(&pkt);
-                }
+                throw std::runtime_error(std::string("could not read audio frame - " + av_err2str(ret)));
+            else if (pkt.stream_index == audioStreamIdx_) {
+                if (into_size < (size_t)pkt.pts * bytesPerFrame + pkt.size)
+                    throw std::runtime_error("audio cache not large enough for loadAudio");
+                std::copy(pkt.data, pkt.data + pkt.size, into_begin + pkt.pts * bytesPerFrame);
+                if (pkt.duration < 0)
+                    throw std::runtime_error("audio pkt duration < 0");
+                SampleCache::Range loaded{pkt.pts, pkt.pts + pkt.duration};
+                if (loaded.first > frame || loaded.second <= frame)
+                    throw std::runtime_error("loaded audio pkt that didn't include selected frame");
+                av_packet_unref(&pkt);
+                return loaded;
+            }
+            else {
+                av_packet_unref(&pkt);
             }
         }
     }
-
-    int numChannels, sampleRate, bytesPerSample;
-    AudioEncoding encoding;
-    getAudioParams(numChannels, sampleRate, bytesPerSample, encoding);
-
-    int bytesPerFrame = bytesPerSample * numChannels;
-    buffer.clear();
-    buffer.insert(buffer.begin(), &audioCache_[bytesPerFrame * pos], &audioCache_[bytesPerFrame * (pos + size)]);
+    throw std::runtime_error("attempt to load audio outside of stream duration");
 }
 
 

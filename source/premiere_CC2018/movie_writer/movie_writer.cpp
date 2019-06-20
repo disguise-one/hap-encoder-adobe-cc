@@ -247,6 +247,7 @@ void MovieWriter::writeAudioFrame(const uint8_t *data, size_t size, int64_t pts)
     pkt.stream_index = audioStream_->index;
     pkt.pts = pts;
     pkt.dts = pkt.pts;
+    //!!! pkt.duration = audioStream_->
     //av_packet_rescale_ts(&pkt, streamTimebase_, audioStream_->time_base);
     pkt.flags = AV_PKT_FLAG_KEY;
 

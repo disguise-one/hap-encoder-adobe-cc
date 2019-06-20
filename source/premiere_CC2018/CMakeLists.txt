@@ -21,6 +21,7 @@ target_sources(CodecPluginFoundation
         premiereParams.hpp
         prstring.cpp
         prstring.hpp
+        sample_cache.hpp
         targetver.h
         # codec/texture_converter.cpp
         # codec/texture_converter.hpp

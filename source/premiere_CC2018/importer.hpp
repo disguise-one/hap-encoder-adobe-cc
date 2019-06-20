@@ -18,7 +18,7 @@
 #include	"PrSDKWindowSuite.h"
 
 #include "codec_registration.hpp"
-#include"freelist.hpp"
+#include "freelist.hpp"
 #include "movie/movie_reader.hpp"
 
 // !!! split into Adobe-specific and non-specific
