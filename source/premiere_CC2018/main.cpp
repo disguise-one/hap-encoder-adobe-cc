@@ -11,6 +11,13 @@
 csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType);
 static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer);
 
+// nuisance
+static std::wstring to_wstring(const std::string& str)
+{
+    return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
+}
+
+
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
 {
 	prMALError result = exportReturn_Unsupported;
@@ -83,7 +90,7 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         CodecRegistry::codec();
 
         std::string logName = CodecRegistry::codec()->logName();
-        std::wstring logNameForPr(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(logName));
+        std::wstring logNameForPr(to_wstring(logName));
 
 
         infoRec->classID = HAP_VIDEOCLSS;
@@ -146,8 +153,8 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     auto pluginId = instanceRecP->exporterPluginID;
     settings->reportError = [report, pluginId](const std::string& error) {
 
-        StringForPr title(L"HAP encoder plugin - ERROR");
-        StringForPr detail(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(error));
+        StringForPr title(to_wstring(CodecRegistry::logName() + " - ERROR"));
+        StringForPr detail(to_wstring(error));
 
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
@@ -156,8 +163,8 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     };
     settings->logMessage = [report, pluginId](const std::string& message) {
 
-        StringForPr title(L"HAP encoder plugin");
-        StringForPr detail(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(message));
+        StringForPr title(to_wstring(CodecRegistry::logName()));
+        StringForPr detail(to_wstring(message));
 
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
@@ -513,7 +520,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         {
             settings->exporter->close();
         }
-        catch (const MovieWriterInvalidData& ex)
+        catch (const MovieWriterInvalidData&)
         {
             // this will happen if we MovieWriter didn't guess large enough on header size.
             //  => we have to guess a header size else Adobe will copy the file and rejig it
