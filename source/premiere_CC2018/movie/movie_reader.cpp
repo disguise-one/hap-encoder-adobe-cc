@@ -138,7 +138,7 @@ MovieReader::MovieReader(
 void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
 {
     AVStream *stream = formatContext_->streams[videoStreamIdx_];
-    int64_t timestamp = iFrame * stream->r_frame_rate.den * stream->time_base.den / (int64_t(stream->r_frame_rate.num) * stream->time_base.num);
+    int64_t timestamp = (int64_t)iFrame * stream->r_frame_rate.den * stream->time_base.den / (int64_t(stream->r_frame_rate.num) * stream->time_base.num);
 
     int ret = av_seek_frame(formatContext_.get(), videoStreamIdx_, timestamp, AVSEEK_FLAG_ANY);
     if (ret < 0)
