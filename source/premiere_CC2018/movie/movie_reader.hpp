@@ -12,6 +12,7 @@ class MovieReader
 public:
     MovieReader(
         VideoFormat videoFormat,
+        int64_t fileSize,
         MovieReadCallback onRead,
         MovieSeekCallback onSeek,
         MovieErrorCallback onError,
@@ -22,6 +23,8 @@ public:
     void readVideoFrame(int iFrame, std::vector<uint8_t>& frame);
     bool hasAudio() const { return audioStreamIdx_ != -1;  }
 
+    int64_t fileSize() const { return fileSize_; }  // this is used by avio seek :(
+
     int width() const { return width_; }
     int height() const { return height_;  }
     int frameRateNumerator() const { return frameRateNumerator_; }
@@ -30,6 +33,7 @@ public:
 
 private:
     std::string filespec_; // path + filename
+    int64_t fileSize_;
 
     //CodecContext videoCodecContext_;
     FormatContext formatContext_;

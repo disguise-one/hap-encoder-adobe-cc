@@ -183,7 +183,14 @@ int64_t MovieWriter::c_onSeek(void *context, int64_t seekPos, int whence)
     MovieWriter *writer = reinterpret_cast<MovieWriter*>(context);
     try
     {
-        return writer->onSeek_(seekPos, whence);
+        if (whence & AVSEEK_SIZE) {
+            return -1; // we *really* don't do this on writing...
+        }
+        else {
+            whence &= (~AVSEEK_FORCE);  // we don't want this potential option to interfere
+
+            return writer->onSeek_(seekPos, whence);
+        }
     }
     catch (const std::exception &ex)
     {

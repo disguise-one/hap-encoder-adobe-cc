@@ -30,11 +30,12 @@ extern "C" {
 // =======================================================
 MovieReader::MovieReader(
     VideoFormat videoFormat,
+    int64_t fileSize,
     MovieReadCallback onRead,
     MovieSeekCallback onSeek,
     MovieErrorCallback onError,
     MovieCloseCallback onClose)
-    : videoStreamIdx_(-1), audioStreamIdx_(-1),
+    : fileSize_(fileSize), videoStreamIdx_(-1), audioStreamIdx_(-1),
       onRead_(onRead), onSeek_(onSeek), onError_(onError), onClose_(onClose)
 {
     int ret;
@@ -191,7 +192,13 @@ int64_t MovieReader::c_onSeek(void *context, int64_t seekPos, int whence)
     MovieReader *obj = reinterpret_cast<MovieReader*>(context);
     try
     {
-        return obj->onSeek_(seekPos, whence);
+        if (whence & AVSEEK_SIZE) {
+            return obj->fileSize();
+        } else {
+            whence &= (~AVSEEK_FORCE);  // we don't want this potential option to interfere
+
+            return obj->onSeek_(seekPos, whence);
+        }
     }
     catch (const std::exception &ex)
     {

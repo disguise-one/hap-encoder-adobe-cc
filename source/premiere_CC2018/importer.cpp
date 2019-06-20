@@ -346,9 +346,20 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
                                  + to_string(filePath) + " - error " + std::to_string(error));
     }
 
+    // fileSize is *only* needed by the seek wrapper for ffmpeg
+    int64_t fileSize;
+    LARGE_INTEGER ffs;
+    if (GetFileSizeEx(fileRef, &ffs)) {
+        fileSize = ffs.QuadPart;
+    }
+    else {
+        fileSize = -1; // this is expected by seek wrapper as meaning "I can't do that"
+    }
+
     return std::pair<std::unique_ptr<MovieReader>, HANDLE>(
         std::make_unique<MovieReader>(
             CodecRegistry::codec()->videoFormat(),
+            fileSize,
             [&, fileRef](const uint8_t* buffer, size_t size) {
                 DWORD bytesReadLu;
                 BOOL ok = ReadFile(fileRef,
