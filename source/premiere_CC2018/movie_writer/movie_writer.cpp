@@ -71,6 +71,8 @@ MovieWriter::MovieWriter(VideoFormat videoFormat,
     // which doesn't work for 29.97fps?
     // videoStream_->time_base will later get trashed by mov file format
     videoStream_->time_base = streamTimebase_;
+    videoStream_->avg_frame_rate = streamTimebase_;
+    videoStream_->r_frame_rate = streamTimebase_;
     videoStream_->codec->time_base = streamTimebase_; // deprecation warning, but it work...
 
     uint8_t* buffer = (uint8_t*)av_malloc(cAVIOBufferSize);
@@ -198,6 +200,7 @@ void MovieWriter::writeFrame(const uint8_t *data, size_t size)
     pkt.stream_index = videoStream_->index;
     pkt.pts = iFrame_++;
     pkt.dts = pkt.pts;
+    pkt.duration = videoStream_->time_base.num;
     av_packet_rescale_ts(&pkt, streamTimebase_, videoStream_->time_base);
     pkt.flags = AV_PKT_FLAG_KEY;
 
