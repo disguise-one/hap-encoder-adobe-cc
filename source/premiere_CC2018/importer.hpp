@@ -41,7 +41,7 @@ struct AdobeImporterAPI
 typedef struct ImporterLocalRec8
 {
     ImporterLocalRec8(const std::wstring& filePath_)
-        : filePath(filePath_)
+        : importerID(-1), filePath(filePath_)
     {
     }
 
@@ -52,8 +52,8 @@ typedef struct ImporterLocalRec8
     UniqueDecoder                  decoder;
     std::unique_ptr<DecoderJob>    decoderJob;
 
-    std::unique_ptr<AdobeImporterAPI> adobe;       // adobe API, suites, importer ID
-    csSDK_int32                       importerID;  // provided on file open
+    std::unique_ptr<AdobeImporterAPI> adobe;               // adobe API, suites, importer ID
+    csSDK_int32                       importerID{ -1 };    // provided on file open
 } *ImporterLocalRec8Ptr, **ImporterLocalRec8H;
 
 // Declare plug-in entry point with C linkage
@@ -68,9 +68,9 @@ PREMPLUGENTRY DllExport xImportEntry (csSDK_int32	selector,
 
 struct ImportJobImpl
 {
-    ImportJobImpl(std::unique_ptr<DecoderJob>& codecJob_) : codecJob(std::move(codecJob_)) {}
+    ImportJobImpl(std::unique_ptr<DecoderJob>& codecJob_) : codecJob(std::move(codecJob_)), iFrame(-1), failed(false) {}
 
-    int32_t iFrame;
+    int32_t iFrame{ -1 };
     std::function<void(const DecoderJob&)> onSuccess;
     std::function<void(const DecoderJob&)> onFail;
 

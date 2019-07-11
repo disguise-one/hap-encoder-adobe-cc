@@ -14,7 +14,7 @@ struct ExportJobImpl
 {
     ExportJobImpl(std::unique_ptr<EncoderJob>& codecJob_) : codecJob(std::move(codecJob_)) {}
 
-    int64_t iFrame;
+    int64_t iFrame{ -1 };
     std::unique_ptr<EncoderJob> codecJob;
     EncodeOutput output;
 };

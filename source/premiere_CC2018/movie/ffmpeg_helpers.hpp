@@ -160,6 +160,8 @@ inline AudioDef getAVCodecParams(
         bytesPerSample = 4;
         encoding = AudioEncoding_Unsigned_PCM;
         break;
+    default:
+        throw std::runtime_error("unhandled audio codec id");
     }
 
     return AudioDef{ numChannels, sampleRate, bytesPerSample, encoding };

@@ -650,7 +650,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
 
         // Write audioBufferOut as one packet
         writer->writeAudioFrame(reinterpret_cast<const uint8_t *>(audioBufferOut),
-                                samplesRequested * numAudioChannels * kAudioSampleSizeOutput,
+                                int64_t(samplesRequested) * int64_t(numAudioChannels) * int64_t(kAudioSampleSizeOutput),
                                 samplesExported);
 
         // Write audioBufferOut as separate samples
