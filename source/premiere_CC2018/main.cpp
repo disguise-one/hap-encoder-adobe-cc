@@ -470,7 +470,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
-    int64_t maxFrames = double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator;
+    int64_t maxFrames = int64_t(double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator);
     
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);

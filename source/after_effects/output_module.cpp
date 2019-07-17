@@ -109,7 +109,7 @@ static MovieFile createMovieFile(const std::string &filename,
     MovieFile fileWrapper;
     auto file=std::make_shared<FILE *>((FILE *)nullptr);
     fileWrapper.onOpenForWrite = [=]() {
-        *file = fopen(filename.c_str(), "wb");
+        fopen_s(file.get(), filename.c_str(), "wb");
         if (!(*file))
             throw std::runtime_error("couldn't open output file");
     };
@@ -260,10 +260,10 @@ AEIO_GetFlatOutputOptions(
     std::string s = j.dump();
 
     ERR(suites.MemorySuite1()->AEGP_NewMemHandle( S_mem_id, 
-                                                    "flat optionsH", 
-                                                    s.size() + 1,
-                                                    AEGP_MemFlag_CLEAR, 
-                                                    new_optionsPH));
+                                                  "flat optionsH", 
+                                                  AEGP_MemSize(s.size() + 1),
+                                                  AEGP_MemFlag_CLEAR, 
+                                                  new_optionsPH));
     if (!err && *new_optionsPH) {
         ERR(suites.MemorySuite1()->AEGP_LockMemHandle(*new_optionsPH, reinterpret_cast<void**>(&new_optionsP)));
 
@@ -558,10 +558,10 @@ AEIO_StartAdding(
             int64_t frameRateNumerator = fps;
             int64_t frameRateDenominator = A_Fixed_ONE;
             int64_t maxFrames = (int64_t)duration.value * fps / A_Fixed_ONE / duration.scale;
-            int64_t reserveMetadataSpace = 0;
+            int reserveMetadataSpace = 0;
             auto movieErrorCallback = [](...) {};
             bool withAudio = (soundRateF > 0);
-            int64_t sampleRate = soundRateF;
+            int sampleRate = int(soundRateF);
             int numAudioChannels = num_channels;
             int audioBytesPerSample = bytes_per_sample;
             AudioEncoding audioEncoding = ((snd_encoding == AEIO_E_UNSIGNED_PCM) ? AudioEncoding_Unsigned_PCM : AudioEncoding_Signed_PCM);

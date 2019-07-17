@@ -235,7 +235,7 @@ Importer::Importer(
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io read
 
     // assume 4 threads + 1 serialising will not tax the system too much before we figure out its limits
-    size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
+    int startingThreads = std::min(5, concurrentThreadsSupported_);
     for (size_t i = 0; i < startingThreads; ++i)
     {
         workers_.push_back(std::make_unique<ImporterWorker>(error_, jobFreeList_, jobReader_, jobDecoder_));
@@ -671,7 +671,7 @@ GetInfoAudio(
         auto audioDef = (*ldataH)->movieReader->audioDef();
 
         SDKFileInfo8->audInfo.numChannels = audioDef.numChannels;
-        SDKFileInfo8->audInfo.sampleRate = audioDef.sampleRate;
+        SDKFileInfo8->audInfo.sampleRate = (float)audioDef.sampleRate;
         std::map<std::pair<int, AudioEncoding>, PrAudioSampleType> bpsAndSignToPrAudioSampleType{
             {{1, AudioEncoding_Signed_PCM}, kPrAudioSampleType_8BitTwosInt},
             {{2, AudioEncoding_Signed_PCM}, kPrAudioSampleType_16BitInt},
@@ -772,19 +772,19 @@ ImporterGetInfo8(
     return result;
 }
 
-template<typename T>
-static void deinterleave(const T* source, int nChannels, int nSamples, float **dest)
+template<typename T, typename CHANNELS_T, typename NSAMPLES_T>
+static void deinterleave(const T* source, CHANNELS_T nChannels, NSAMPLES_T nSamples, float **dest)
 {
-    double half_range = 0.5 * (std::numeric_limits<T>::max() - std::numeric_limits<T>::min());
-    double scale = 1.0 / half_range;
-    double offset = -scale * std::numeric_limits<T>::min() - 1;
+    auto constexpr half_range{ 0.5 * (size_t(std::numeric_limits<T>::max()) - std::numeric_limits<T>::min()) };
+    auto constexpr scale{ 1.0 / half_range };
+    auto constexpr offset{ -scale * std::numeric_limits<T>::min() - 1 };
 
     for (auto channel = 0; channel != nChannels; ++channel)
     {
         const T* s = &source[channel];
         float *d = dest[channel];
         for (int i = 0; i < nSamples; ++i) {
-            *d = *s * scale + offset;
+            *d = float(*s * scale + offset);
             s += nChannels;
             ++d;
         }
@@ -1074,7 +1074,7 @@ PREMPLUGENTRY DllExport xImportEntry (
 
         case imGetSubTypeNames:
             result = ImporterGetSubTypeNames(stdParms,
-                reinterpret_cast<csSDK_int32>(param1),
+                (csSDK_int32)reinterpret_cast<size_t>(param1),
                 reinterpret_cast<imSubTypeDescriptionRec**>(param2));
             break;
 

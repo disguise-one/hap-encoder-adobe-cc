@@ -23,9 +23,9 @@ public:
 
     void readVideoFrame(int iFrame, std::vector<uint8_t>& frame);
     bool hasAudio() const { return audioStreamIdx_ != -1;  }
-    const AudioDef& audioDef() const { if (hasAudio()) return audioDef_; else throw std::runtime_error("no audio"); }
+    const AudioDef& audioDef() const { if (hasAudio()) return *audioDef_; else throw std::runtime_error("no audio"); }
     const int64_t numAudioFrames() const { if (hasAudio()) return audioCache_->numFrames(); else throw std::runtime_error("no audio"); }
-    void readAudio(int64_t samplePos, int64_t size, std::vector<uint8_t> &audio_);
+    void readAudio(size_t samplePos, size_t size, std::vector<uint8_t> &audio_);
 
     int64_t fileSize() const { return fileSize_; }  // this is used by avio seek :(
 
@@ -52,7 +52,7 @@ private:
     int64_t numFrames_;
 
     // audio, valid if audioStreamIdx_>=0
-    AudioDef audioDef_;
+    std::unique_ptr<AudioDef> audioDef_;
     std::unique_ptr<SampleCache> audioCache_;
     SampleCache::Range loadAudio(size_t pos, uint8_t *into_begin, size_t into_size);
 

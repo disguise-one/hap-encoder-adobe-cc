@@ -171,7 +171,7 @@ public:
 private:
     bool closed_;
     bool expandWorkerPoolToCapacity() const;
-    size_t concurrentThreadsSupported_;
+    int concurrentThreadsSupported_;
 
     mutable std::atomic<bool> error_;
     UniqueDecoder decoder_;

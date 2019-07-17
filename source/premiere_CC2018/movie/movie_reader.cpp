@@ -36,7 +36,8 @@ MovieReader::MovieReader(
     MovieErrorCallback onError,
     MovieCloseCallback onClose)
     : fileSize_(fileSize), videoStreamIdx_(-1), audioStreamIdx_(-1),
-      onRead_(onRead), onSeek_(onSeek), onError_(onError), onClose_(onClose)
+      onRead_(onRead), onSeek_(onSeek), onError_(onError), onClose_(onClose),
+      width_(0), height_(0), numFrames_(0), frameRateNumerator_(0), frameRateDenominator_(0)
 {
     int ret;
 
@@ -126,8 +127,8 @@ MovieReader::MovieReader(
         if (audioStreamIdx_ != -1)
         {
             AVStream *stream = formatContext_->streams[audioStreamIdx_];
-            audioDef_ = getAVCodecParams(*stream->codecpar);
-            int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+            audioDef_ = std::make_unique<AudioDef>(getAVCodecParams(*stream->codecpar));
+            int bytesPerFrame = audioDef_->bytesPerSample * audioDef_->numChannels;
             audioCache_ = std::make_unique<SampleCache>(
                 stream->duration, bytesPerFrame,
                 [this](size_t frame, uint8_t *into_begin, size_t into_size)->SampleCache::Range {
@@ -174,7 +175,7 @@ void MovieReader::readVideoFrame(int iFrame, std::vector<uint8_t>& frame)
     }
 }
 
-void MovieReader::readAudio(int64_t pos, int64_t size, std::vector<uint8_t>& buffer)
+void MovieReader::readAudio(size_t pos, size_t size, std::vector<uint8_t>& buffer)
 {
     if (!hasAudio())
         throw std::runtime_error("no audio");
@@ -183,7 +184,7 @@ void MovieReader::readAudio(int64_t pos, int64_t size, std::vector<uint8_t>& buf
         throw std::runtime_error("attempt to read past end of audio");
 
     const uint8_t *samples = audioCache_->get(SampleCache::Range(pos, pos + size));
-    int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+    int bytesPerFrame = audioDef_->bytesPerSample * audioDef_->numChannels;
 
     buffer.clear();
     buffer.assign(samples, samples + size*bytesPerFrame);
@@ -192,7 +193,7 @@ void MovieReader::readAudio(int64_t pos, int64_t size, std::vector<uint8_t>& buf
 SampleCache::Range MovieReader::loadAudio(size_t frame, uint8_t *into_begin, size_t into_size)
 {
     AVStream *stream = formatContext_->streams[audioStreamIdx_];
-    int bytesPerFrame = audioDef_.bytesPerSample * audioDef_.numChannels;
+    int bytesPerFrame = audioDef_->bytesPerSample * audioDef_->numChannels;
 
     AVPacket pkt;
     while (frame < (size_t)stream->duration) {
