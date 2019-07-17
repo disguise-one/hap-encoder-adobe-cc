@@ -46,7 +46,7 @@ struct OutputOptions
 };
 
 void to_json(json& j, const OutputOptions& o) {
-    if (CodecRegistry::codec()->hasQuality) {
+    if (CodecRegistry::codec()->hasQuality()) {
         j = json{ {"quality", o.quality} };
     }
     else {
@@ -55,8 +55,7 @@ void to_json(json& j, const OutputOptions& o) {
 }
 
 void from_json(const json& j, OutputOptions& o) {
-    auto codec = CodecRegistry::codec();
-    if (codec->hasQuality) {
+    if (CodecRegistry::codec()->hasQuality()) {
         j.at("quality").get_to(o.quality);
     }
 }
