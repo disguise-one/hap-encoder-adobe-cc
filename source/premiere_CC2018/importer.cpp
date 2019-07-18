@@ -825,7 +825,7 @@ ImporterImportAudio7(
     {
         for (size_t iChannel = 0; iChannel < numChannels; ++iChannel) {
             auto channel = importAudioRec7->buffer[iChannel];
-            std::fill(channel + safeSize, channel + importAudioRec7->size, 0.0);
+            std::fill(channel + safeSize, channel + importAudioRec7->size, 0.0f);
         }
     }
     // !!!

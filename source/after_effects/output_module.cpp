@@ -130,7 +130,7 @@ static MovieFile createMovieFile(const std::string &filename,
 static std::unique_ptr<Exporter> createExporter(
     const FrameDef& frameDef, CodecAlpha alpha, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
-    int64_t maxFrames, int32_t reserveMetadataSpace,
+    int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
     bool withAudio, int sampleRate, int32_t numAudioChannels, int32_t audioBytesPerSample, AudioEncoding audioEncoding,
     bool writeMoovTagEarly
@@ -547,7 +547,7 @@ AEIO_StartAdding(
             int clampedQuality = std::clamp(optionsUP->quality, 1, 5);  //!!! 4 is optimal; replace with enum
             int64_t frameRateNumerator = fps;
             int64_t frameRateDenominator = A_Fixed_ONE;
-            int64_t maxFrames = (int64_t)duration.value * fps / A_Fixed_ONE / duration.scale;
+            int32_t maxFrames = (int32_t)((int64_t)duration.value * fps / A_Fixed_ONE / duration.scale);
             int reserveMetadataSpace = 0;
             auto movieErrorCallback = [](...) {};
             bool withAudio = (soundRateF > 0);

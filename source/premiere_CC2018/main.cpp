@@ -375,7 +375,7 @@ static MovieFile createMovieFile(PrSDKExportFileSuite* exportFileSuite, csSDK_in
 static std::unique_ptr<Exporter> createExporter(
     const FrameDef& frameDef, CodecAlpha alpha, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
-    int64_t maxFrames, int32_t reserveMetadataSpace,
+    int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
     bool withAudio, int sampleRate, int32_t numAudioChannels,
     exDoExportRec* exportInfoP, prMALError& error,  //!!! not ideal passing these in
@@ -464,7 +464,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     const int64_t frameRateNumerator = ticksPerSecond;
     const int64_t frameRateDenominator = ticksPerFrame.value.timeValue;
 
-    int64_t maxFrames = int64_t(double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator);
+    int32_t maxFrames = int32_t(double((exportInfoP->endTime - exportInfoP->startTime)) / frameRateDenominator);
     
     //!!!
     int clampedQuality = std::clamp(quality.value.intValue, 1, 5);
