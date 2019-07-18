@@ -16,6 +16,8 @@ target_sources(NotchLCAEXPlugin
         after_effects/win/ui.cpp
         premiere_CC2018/configure.hpp
         premiere_CC2018/freelist.hpp
+        premiere_CC2018/string_conversion.cpp
+        premiere_CC2018/string_conversion.hpp
         premiere_CC2018/targetver.h
         premiere_CC2018/exporter/exporter.cpp
         premiere_CC2018/exporter/exporter.hpp

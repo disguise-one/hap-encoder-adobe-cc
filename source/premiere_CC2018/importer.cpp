@@ -5,18 +5,9 @@
 #include "codec_registration.hpp"
 #include "importer.hpp"
 #include "prstring.hpp"
+#include "string_conversion.hpp"
 
 using namespace std::chrono_literals;
-
-// nuisance
-std::string to_string(const std::wstring& fromUTF16)
-{
-    //setup converter
-    using convert_type = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_type, wchar_t> converter;
-
-    return converter.to_bytes(fromUTF16);
-}
 
 //!!! if importerID can be removed rename this to AdobeSuites
 AdobeImporterAPI::AdobeImporterAPI(piSuitesPtr piSuites)
@@ -619,12 +610,6 @@ ImporterGetIndPixelFormat(
         break;
     }
     return result;
-}
-
-// nuisance
-static std::wstring to_wstring(const std::string& str)
-{
-    return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
 }
 
 static prMALError

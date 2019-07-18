@@ -1,4 +1,3 @@
-#include <codecvt>
 #include <new>
 #include <sstream>
 
@@ -7,6 +6,7 @@
 using json = nlohmann::json;
 
 #include "../premiere_CC2018/exporter/exporter.hpp"
+#include "../premiere_CC2018/string_conversion.hpp"
 #include "codec_registration.hpp"
 
 #include "output_module.h"
@@ -21,16 +21,6 @@ static A_Err DeathHook(
     CodecRegistry::codec().reset();
 
     return A_Err_NONE;
-}
-
-// nuisance
-std::string to_string(const std::wstring& fromUTF16)
-{
-    //setup converter
-    using convert_type = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_type, wchar_t> converter;
-
-    return converter.to_bytes(fromUTF16);
 }
 
 struct OutputOptions

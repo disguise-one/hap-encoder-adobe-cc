@@ -5,18 +5,12 @@
 #include "export_settings.hpp"
 #include "exporter/exporter.hpp"
 #include "configure.hpp"
+#include "string_conversion.hpp"
 #include <vector>
 #include <locale>
 
 csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType);
 static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer);
-
-// nuisance
-static std::wstring to_wstring(const std::string& str)
-{
-    return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
-}
-
 
 DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParmsP, void* param1, void* param2)
 {

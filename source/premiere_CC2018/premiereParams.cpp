@@ -1,7 +1,8 @@
-#include "premiereParams.hpp"
-#include "export_settings.hpp"
-#include "prstring.hpp"
 #include "configure.hpp"
+#include "export_settings.hpp"
+#include "premiereParams.hpp"
+#include "prstring.hpp"
+#include "string_conversion.hpp"
 
 const int k_chunkingMin = 1;
 const int k_chunkingMax = 64;
@@ -272,7 +273,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     for (const auto& quality : qualities)
     {
         tempQuality.intValue = (csSDK_int32)quality.first;
-        StringForPr qualityString(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(quality.second));
+        StringForPr qualityString(to_wstring(quality.second));
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempQuality, qualityString.get());
     }
 

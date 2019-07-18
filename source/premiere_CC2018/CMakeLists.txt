@@ -22,6 +22,8 @@ target_sources(CodecPluginFoundation
         prstring.cpp
         prstring.hpp
         sample_cache.hpp
+        string_conversion.cpp
+        string_conversion.hpp
         targetver.h
         # codec/texture_converter.cpp
         # codec/texture_converter.hpp
