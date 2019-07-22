@@ -1,7 +1,6 @@
-[submodule "external/ffmpeg/FFmpeg"]
-	path = external/ffmpeg/FFmpeg
-	url = https://github.com/FFmpeg/FFmpeg
-	branch = release/4.0
 [submodule "external/cmake-pandocology"]
 	path = external/cmake-pandocology
 	url = https://github.com/jeetsukumaran/cmake-pandocology.git
+[submodule "external/foundation"]
+	path = external/foundation
+	url = git@github.com:GregBakker/adobe-cc-codec-foundation.git
