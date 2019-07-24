@@ -15,7 +15,6 @@ Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting t
 
 Please see [license.txt](license.txt) for the licenses of this plugin and the components used to create it.
 
-
 # Download
 
 An installer for the exporter can be downloaded [here](https://github.com/disguise-one/hap-encoder-adobe-cc/releases).
@@ -37,6 +36,7 @@ The following information is for developers who wish to contribute to the projec
 ### compiler toolchain
 
 You'll need a compiler environment appropriate to your operating system. The current plugin has been developed on
+
 -  win64 with Microsoft Visual Studio 2017 Professional.
 -  macOS with XCode
 
@@ -52,15 +52,16 @@ NSIS is required for win32 installer builds.
 
 [http://nsis.sourceforge.net/Main_Page](http://nsis.sourceforge.net/Main_Page)
 
-### Adobe CC 2018 SDK
+### Adobe CC 2019 SDKs
 
-Website
+The following SDKs are required from Adobe.
 
-[https://www.adobe.io/apis/creativecloud/premierepro.html](https://www.adobe.io/apis/creativecloud/premierepro.html)
+<https://console.adobe.io/downloads>
 
-Place in
-
-    external/adobe/premiere
+| SDK           | Location                       |
+|---------------|--------------------------------|
+| Premiere      | external/adobe/premiere        |
+| After Effects | external/adobe/AfterEffectsSDK |
 
 ### FFMpeg
 
@@ -68,8 +69,7 @@ FFmpeg 4.0 is used for output of the .mov format.
 
 It is referenced as a submodule of this repository. Fetch the source for building with
 
-    git submodule init
-    git submodule update
+    git submodule update --init
 
 The FFMpeg build is not wrapped by the plugin's cmake build process, and must be made in a platform specific process as descibed below.
 
@@ -77,7 +77,7 @@ The FFMpeg build is not wrapped by the plugin's cmake build process, and must be
 
 Either install and set environment for your own FFMpeg, or build / install the one in external/ffmpeg as described at
 
-[https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC](https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC)
+<https://trac.ffmpeg.org/wiki/CompilationGuide/MSVC>
 
 For reference, the FFMpeg build for the win64 plugin was created by
 
@@ -110,11 +110,11 @@ Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg.
 
 Pandoc is required to build the documentation, which is bundled by the installer.
 
-[https://pandoc.org/](https://pandoc.org/)
+<https://pandoc.org/>
 
 #### macOS
 
-For macos, the homebrew installation is recommended.
+For macos, the homebrew installation is recommended (requires [Homebrew](https://brew.sh)).
 
     brew install pandoc
 
