@@ -45,5 +45,3 @@ typedef struct ExportSettings
 	PrSDKAudioSuite* audioSuite;
 	PrSDKSequenceAudioSuite1* sequenceAudioSuite;
 } ExportSettings;
-
-csSDK_int32 getPixelFormatSize(const PrFourCC subtype);

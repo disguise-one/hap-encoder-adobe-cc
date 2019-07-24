@@ -1,14 +1,5 @@
 #pragma once
 
-#define HAPSpecificCodecGroup           "HAPSpecificCodecGroup"
-#define HAPChunkCount                   "HAPChunkCount"
-
-#define HAP_VIDEOFILETYPE				'hap'
-#define HAP_VIDEOFILEEXT				L"mov"
-#define HAP_FILE_NAME					L"HAP"
-#define HAP_VIDEO_FILE_NAME				L"HAP Video"
-#define	HAP_VIDEOCLSS					'HAPY'
-#define EXPORTER_NAME					"HAP Exporter"
 #define SETTING_STRING					"Turn on marker export and warnings? (Don't turn this on for rendering preview files)"
 #define TOP_VIDEO_PARAM_GROUP_NAME		L"Video parameters"
 #define VIDEO_CODEC_PARAM_GROUP_NAME	L"Video"

@@ -349,7 +349,7 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
 
     return std::pair<std::unique_ptr<MovieReader>, HANDLE>(
         std::make_unique<MovieReader>(
-            CodecRegistry::codec()->videoFormat(),
+            CodecRegistry::codec()->details().videoFormat,
             fileSize,
             [&, fileRef](const uint8_t* buffer, size_t size) {
                 DWORD bytesReadLu;
@@ -477,7 +477,7 @@ ImporterOpenFile8(
         (*localRecH)->movieReader = std::move(readerAndHandle.first);
         *fileRef = readerAndHandle.second;
 
-        FileFormat fileFormat = CodecRegistry::fileFormat();
+        FileFormat fileFormat = CodecRegistry::codec()->details().fileFormat;
         fileOpenRec8->fileinfo.filetype = reinterpret_cast<csSDK_int32&>(fileFormat);
 
         (*localRecH)->importerID = fileOpenRec8->inImporterID;
@@ -565,14 +565,14 @@ ImporterGetIndFormat(
         //    Add a case for each filetype.
         
     case 0:
-        FileFormat fileFormat = CodecRegistry::fileFormat();
+        FileFormat fileFormat = CodecRegistry::codec()->details().fileFormat;
         indFormatRec->filetype = reinterpret_cast<csSDK_int32&>(fileFormat);
 
         indFormatRec->canWriteTimecode    = kPrTrue;
 
         #ifdef PRWIN_ENV
-        strcpy_s(indFormatRec->FormatName, sizeof (indFormatRec->FormatName), CodecRegistry::fileFormatName().c_str());                 // The long name of the importer
-        strcpy_s(indFormatRec->FormatShortName, sizeof (indFormatRec->FormatShortName), CodecRegistry::fileFormatShortName().c_str());        // The short (menu name) of the importer
+        strcpy_s(indFormatRec->FormatName, sizeof (indFormatRec->FormatName), CodecRegistry::codec()->details().fileFormatName.c_str());                 // The long name of the importer
+        strcpy_s(indFormatRec->FormatShortName, sizeof (indFormatRec->FormatShortName), CodecRegistry::codec()->details().fileFormatShortName.c_str());        // The short (menu name) of the importer
         strcpy_s(indFormatRec->PlatformExtension, sizeof (indFormatRec->PlatformExtension), platformXten); // The 3 letter extension
         #else
         strcpy(indFormatRec->FormatName, formatname);            // The Long name of the importer
@@ -620,17 +620,17 @@ ImporterGetSubTypeNames(
 {
     prMALError    result = malNoError;
 
-    csSDK_int32 supportedFileFormat = reinterpret_cast<csSDK_int32&>(CodecRegistry::fileFormat());
+    csSDK_int32 supportedFileFormat = reinterpret_cast<const csSDK_int32&>(CodecRegistry::codec()->details().fileFormat);
 
     if (fileType = supportedFileFormat)
     {
         *subTypeDescriptionRec = (imSubTypeDescriptionRec *)stdParms->piSuites->memFuncs->newPtrClear(sizeof(imSubTypeDescriptionRec));
 
-        csSDK_int32 videoFormat = reinterpret_cast<csSDK_int32&>(CodecRegistry::videoFormat());
+        csSDK_int32 videoFormat = reinterpret_cast<const csSDK_int32&>(CodecRegistry::codec()->details().videoFormat);
         (*subTypeDescriptionRec)->subType = videoFormat;
 
         // should use the subtype format here, but we don't break out codec subtypes atm
-        copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::fileFormatShortName()).c_str(),
+        copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::codec()->details().fileFormatShortName).c_str(),
                                           (*subTypeDescriptionRec)->subTypeName);
     }
     else
@@ -735,7 +735,7 @@ ImporterGetInfo8(
 
     // Get video info from header
     fileInfo8->hasVideo = kPrTrue;
-    fileInfo8->vidInfo.subType     = (csSDK_int32 &)(CodecRegistry::codec()->videoFormat());
+    fileInfo8->vidInfo.subType     = (const csSDK_int32 &)(CodecRegistry::codec()->details().videoFormat);
     fileInfo8->vidInfo.imageWidth  = (*ldataH)->movieReader->width();
     fileInfo8->vidInfo.imageHeight = (*ldataH)->movieReader->height();
     fileInfo8->vidInfo.depth       = 32;  //!!! lack of alpha should change this

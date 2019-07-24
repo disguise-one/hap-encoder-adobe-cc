@@ -128,7 +128,7 @@ static MovieFile createMovieFile(const std::string &filename,
 
 
 static std::unique_ptr<Exporter> createExporter(
-    const FrameDef& frameDef, CodecAlpha alpha, int quality,
+    const FrameDef& frameDef, CodecAlpha alpha, bool hasCodecSubType, CodecSubType subType, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
@@ -139,6 +139,8 @@ static std::unique_ptr<Exporter> createExporter(
     std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
         frameDef,
         alpha,
+        hasCodecSubType,
+        subType,
         quality
         );
 
@@ -333,8 +335,11 @@ AEIO_GetOutputInfo(
     A_Err err			= A_Err_NONE;
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
 
+    auto codecName = CodecRegistry::codec()->details().fileFormatName;
+    auto productName = CodecRegistry::codec()->details().productName;
+
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->name, "filename");
-    suites.ANSICallbacksSuite1()->strcpy(verbiageP->type, "MOV (NotchLC)");
+    suites.ANSICallbacksSuite1()->strcpy(verbiageP->type, (std::string("MOV (") + codecName + ")").c_str());
 
     OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
     if (!optionsUP)
@@ -342,7 +347,7 @@ AEIO_GetOutputInfo(
     std::string qualityAsString = CodecRegistry::codec()->qualityDescriptions()[optionsUP->quality];
 
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->sub_type,
-                                         (std::string("NotchLC by 10bit FX\rQuality setting: ") + qualityAsString).c_str());
+                                         (productName + std::string("\rQuality setting: ") + qualityAsString).c_str());
     return err;
 };
 
@@ -560,10 +565,17 @@ AEIO_StartAdding(
 
             movieFile.onOpenForWrite();  //!!! move to writer
 
+            // !!! 
+            throw std::runtime_error("codec subtype not implemented");
+            bool hasCodecSubType(true);
+            CodecSubType subType; //!!! need to obtain this
+
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
                          format),
                 codecAlpha,
+                hasCodecSubType,
+                subType,
                 clampedQuality,
                 frameRateNumerator,
                 frameRateDenominator,
@@ -818,24 +830,26 @@ ConstructModuleInfo(
     A_Err err = A_Err_NONE;
 
     AEGP_SuiteHandler	suites(pica_basicP);
-    
+
+    const auto& codec = *CodecRegistry::codec();
+
     if (info) {
-        info->sig						=	'NLC_';
+        info->sig						=	codec.details().afterEffectsSig;
         info->max_width					=	32768;
         info->max_height				=   32768;
         info->num_filetypes				=	1;
         info->num_extensions			=	1;
         info->num_clips					=	0;
         
-        info->create_kind.type			=	'NLC_';
+        info->create_kind.type			=    codec.details().afterEffectsType;
         info->create_kind.creator		=	'DTEK';
 
         info->create_ext.pad			=	'.';
-        info->create_ext.extension[0]	=	'm';
-        info->create_ext.extension[1]	=	'o';
-        info->create_ext.extension[2]	=	'v';
+        info->create_ext.extension[0]	=	codec.details().videoFileExt[0];
+        info->create_ext.extension[1]	=   codec.details().videoFileExt[1];
+        info->create_ext.extension[2]	=   codec.details().videoFileExt[2];
 
-        suites.ANSICallbacksSuite1()->strcpy(info->name, "NotchLC");
+        suites.ANSICallbacksSuite1()->strcpy(info->name, codec.details().fileFormatName.c_str());
         
         info->num_aux_extensionsS		=	0;
 
@@ -851,12 +865,12 @@ ConstructModuleInfo(
         info->flags2                    =   AEIO_MFlag2_SUPPORTS_ICC_PROFILES;
 #endif
 
-        info->read_kinds[0].mac.type			=	'NLC_';
+        info->read_kinds[0].mac.type			=	codec.details().afterEffectsMacType;
         info->read_kinds[0].mac.creator			=	AEIO_ANY_CREATOR;
         info->read_kinds[1].ext.pad				=	'.';
-        info->read_kinds[1].ext.extension[0]	=	'm';
-        info->read_kinds[1].ext.extension[1]	=	'o';
-        info->read_kinds[1].ext.extension[2]	=	'v';
+        info->read_kinds[1].ext.extension[0]	=   codec.details().videoFileExt[0];
+        info->read_kinds[1].ext.extension[1]	=   codec.details().videoFileExt[1];
+        info->read_kinds[1].ext.extension[2]	=   codec.details().videoFileExt[2];
     } else {
         err = A_Err_STRUCT;
     }

@@ -81,14 +81,13 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
     if (infoRec->exportReqIndex == 0)
     {
         // singleton needed from here on
-        CodecRegistry::codec();
+        const auto &codec = *CodecRegistry::codec();
 
         std::string logName = CodecRegistry::codec()->logName();
         std::wstring logNameForPr(to_wstring(logName));
 
-
-        infoRec->classID = HAP_VIDEOCLSS;
-        infoRec->fileType = HAP_VIDEOFILETYPE;
+        infoRec->classID = reinterpret_cast<const uint32_t &>(codec.details().videoFormat);
+        infoRec->fileType = reinterpret_cast<const uint32_t&>(codec.details().fileFormat);
         infoRec->hideInUI = kPrFalse;
         infoRec->isCacheable = kPrFalse;
         infoRec->exportReqIndex = 0;
@@ -101,7 +100,7 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         infoRec->doesNotSupportAudioOnly = kPrTrue;
         infoRec->interfaceVersion = EXPORTMOD_VERSION;
         copyConvertStringLiteralIntoUTF16(logNameForPr.c_str(), infoRec->fileTypeName);
-        copyConvertStringLiteralIntoUTF16(HAP_VIDEOFILEEXT, infoRec->fileTypeDefaultExtension);
+        copyConvertStringLiteralIntoUTF16(to_wstring(codec.details().videoFileExt).c_str(), infoRec->fileTypeDefaultExtension);
         return exportReturn_IterateExporter;
     }
 
@@ -234,11 +233,16 @@ prMALError endInstance(exportStdParms* stdParmsP, exExporterInstanceRec* instanc
 prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsRec *outputSettingsP)
 {
 	const csSDK_uint32 exID = outputSettingsP->exporterPluginID;
-    exParamValues width, height, frameRate;
+    exParamValues width, height, frameRate, subTypeParamValue;
+    bool hasSubType{ false };
+    CodecSubType subType;
     ExportSettings* privateData = reinterpret_cast<ExportSettings*>(outputSettingsP->privateData);
 	PrSDKExportParamSuite* paramSuite = privateData->exportParamSuite;
 	const csSDK_int32 mgroupIndex = 0;
 	float fps = 0.0f;
+
+    const auto& codec = *CodecRegistry::codec();
+
 
 	if (outputSettingsP->inExportVideo)
 	{
@@ -248,22 +252,29 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 		outputSettingsP->outVideoHeight = height.value.intValue;
 		paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFPS, &frameRate);
 		outputSettingsP->outVideoFrameRate = frameRate.value.timeValue;
+
+
+        hasSubType = true;
+        paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoCodec, &subTypeParamValue);
+        subType = reinterpret_cast<CodecSubType&>(subTypeParamValue.value.intValue);
+
         outputSettingsP->outVideoAspectNum = 1;
 		outputSettingsP->outVideoAspectDen = 1;
 		// paramSuite->GetParamValue(exID, mgroupIndex, ADBEVideoFieldType, &fieldType);
 		outputSettingsP->outVideoFieldType = prFieldsNone;
-	}
 
-	// Calculate bitrate
-	PrTime ticksPerSecond = 0;
-	csSDK_uint32 videoBitrate = 0;
+    	// Calculate bitrate
+	    PrTime ticksPerSecond = 0;
+	    csSDK_uint32 videoBitrate = 0;
 
-	if (outputSettingsP->inExportVideo)
-	{
 		privateData->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 		fps = static_cast<float>(ticksPerSecond) / frameRate.value.timeValue;
-    }
 
+        videoBitrate = static_cast<csSDK_uint32>(width.value.intValue * height.value.intValue * codec.getPixelFormatSize(hasSubType, subType) * fps);
+
+        outputSettingsP->outBitratePerSecond = videoBitrate * 8 / 1000;
+    }
+ 
     if (outputSettingsP->inExportAudio)
     {
         exParamValues sampleRate, channelType;
@@ -275,14 +286,12 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
         outputSettingsP->outAudioSampleType = kPrAudioSampleType_16BitInt;
     }
 
-	outputSettingsP->outBitratePerSecond = videoBitrate * 8 / 1000;
-
 	return malNoError;
 }
 
 prMALError fileExtension(exportStdParms* stdParmsP, exQueryExportFileExtensionRec* exportFileExtensionRecP)
 {
-	copyConvertStringLiteralIntoUTF16(HAP_VIDEOFILEEXT, exportFileExtensionRecP->outFileExtension);
+	copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::codec()->details().videoFileExt).c_str(), exportFileExtensionRecP->outFileExtension);
 
 	return malNoError;
 }
@@ -373,7 +382,7 @@ static MovieFile createMovieFile(PrSDKExportFileSuite* exportFileSuite, csSDK_in
 }
 
 static std::unique_ptr<Exporter> createExporter(
-    const FrameDef& frameDef, CodecAlpha alpha, int quality,
+    const FrameDef& frameDef, CodecAlpha alpha, bool hasSubType, CodecSubType subType, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
@@ -385,6 +394,8 @@ static std::unique_ptr<Exporter> createExporter(
     std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
         frameDef,
         alpha,
+        hasSubType,
+        subType,
         quality
         );
 
@@ -449,15 +460,28 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
 {
 	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
 	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, includeAlphaChannel, quality;
+	exParamValues ticksPerFrame, width, height, includeAlphaChannel, subTypeParam, quality;
+    bool hasSubType(false);
+    CodecSubType subType;
 	PrTime ticksPerSecond;
+
+    const auto& codec = *CodecRegistry::codec();
 
     settings->logMessage("codec implementation: " + CodecRegistry::logName());
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
-    settings->exportParamSuite->GetParamValue(exID, 0, NOTCHLCIncludeAlphaChannel, &includeAlphaChannel);
+    if (codec.details().subtypes.size())
+    {
+        hasSubType = true;
+        settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &subTypeParam);
+        subType = reinterpret_cast<CodecSubType&>(subTypeParam.value.intValue);
+    }
+    if (codec.details().hasExplicitIncludeAlphaChannel)
+    {
+        settings->exportParamSuite->GetParamValue(exID, 0, codec.details().premiereIncludeAlphaChannelName.c_str(), &includeAlphaChannel);
+    }
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
@@ -497,7 +521,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         movieFile.onOpenForWrite();  //!!! move to writer
 
         settings->exporter = createExporter(
-            frameDef, alpha, clampedQuality,
+            frameDef, alpha, hasSubType, subType, clampedQuality,
             frameRateNumerator, frameRateDenominator,
             maxFrames,
             exportInfoP->reserveMetaDataSpace,
@@ -533,7 +557,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
             movieFile.onOpenForWrite();  //!!! move to writer
 
             settings->exporter = createExporter(
-                frameDef, alpha, clampedQuality,
+                frameDef, alpha, hasSubType, subType, clampedQuality,
                 frameRateNumerator, frameRateDenominator,
                 maxFrames,
                 exportInfoP->reserveMetaDataSpace,

@@ -4,6 +4,7 @@
 #include <array>
 #include <functional>
 #include <map>
+#include <vector>
 
 // Details of frame
 
@@ -80,9 +81,12 @@ enum CodecAlpha
     withAlpha = 1
 };
 
+typedef std::array<char, 4> CodecSubType;
+typedef std::array<unsigned int, 2> HapChunkCounts;  //!!! move this
+
 struct EncoderParametersBase {
-    EncoderParametersBase(const FrameDef& frameDef_, CodecAlpha alpha_, int quality_)
-        : frameDef(frameDef_), alpha(alpha_), quality(quality_) {}
+    EncoderParametersBase(const FrameDef& frameDef_, CodecAlpha alpha_, bool hasSubType_, CodecSubType subType_, int quality_)
+        : frameDef(frameDef_), alpha(alpha_), hasSubType(hasSubType_), subType(subType_), quality(quality_) {}
     virtual ~EncoderParametersBase() {}
 
     // ui-building
@@ -92,7 +96,10 @@ struct EncoderParametersBase {
 
     FrameDef frameDef;
     CodecAlpha alpha;
+    bool hasSubType;
+    CodecSubType subType;
     int quality;
+    HapChunkCounts hapChunkCounts; //!!! move this
 
     EncoderParametersBase(const EncoderParametersBase&) = delete;
     EncoderParametersBase& operator=(const EncoderParametersBase&) = delete;
@@ -253,6 +260,30 @@ private:
 typedef std::unique_ptr<Encoder, std::function<void(Encoder *)>> UniqueEncoder;
 typedef std::unique_ptr<Decoder, std::function<void(Decoder *)>> UniqueDecoder;
 
+typedef std::pair<CodecSubType, std::string> CodecNamedSubType;
+typedef std::vector<CodecNamedSubType> CodecNamedSubTypes;
+
+struct CodecDetails
+{
+    std::string productName;         // could be '<product> by <entity>'
+    std::string fileFormatName;
+    std::string fileFormatShortName;
+    std::string videoFileExt;
+    FileFormat fileFormat;
+    VideoFormat videoFormat;
+    CodecNamedSubTypes subtypes;      // leave empty for no subtypes
+    CodecSubType defaultSubType;
+    bool hasExplicitIncludeAlphaChannel;
+    bool hasChunkCount;
+    std::string premiereGroupName;               // Adobe Premiere group name for storage
+    std::string premiereIncludeAlphaChannelName; // Adobe Premiere include alpha channel for storage(backwards compat)
+    std::string premiereChunkCountName;          // Adobe Premiere chunk count name for storage (backwards compat)
+    uint32_t afterEffectsSig;       // AfterEffects output module registration info - docs suggest letting Adobe know what you use here
+    uint32_t afterEffectsCreator;   // other AEX reg info - _not_ exactly sure how this is is used by AEX
+    uint32_t afterEffectsType;      // ditto
+    uint32_t afterEffectsMacType;   // ditto
+};
+
 class CodecRegistry {
 public:
     static std::shared_ptr<CodecRegistry>& codec();
@@ -263,11 +294,9 @@ public:
 
 
     // codec properties
-    static std::string fileFormatName();
-    static std::string fileFormatShortName();
-    static FileFormat fileFormat();
-    //!!! these need to be broken out per codec subtype
-    static VideoFormat videoFormat();
+    static const CodecDetails& details();
+    static int getPixelFormatSize(bool hasSubType, CodecSubType subType); // !!! for bitrate calculation; should be moved to encoder
+
     static bool isHighBitDepth();       // should host expect high bit depth from this codec
 
     // as much information about the codec that will be doing the job as possible - eg gpu vs cpu, codebase etc
