@@ -88,6 +88,11 @@ std::string CodecRegistry::logName()
     return logName_;
 }
 
+bool CodecRegistry::hasQuality()
+{
+    return true;
+}
+
 std::map<int, std::string> CodecRegistry::qualityDescriptions()
 {
     return std::map<int, std::string>{
