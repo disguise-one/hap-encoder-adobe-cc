@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include <string>
 
 // Details of frame
 
@@ -218,8 +219,8 @@ public:
     {};
     virtual ~Encoder() {};
 
-    virtual VideoFormat subType() const { throw std::exception("not implemented"); }
-    virtual VideoEncoderName name() const { throw std::exception("not implemented"); }
+    virtual VideoFormat subType() const { throw std::runtime_error("not implemented"); }
+    virtual VideoEncoderName name() const { throw std::runtime_error("not implemented"); }
     const EncoderParametersBase& parameters() const { return *parameters_; }
     int encodedBitDepth() const { return (parameters_->alpha == withoutAlpha) ? 24 : 32; }
 
@@ -239,7 +240,7 @@ public:
     {};
     virtual ~Decoder() {};
 
-    virtual VideoFormat subType() const { throw std::exception("not implemented"); }
+    virtual VideoFormat subType() const { throw std::runtime_error("not implemented"); }
     const DecoderParametersBase& parameters() const { return *parameters_; }
 
     virtual std::unique_ptr<DecoderJob> create() = 0;
