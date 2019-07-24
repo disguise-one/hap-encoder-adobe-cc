@@ -44,7 +44,7 @@ END
 
 OUTDIALOG DIALOGEX 0, 0, 181, 146
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "NotchLC Options"
+CAPTION OPTIONS_CAPTION_NAME
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,124,125,50,14
@@ -80,14 +80,14 @@ BEGIN
         BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "10BitFx\0"  // NOTCHLC SPECIFIC
-            VALUE "FileDescription", "AfterEffects output module to export NotchLC\0" // NOTCHLC SPECIFIC
+            VALUE "FileDescription", "AfterEffects output module to export " CODEC_NAME "\0"
             VALUE "FileVersion", "1, 0, 0, 1\0"
-            VALUE "InternalName", "NotchLCAfterEffectsPlugin\0"
+            VALUE "InternalName", AEX_INTERNAL_NAME
             VALUE "LegalCopyright", "Copyright � 2019\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "NotchLCAEXPlugin.aex\0"
+            VALUE "OriginalFilename", AEX_ORIGINAL_FILENAME
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "10BitFx NotchLC\0"
+            VALUE "ProductName", AEX_PRODUCT_NAME
             VALUE "ProductVersion", "1, 0, 0, 1\0"
             VALUE "SpecialBuild", "\0"
         END

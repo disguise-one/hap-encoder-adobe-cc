@@ -12,7 +12,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [2] */
 		Name {
-			"NotchLC"
+            CODEC_NAME
 		},
 		/* [3] */
 		Category {

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
-project(NotchLCAEXPlugin)
+project(AEXPlugin)
 
 # this is the one we will install
-add_library(NotchLCAEXPlugin MODULE)
+add_library(AEXPlugin MODULE)
 
-target_sources(NotchLCAEXPlugin
+target_sources(AEXPlugin
     PRIVATE
         after_effects/output_module.cpp
         after_effects/output_module.h
@@ -41,7 +41,7 @@ else (MSVC)
    include(findZLIB)
 endif(MSVC)
 
-target_link_libraries(NotchLCAEXPlugin
+target_link_libraries(AEXPlugin
     PRIVATE
         AdobeAfterEffectsSdk
         CodecRegistration
@@ -60,26 +60,26 @@ target_link_libraries(NotchLCAEXPlugin
 )
 
 # Include the ffmpeg headers
-target_include_directories(NotchLCAEXPlugin
+target_include_directories(AEXPlugin
     PRIVATE
         ${ffmpeg_INCLUDE_DIRS}
 )
 
 if (MSVC)
-    set_target_properties(NotchLCAEXPlugin
+    set_target_properties(AEXPlugin
         PROPERTIES
             SUFFIX ".aex"
     )
 endif(MSVC)
 
-set_target_properties(NotchLCAEXPlugin
+set_target_properties(AEXPlugin
     PROPERTIES
 	    BUNDLE TRUE
 	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapCodecPlugin
 )
 
 install(
-  TARGETS NotchLCAEXPlugin
+  TARGETS AEXPlugin
   RUNTIME
   BUNDLE DESTINATION .
   LIBRARY DESTINATION .
