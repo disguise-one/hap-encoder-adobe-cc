@@ -31,8 +31,13 @@ add_subdirectory(codec)
 # documentation
 add_subdirectory(doc)
 
-# foundation
+# codec declarations that need to be compiled in
+# !!! TODO: make these into variables that are used in build steps
 add_definitions(-DFOUNDATION_FILE_IMPORT_FOUR_CC=0x48415000L)  # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
+add_definitions(-DCODEC_NAME="HAP")
+add_definitions(-DCODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x03HAP")
+
+# foundation
 add_subdirectory(external/foundation)
 
 # # documentation

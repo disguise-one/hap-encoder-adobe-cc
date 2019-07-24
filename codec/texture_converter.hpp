@@ -6,25 +6,12 @@
 #include <memory>
 #include <vector>
 
-
-typedef std::array<char, 4> CodecSubType;
+#include "codec_registration.hpp"
 
 enum SquishEncoderQuality {
     kSquishEncoderFastQuality = 0,
     kSquishEncoderNormalQuality = 1,
     kSquishEncoderBestQuality = 2
-};
-
-// Details of frame
-
-struct FrameDef
-{
-	FrameDef(int width_, int height_)
-		: width(width_), height(height_)
-	{ }
-
-	int width;
-	int height;
 };
 
 // texture conversion from adobe-preferred to hap_encode required

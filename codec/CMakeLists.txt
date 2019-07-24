@@ -12,6 +12,15 @@ add_library(Codec
 
 target_link_libraries(Codec
     CodecRegistration
+    Hap
+    snappy
+    squish
+    ycocg
+    $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
+    $<$<PLATFORM_ID:Darwin>:${CoreVideo}>
+    $<$<PLATFORM_ID:Darwin>:${Accelerate}>
+    $<$<PLATFORM_ID:Darwin>:${GLIB2}>
+    $<$<PLATFORM_ID:Darwin>:${ZLIB}>
 )
 
 target_include_directories(Codec
@@ -19,3 +28,8 @@ target_include_directories(Codec
     INTERFACE
         CodecRegistration
 )
+
+# hack because squish CMakeLists.txt predates v3.4
+# TODO: fix the squish CMakeLists.txt
+list(APPEND INCLUDE_DIRS ${squish_SOURCE_DIR})
+include_directories(${INCLUDE_DIRS})
