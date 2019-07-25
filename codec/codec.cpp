@@ -109,7 +109,7 @@ int CodecRegistry::defaultQuality()
 HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
     : Encoder(std::move(params)),
       count_((int)textureFormats_.size()),
-      chunkCounts_((params->hapChunkCounts == HapChunkCounts{ 0, 0 }) ? HapChunkCounts{ 1, 1 } : params->hapChunkCounts),     // auto represented as 0, 0
+      chunkCounts_((params->chunkCounts == HapChunkCounts{ 0, 0 }) ? HapChunkCounts{ 1, 1 } : params->chunkCounts),     // auto represented as 0, 0
       textureFormats_(getTextureFormats(params->subType)),
       compressors_{ HapCompressorSnappy, HapCompressorSnappy }
 {
