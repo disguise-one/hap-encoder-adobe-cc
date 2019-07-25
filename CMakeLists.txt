@@ -35,7 +35,7 @@ add_subdirectory(doc)
 # !!! TODO: make these into variables that are used in build steps
 add_definitions(-DFOUNDATION_FILE_IMPORT_FOUR_CC=0x48415000L)  # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
 add_definitions(-DCODEC_NAME="HAP")
-add_definitions(-DCODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x03HAP")
+add_definitions(-DCODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")   # !!! hack - size must be 0x7 atm, and padded to 7-bytes- we're not using the recommended resource builder step that compiles the correct sizes around this
 
 # foundation
 add_subdirectory(external/foundation)
