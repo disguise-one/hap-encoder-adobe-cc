@@ -9,6 +9,9 @@
 #include <vector>
 #include <locale>
 
+const int k_chunkingMin = 1;
+const int k_chunkingMax = 64;
+
 csSDK_int32 GetNumberOfAudioChannels(csSDK_int32 audioChannelType);
 static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error, MovieWriter *writer);
 
@@ -382,7 +385,7 @@ static MovieFile createMovieFile(PrSDKExportFileSuite* exportFileSuite, csSDK_in
 }
 
 static std::unique_ptr<Exporter> createExporter(
-    const FrameDef& frameDef, CodecAlpha alpha, bool hasSubType, CodecSubType subType, int quality,
+    const FrameDef& frameDef, CodecAlpha alpha, bool hasSubType, CodecSubType subType, bool hasChunkCount, HapChunkCounts chunkCounts, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
@@ -396,6 +399,8 @@ static std::unique_ptr<Exporter> createExporter(
         alpha,
         hasSubType,
         subType,
+        hasChunkCount,
+        chunkCounts,
         quality
         );
 
@@ -458,31 +463,45 @@ void exportLoop(exDoExportRec* exportInfoP, prMALError& error)
 
 static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error)
 {
-	const csSDK_uint32 exID = exportInfoP->exporterPluginID;
-	ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
-	exParamValues ticksPerFrame, width, height, includeAlphaChannel, subTypeParam, quality;
-    bool hasSubType(false);
-    CodecSubType subType;
+    const csSDK_uint32 exID = exportInfoP->exporterPluginID;
+    ExportSettings* settings = reinterpret_cast<ExportSettings*>(exportInfoP->privateData);
+    exParamValues ticksPerFrame, width, height, includeAlphaChannel, subTypeParam, quality, chunkCountParam;
+    CodecSubType subType{ 0 };
+    bool hasChunkCount{ false };
 	PrTime ticksPerSecond;
 
     const auto& codec = *CodecRegistry::codec();
+    bool hasSubType{ 0 != codec.details().subtypes.size() };
+    bool hasExplicitAlphaChannel{ codec.details().hasExplicitIncludeAlphaChannel };
 
     settings->logMessage("codec implementation: " + CodecRegistry::logName());
 
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoFPS, &ticksPerFrame);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoWidth, &width);
 	settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoHeight, &height);
-    if (codec.details().subtypes.size())
+    if (hasSubType)
     {
-        hasSubType = true;
         settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &subTypeParam);
         subType = reinterpret_cast<CodecSubType&>(subTypeParam.value.intValue);
     }
-    if (codec.details().hasExplicitIncludeAlphaChannel)
-    {
+    CodecAlpha alpha{ withAlpha };
+    if (hasExplicitAlphaChannel) {
         settings->exportParamSuite->GetParamValue(exID, 0, codec.details().premiereIncludeAlphaChannelName.c_str(), &includeAlphaChannel);
+        alpha = includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha;
     }
     settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &quality);
+
+    int chunkCount{ 0 };
+    if (codec.details().hasChunkCount) {
+        hasChunkCount = true;
+        settings->exportParamSuite->GetParamValue(exID, 0, codec.details().premiereChunkCountName.c_str(), &chunkCountParam);
+        // currently 0 means auto, which until we have more information about the playback device will be 1 chunk
+        chunkCount = (chunkCountParam.optionalParamEnabled == 1) ?
+            std::max(1, chunkCountParam.value.intValue)  // force old param to 1
+            : 1;
+    }
+    HapChunkCounts chunkCounts{ chunkCount, chunkCount };
+
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
     const int64_t frameRateNumerator = ticksPerSecond;
@@ -496,8 +515,6 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
     ChannelFormat channelFormat(CodecRegistry::isHighBitDepth() ? ChannelFormat_U16_32k : ChannelFormat_U8); // we're going to request frames in keeping with the codec's high bit depth
     FrameFormat format(channelFormat | FrameOrigin_BottomLeft | ChannelLayout_BGRA);
     FrameDef frameDef(width.value.intValue, height.value.intValue, format);
-
-    CodecAlpha alpha = includeAlphaChannel.value.intValue ? withAlpha : withoutAlpha;
 
     MovieErrorCallback errorCallback([&](const char *msg) { settings->reportError(msg); });
 
@@ -521,7 +538,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
         movieFile.onOpenForWrite();  //!!! move to writer
 
         settings->exporter = createExporter(
-            frameDef, alpha, hasSubType, subType, clampedQuality,
+            frameDef, alpha, hasSubType, subType, hasChunkCount, chunkCounts, clampedQuality,
             frameRateNumerator, frameRateDenominator,
             maxFrames,
             exportInfoP->reserveMetaDataSpace,
@@ -557,7 +574,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
             movieFile.onOpenForWrite();  //!!! move to writer
 
             settings->exporter = createExporter(
-                frameDef, alpha, hasSubType, subType, clampedQuality,
+                frameDef, alpha, hasSubType, subType, hasChunkCount, chunkCounts, clampedQuality,
                 frameRateNumerator, frameRateDenominator,
                 maxFrames,
                 exportInfoP->reserveMetaDataSpace,

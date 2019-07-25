@@ -128,7 +128,7 @@ static MovieFile createMovieFile(const std::string &filename,
 
 
 static std::unique_ptr<Exporter> createExporter(
-    const FrameDef& frameDef, CodecAlpha alpha, bool hasCodecSubType, CodecSubType subType, int quality,
+    const FrameDef& frameDef, CodecAlpha alpha, bool hasCodecSubType, CodecSubType subType, bool hasChunkCount, HapChunkCounts chunkCounts, int quality,
     int64_t frameRateNumerator, int64_t frameRateDenominator,
     int32_t maxFrames, int32_t reserveMetadataSpace,
     const MovieFile& file, MovieErrorCallback errorCallback,
@@ -139,8 +139,8 @@ static std::unique_ptr<Exporter> createExporter(
     std::unique_ptr<EncoderParametersBase> parameters = std::make_unique<EncoderParametersBase>(
         frameDef,
         alpha,
-        hasCodecSubType,
-        subType,
+        hasCodecSubType, subType,
+        hasChunkCount, chunkCounts,
         quality
         );
 
@@ -569,13 +569,17 @@ AEIO_StartAdding(
             throw std::runtime_error("codec subtype not implemented");
             bool hasCodecSubType(true);
             CodecSubType subType; //!!! need to obtain this
+            // !!! 
+            throw std::runtime_error("chunk counts not implemented");
+            bool hasChunkCounts(true);
+            HapChunkCounts chunkCounts{ 0 }; // !!! need to obtain this
 
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,
                          format),
                 codecAlpha,
-                hasCodecSubType,
-                subType,
+                hasCodecSubType, subType,
+                hasChunkCounts, chunkCounts,
                 clampedQuality,
                 frameRateNumerator,
                 frameRateDenominator,

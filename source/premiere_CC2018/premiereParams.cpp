@@ -130,6 +130,21 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
         frameRateParam.paramValues = frameRateValues;
         exportParamSuite->AddParam(exporterPluginID, mgroupIndex, ADBEBasicVideoGroup, &frameRateParam);
 
+        if (codec.details().hasChunkCount) {
+            exNewParamInfo chunkCountParam;
+            exParamValues chunkCountValues;
+            safeStrCpy(chunkCountParam.identifier, 256, codec.details().premiereChunkCountName.c_str());
+            chunkCountParam.paramType = exParamType_int;
+            chunkCountParam.flags = exParamFlag_optional;
+            chunkCountValues.rangeMin.intValue = k_chunkingMin;
+            chunkCountValues.rangeMax.intValue = k_chunkingMax;
+            chunkCountValues.value.intValue = 1;
+            chunkCountValues.disabled = kPrFalse;
+            chunkCountValues.hidden = kPrFalse;
+            chunkCountParam.paramValues = chunkCountValues;
+            exportParamSuite->AddParam(exporterPluginID, mgroupIndex, codec.details().premiereGroupName.c_str(), &chunkCountParam);
+        }
+
         if (CodecRegistry::hasQuality())
         {
             exNewParamInfo qualityParam;
@@ -293,6 +308,18 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
     copyConvertStringLiteralIntoUTF16(CODEC_SPECIFIC_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, codec.details().premiereGroupName.c_str(), tempString);
 
+    if (codec.details().hasChunkCount) {
+        copyConvertStringLiteralIntoUTF16(STR_CHUNKING, tempString);
+        settings->exportParamSuite->SetParamName(exID, 0, codec.details().premiereChunkCountName.c_str(), tempString);
+        exParamValues chunkCountValues;
+        settings->exportParamSuite->GetParamValue(exID, 0, codec.details().premiereChunkCountName.c_str(), &chunkCountValues);
+        chunkCountValues.rangeMin.intValue = k_chunkingMin;
+        chunkCountValues.rangeMax.intValue = k_chunkingMax;
+        chunkCountValues.disabled = kPrFalse;
+        chunkCountValues.hidden = kPrFalse;
+        settings->exportParamSuite->ChangeParam(exID, 0, codec.details().premiereChunkCountName.c_str(), &chunkCountValues);
+    }
+
     copyConvertStringLiteralIntoUTF16(BASIC_AUDIO_PARAM_GROUP_NAME, tempString);
     settings->exportParamSuite->SetParamName(exID, 0, ADBEBasicAudioGroup, tempString);
 
@@ -337,7 +364,8 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
 
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoWidth, &width);
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEVideoHeight, &height);
-    if (codec.details().hasExplicitIncludeAlphaChannel)
+    bool hasExplicitUseAlphaChannel = codec.details().hasExplicitIncludeAlphaChannel;
+    if (hasExplicitUseAlphaChannel)
     {
         paramSuite->GetParamValue(exporterPluginID, mgroupIndex, codec.details().premiereIncludeAlphaChannelName.c_str(), &includeAlphaChannel);
     }
@@ -346,9 +374,9 @@ prMALError getParamSummary(exportStdParms *stdParmsP, exParamSummaryRec *summary
     paramSuite->GetParamValue(exporterPluginID, mgroupIndex, ADBEAudioNumChannels, &channelType);
     timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
-    swprintf(videoSummary, 256, L"%ix%i, %s, %.2f fps",
+    swprintf(videoSummary, 256, L"%ix%i, %s%.2f fps",
             width.value.intValue, height.value.intValue,
-            (includeAlphaChannel.value.intValue ? L"with alpha" : L"no alpha"),
+            (hasExplicitUseAlphaChannel?(includeAlphaChannel.value.intValue ? L"with alpha, " : L"no alpha, "):L""),
             static_cast<float>(ticksPerSecond) / static_cast<float>(frameRate.value.timeValue));
     copyConvertStringLiteralIntoUTF16(videoSummary, summaryRecP->videoSummary);
 

@@ -979,6 +979,10 @@ PREMPLUGENTRY DllExport xImportEntry (
 {
     prMALError result = imUnsupported;
 
+    static bool noImporter = (!CodecRegistry::codec()->createDecoder);
+    if (noImporter)
+        return result;
+
     try {
         switch (selector)
         {

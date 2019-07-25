@@ -86,8 +86,10 @@ typedef std::array<char, 4> CodecSubType;
 typedef std::array<unsigned int, 2> HapChunkCounts;  //!!! move this
 
 struct EncoderParametersBase {
-    EncoderParametersBase(const FrameDef& frameDef_, CodecAlpha alpha_, bool hasSubType_, CodecSubType subType_, int quality_)
-        : frameDef(frameDef_), alpha(alpha_), hasSubType(hasSubType_), subType(subType_), quality(quality_) {}
+    EncoderParametersBase(const FrameDef& frameDef_, CodecAlpha alpha_, bool hasSubType_, CodecSubType subType_,
+                          bool hasChunkCount_, HapChunkCounts chunkCounts_, int quality_)
+        : frameDef(frameDef_), alpha(alpha_), hasSubType(hasSubType_), subType(subType_),
+          hasChunkCount(hasChunkCount_), chunkCounts(chunkCounts_), quality(quality_) {}
     virtual ~EncoderParametersBase() {}
 
     // ui-building
@@ -99,8 +101,9 @@ struct EncoderParametersBase {
     CodecAlpha alpha;
     bool hasSubType;
     CodecSubType subType;
+    bool hasChunkCount;
+    HapChunkCounts chunkCounts; //!!! move this
     int quality;
-    HapChunkCounts hapChunkCounts; //!!! move this
 
     EncoderParametersBase(const EncoderParametersBase&) = delete;
     EncoderParametersBase& operator=(const EncoderParametersBase&) = delete;
