@@ -60,10 +60,10 @@ CodecRegistry::CodecRegistry()
             [](Encoder* encoder) { delete encoder; });
     };
 
-    createDecoder = [=](std::unique_ptr<DecoderParametersBase> parameters) -> UniqueDecoder
-    {
-        return nullptr;
-    };
+    // createDecoder = [=](std::unique_ptr<DecoderParametersBase> parameters) -> UniqueDecoder
+    // {
+    //     return nullptr;
+    // };
 }
 
 std::shared_ptr<CodecRegistry>& CodecRegistry::codec()
