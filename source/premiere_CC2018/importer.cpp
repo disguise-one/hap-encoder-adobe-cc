@@ -7,6 +7,10 @@
 #include "prstring.hpp"
 #include "string_conversion.hpp"
 
+#ifdef PRMAC_ENV
+#include <os/log.h>
+#endif
+
 using namespace std::chrono_literals;
 
 //!!! if importerID can be removed rename this to AdobeSuites
@@ -1188,7 +1192,11 @@ PREMPLUGENTRY DllExport xImportEntry (
     catch (const std::exception& ex)
     {
         // !!! appears to be no way to provide an import error string
+#ifdef PRWIN_ENV
         OutputDebugString((CodecRegistry::codec()->logName() + " error - " + ex.what()).c_str());
+#else
+        os_log_debug(OS_LOG_DEFAULT, "%s error - %s", CodecRegistry::codec()->logName().c_str(), ex.what());
+#endif
 
         result = malUnknownError;
     }
