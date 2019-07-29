@@ -516,7 +516,7 @@ AEIO_StartAdding(
 
         ERR(suites.MemorySuite1()->AEGP_LockMemHandle(file_pathH, reinterpret_cast<void**>(&file_pathZ)));
         // convert file path to utf8
-        std::string filePath(to_string((wchar_t *)file_pathZ));
+        std::string filePath(to_string(file_pathZ));
         ERR(suites.MemorySuite1()->AEGP_UnlockMemHandle(file_pathH));
         ERR(suites.MemorySuite1()->AEGP_FreeMemHandle(file_pathH));
 

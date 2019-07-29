@@ -528,7 +528,7 @@ ImporterOpenFile8(
         fileOpenRec8->privatedata = (void*)localRecH;
 
         // Construct it
-        new (*localRecH) ImporterLocalRec8(fileOpenRec8->fileinfo.filepath);
+        new (*localRecH) ImporterLocalRec8(to_wstring(fileOpenRec8->fileinfo.filepath));
     }
 
     // open the file
@@ -625,6 +625,7 @@ ImporterGetIndFormat(
         //    Add a case for each filetype.
         
     case 0:
+    {
         FileFormat fileFormat = CodecRegistry::codec()->details().fileFormat;
         indFormatRec->filetype = reinterpret_cast<csSDK_int32&>(fileFormat);
 
@@ -635,13 +636,13 @@ ImporterGetIndFormat(
         strcpy_s(indFormatRec->FormatShortName, sizeof (indFormatRec->FormatShortName), CodecRegistry::codec()->details().fileFormatShortName.c_str());        // The short (menu name) of the importer
         strcpy_s(indFormatRec->PlatformExtension, sizeof (indFormatRec->PlatformExtension), platformXten); // The 3 letter extension
         #else
-        strcpy(indFormatRec->FormatName, formatname);            // The Long name of the importer
-        strcpy(indFormatRec->FormatShortName, shortname);        // The short (menu name) of the importer
+        strcpy(indFormatRec->FormatName, CodecRegistry::codec()->details().fileFormatName.c_str());            // The Long name of the importer
+        strcpy(indFormatRec->FormatShortName, CodecRegistry::codec()->details().fileFormatShortName.c_str());        // The short (menu name) of the importer
         strcpy(indFormatRec->PlatformExtension, platformXten);   // The 3 letter extension
         #endif
 
         break;
-        
+    }
     default:
         result = imBadFormatIndex;
     }
