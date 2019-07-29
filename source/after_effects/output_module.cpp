@@ -317,8 +317,13 @@ AEIO_UserOptionsDialog(
             return A_Err_PARAMETER;
 
         // get platform handles
+#ifdef AE_OS_WIN
         HWND hwndOwner = NULL;
         hwndOwner = GetForegroundWindow();
+#else
+        void *hwndOwner = nullptr;
+        // #error TODO: 
+#endif
         if (NULL==hwndOwner)
             suites.UtilitySuite6()->AEGP_GetMainHWND((void *)&hwndOwner);
 

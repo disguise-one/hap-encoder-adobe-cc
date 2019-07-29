@@ -66,4 +66,11 @@ target_sources(AdobeAfterEffectsSdk
         ${CMAKE_CURRENT_LIST_DIR}/AfterEffectsSDK/Examples/Util/MissingSuiteError.cpp
         ${CMAKE_CURRENT_LIST_DIR}/AfterEffectsSDK/Examples/Util/entry.h
 )
-target_include_directories(AdobeAfterEffectsSdk INTERFACE AfterEffectsSDK/Examples/Headers AfterEffectsSDK/Examples/Headers/SP AfterEffectsSDK/Examples/Util)
+
+target_include_directories(AdobeAfterEffectsSdk
+    INTERFACE
+        AfterEffectsSDK/Examples/Headers
+        AfterEffectsSDK/Examples/Headers/SP
+        AfterEffectsSDK/Examples/Util
+        AfterEffectsSDK/Examples/Resources
+)
