@@ -352,7 +352,7 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
         std::make_unique<MovieReader>(
             CodecRegistry::codec()->details().videoFormat,
             fileSize,
-            [&, fileRef](const uint8_t* buffer, size_t size) {
+            [&, fileRef](uint8_t* buffer, size_t size) {
                 DWORD bytesReadLu;
                 BOOL ok = ReadFile(fileRef,
                     (LPVOID)buffer, (DWORD)size,
