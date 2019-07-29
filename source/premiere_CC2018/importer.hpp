@@ -68,7 +68,7 @@ PREMPLUGENTRY DllExport xImportEntry (csSDK_int32	selector,
 
 struct ImportJobImpl
 {
-    ImportJobImpl(std::unique_ptr<DecoderJob>& codecJob_) : codecJob(std::move(codecJob_)), iFrame(-1), failed(false) {}
+    ImportJobImpl(std::unique_ptr<DecoderJob> codecJob_) : codecJob(std::move(codecJob_)), iFrame(-1), failed(false) {}
 
     int32_t iFrame{ -1 };
     std::function<void(const DecoderJob&)> onSuccess;
