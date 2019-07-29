@@ -318,6 +318,7 @@ bool Importer::expandWorkerPoolToCapacity() const
 
 // helper to create movie reader wrapped around an imFileRef that the Adobe SDK
 // wishes to manage
+#ifdef PRWIN_ENV
 static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const std::wstring& filePath)
 {
     HANDLE fileRef = CreateFileW(filePath.c_str(),
@@ -396,6 +397,65 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
         ),
         fileRef);
 }
+
+#else
+
+static std::pair<std::unique_ptr<MovieReader>, imFileRef> createMovieReader(const std::wstring& filePath)
+{
+    FILE *fileRef = fopen(to_string(filePath).c_str(), "rb");
+    
+    // Check to see if file is valid
+    if (fileRef == nullptr)
+    {
+        auto error = errno;
+
+        throw std::runtime_error(std::string("could not open ")
+                                 + to_string(filePath) + " - error " + std::to_string(error));
+    }
+
+    // fileSize is *only* needed by the seek wrapper for ffmpeg
+    long fileSize;
+    if (fseek(fileRef, 0, SEEK_END) == 0)
+    {
+        // returns -1 on failure, which matches our expected failure value below
+        fileSize = ftell(fileRef);
+    }
+    else
+    {
+        fileSize = -1; // this is expected by seek wrapper as meaning "I can't do that"
+    }
+
+    rewind(fileRef);
+
+    return std::pair<std::unique_ptr<MovieReader>, imFileRef>(
+        std::make_unique<MovieReader>(
+            CodecRegistry::codec()->details().videoFormat,
+            fileSize,
+            [&, fileRef](uint8_t* buffer, size_t size) {
+                size_t read = fread(static_cast<void *>(buffer), 1, size, fileRef);
+                
+                if (read != size)
+                    throw std::runtime_error("could not read");
+                return read;
+            },
+            [&, fileRef](int64_t offset, int whence) {
+                if (fseek(fileRef, offset, whence) != 0)
+                    throw std::runtime_error("could not seek");
+
+                return 0;
+            },
+            [&](const char *msg) {
+                //!!! report here
+            },
+            [fileRef]() {
+                fclose(fileRef);
+                return 0;
+            }
+        ),
+        fileRef);
+}
+
+#endif
 
 static prMALError 
 ImporterInit(
