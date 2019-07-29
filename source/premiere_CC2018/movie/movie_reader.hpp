@@ -1,7 +1,10 @@
 #ifndef MOVIE_READER_HPP
 #define MOVIE_READER_HPP
 
+#ifdef _WIN64
+// TODO: needed?
 #include <Windows.h>
+#endif
 
 #include "../movie/ffmpeg_helpers.hpp"
 #include "../sample_cache.hpp"

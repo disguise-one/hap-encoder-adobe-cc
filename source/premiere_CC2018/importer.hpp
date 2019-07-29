@@ -4,6 +4,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <list>
 
 #include	"PrSDKTypes.h"
 #include	"PrSDKStructs.h"

@@ -591,7 +591,7 @@ ImporterQuietFile(
 static prMALError
 ImporterCloseFile(
     imStdParms			*stdParms,
-    imFileRef			*imFileRef,
+    imFileRef			*fileRef,
     void				*privateData)
 {
     ImporterLocalRec8H ldataH = reinterpret_cast<ImporterLocalRec8H>(privateData);
@@ -601,7 +601,7 @@ ImporterCloseFile(
     if (ldataH && *ldataH) //!!!  && (*ldataH)->BasicSuite)  either it was constructed, or its null.
     {
         // !!! only reason to call this is because it zeroes imFileRef
-        ImporterQuietFile(stdParms, imFileRef, privateData);
+        ImporterQuietFile(stdParms, fileRef, privateData);
 
         (*ldataH)->~ImporterLocalRec8();
         stdParms->piSuites->memFuncs->disposeHandle(reinterpret_cast<char**>(ldataH));

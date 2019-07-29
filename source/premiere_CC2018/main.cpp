@@ -500,7 +500,7 @@ static void renderAndWriteAllVideo(exDoExportRec* exportInfoP, prMALError& error
             std::max(1, chunkCountParam.value.intValue)  // force old param to 1
             : 1;
     }
-    HapChunkCounts chunkCounts{ chunkCount, chunkCount };
+    HapChunkCounts chunkCounts{ static_cast<unsigned int>(chunkCount), static_cast<unsigned int>(chunkCount) };
 
     settings->timeSuite->GetTicksPerSecond(&ticksPerSecond);
 
