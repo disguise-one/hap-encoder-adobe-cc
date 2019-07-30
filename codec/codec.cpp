@@ -88,9 +88,14 @@ std::string CodecRegistry::logName()
     return logName_;
 }
 
-bool CodecRegistry::hasQuality()
+bool CodecRegistry::hasQualityForAnySubType()
 {
     return true;
+}
+
+bool CodecRegistry::hasQuality(const CodecSubType& subtype)
+{
+    return (subtype == kHapCodecSubType || subtype == kHapAlphaCodecSubType);
 }
 
 std::map<int, std::string> CodecRegistry::qualityDescriptions()
