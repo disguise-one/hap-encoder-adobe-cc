@@ -1,34 +1,32 @@
 #pragma once
 
 #include <string>
-
-// Used by AE and Pr so re-typedef rather than include headers
-#ifdef _WIN64
-typedef wchar_t			prUTF16Char;
-typedef unsigned short	A_u_short;
-#else
-typedef uint16_t        A_u_short;
-typedef uint16_t		csSDK_uint16;
-typedef csSDK_uint16	prUTF16Char;
-#endif
-typedef A_u_short       A_UTF16Char;
-
+#include <type_traits>
 
 namespace SDKStringConvert {
+    using uint16_based_type = uint16_t;
 	std::wstring to_wstring(const std::string& str);
-	std::wstring to_wstring(const A_UTF16Char* str);
-	std::wstring to_wstring(const prUTF16Char* str);
+	std::wstring to_wstring(const uint16_based_type* str);
+    // For Windows where wchar_t is 16 bits wide
+    template <typename T, typename std::enable_if<sizeof(T) == sizeof(uint16_based_type) && std::is_same<T, wchar_t>::value>::type = nullptr>
+	std::wstring to_wstring(const T* str) {
+        return std::wstring(str);
+    }
 	std::string to_string(const std::wstring& fromUTF16);
-	std::string to_string(const A_UTF16Char* str);
-	std::string to_string(const prUTF16Char* str);
-	void to_buffer(const std::string& str, prUTF16Char* dst, size_t dstSizeInChars);
+	std::string to_string(const uint16_based_type* str);
+    // For Windows where wchar_t is 16 bits wide
+    template <typename T, typename std::enable_if<sizeof(T) == sizeof(uint16_based_type) && std::is_same<T, wchar_t>::value>::type = nullptr>
+	std::string to_string(const T* str) {
+        return to_string(std::wstring(str));
+    }
+	void to_buffer(const std::string& str, uint16_based_type* dst, size_t dstSizeInChars);
 	template <size_t size>
-	void to_buffer(const std::string& str, prUTF16Char(&dst)[size]) {
+	void to_buffer(const std::string& str, uint16_based_type(&dst)[size]) {
 		to_buffer(str, dst, size);
 	}
-	void to_buffer(const std::wstring& str, prUTF16Char* dst, size_t dstSizeInChars);
+	void to_buffer(const std::wstring& str, uint16_based_type* dst, size_t dstSizeInChars);
 	template <size_t size>
-	void to_buffer(const std::wstring& str, prUTF16Char(&dst)[size]) {
+	void to_buffer(const std::wstring& str, uint16_based_type(&dst)[size]) {
 		to_buffer(str, dst, size);
 	}
 	void to_buffer(const std::string& str, char* dst, size_t dstSizeInChars);

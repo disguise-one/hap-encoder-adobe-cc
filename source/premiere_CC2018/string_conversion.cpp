@@ -1,6 +1,6 @@
 #include "string_conversion.hpp"
 
-#ifndef _WIN64
+#ifdef __APPLE__
 #include <codecvt>
 #include <CoreFoundation/CFString.h>
 #include <vector>
@@ -12,7 +12,7 @@
 
 #ifdef __APPLE__
 template <class T>
-static inline int aUTF16CharLength(const T inStr)
+static inline int aUTF16CharLength(const T* inStr)
 {
     int ret = 0;
     if (inStr)
@@ -36,19 +36,10 @@ std::wstring SDKStringConvert::to_wstring(const std::string& str)
 #endif
 }
 
-std::wstring SDKStringConvert::to_wstring(const A_UTF16Char *str)
+std::wstring SDKStringConvert::to_wstring(const uint16_based_type *str)
 {
 #ifdef _WIN32
 	return std::wstring(reinterpret_cast<const wchar_t*>(str));
-#else
-	return to_wstring(to_string(str));
-#endif
-}
-
-std::wstring SDKStringConvert::to_wstring(const prUTF16Char* str)
-{
-#ifdef _WIN32
-	return std::wstring(str);
 #else
 	return to_wstring(to_string(str));
 #endif
@@ -69,20 +60,35 @@ std::string SDKStringConvert::to_string(const std::wstring& str)
 #endif
 }
 
-std::string SDKStringConvert::to_string(const A_UTF16Char *str)
+#ifdef __APPLE__
+static bool cf_to_buffer(CFStringRef input, CFStringEncoding encoding, UInt8 *dst, CFIndex maxBuffLen)
+{
+    CFRange	range = { 0, 0 };
+	range.length = CFStringGetLength(input);
+    CFIndex copied;
+	CFStringGetBytes(input, range, encoding, 0, false, dst, maxBuffLen, &copied);
+	dst[copied] = 0;
+    if (copied != 0)
+    {
+        return true;
+    }
+    return false;
+}
+#endif
+
+std::string SDKStringConvert::to_string(const uint16_based_type *str)
 {
 #ifdef _WIN32
     return to_string(to_wstring(str));
 #else
-    CFIndex bytes = aUTF16CharLength(str) * sizeof(A_UTF16Char);
+    CFIndex bytes = aUTF16CharLength(str) * sizeof(uint16_based_type);
     CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(str), bytes, kCFStringEncodingUTF16, false, kCFAllocatorNull);
     const char *output = CFStringGetCStringPtr(input, kCFStringEncodingUTF8);
     if (!output)
     {
         CFIndex maximum = CFStringGetMaximumSizeForEncoding(CFStringGetLength(input), kCFStringEncodingUTF8);
         std::vector<char> buffer(maximum + 1);
-        Boolean result = CFStringGetCString(input, buffer.data(), buffer.size(), kCFStringEncodingUTF8);
-        if (result)
+        if (cf_to_buffer(input, kCFStringEncodingUTF8, reinterpret_cast<UInt8 *>(buffer.data()), buffer.size()))
         {
             output = buffer.data();
         }
@@ -100,64 +106,18 @@ std::string SDKStringConvert::to_string(const A_UTF16Char *str)
 #endif
 }
 
-std::string SDKStringConvert::to_string(const prUTF16Char* str)
-{
-#ifdef _WIN32
-	return to_string(to_wstring(str));
-#else
-	// TODO: CHECK
-	CFStringRef input = CFStringCreateWithCharacters(NULL, str, aUTF16CharLength(str));
-	const char* output = CFStringGetCStringPtr(input, kCFStringEncodingUTF8);
-	if (!output)
-	{
-		CFIndex maximum = CFStringGetMaximumSizeForEncoding(CFStringGetLength(input), kCFStringEncodingUTF8);
-		std::vector<char> buffer(maximum + 1);
-		Boolean result = CFStringGetCString(input, buffer.data(), buffer.size(), kCFStringEncodingUTF8);
-		if (result)
-		{
-			output = buffer.data();
-		}
-	}
-
-	std::string final;
-	if (output)
-	{
-		final = output;
-	}
-
-	CFRelease(input);
-
-	return final;
-#endif
-}
-
-void SDKStringConvert::to_buffer(const std::string& str, prUTF16Char* dst, size_t dstChars)
+void SDKStringConvert::to_buffer(const std::string& str, uint16_based_type* dst, size_t dstChars)
 {
 	to_buffer(to_wstring(str), dst, dstChars);
 }
 
-void SDKStringConvert::to_buffer(const std::wstring& str, prUTF16Char* dst, size_t dstChars)
+void SDKStringConvert::to_buffer(const std::wstring& str, uint16_based_type* dst, size_t dstChars)
 {
 #ifdef __APPLE__
-	// TODO: check
-	int length = str.length();
-	CFRange	range = { 0, kPrMaxPath };
-	range.length = length;
-	CFStringRef inputStringCFSR = CFStringCreateWithBytes(kCFAllocatorDefault,
-		reinterpret_cast<const uint8_t*>(str.c_str()),
-		length * sizeof(wchar_t),
-		kCFStringEncodingUTF32LE,
-		kPrFalse);
-	CFStringGetBytes(inputStringCFSR,
-		range,
-		kCFStringEncodingUTF16,
-		0,
-		kPrFalse,
-		reinterpret_cast<uint8_t*>(dst),
-		dstChars * (sizeof(prUTF16Char)),
-		NULL);
-	dst[length] = 0;
-	CFRelease(inputStringCFSR);
+    CFIndex bytes = str.length() * sizeof(wchar_t);
+	CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
+    cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8 *>(dst), dstChars * (sizeof(uint16_based_type)));
+	CFRelease(input);
 #elif defined _WIN32
 	wcscpy_s(dst, dstChars, str.c_str());
 #endif
@@ -168,7 +128,8 @@ void SDKStringConvert::to_buffer(const std::string& str, char* dst, size_t dstSi
 #ifdef _WIN32
 	strcpy_s(dst, dstSizeInChars, str.c_str());
 #else
-	// TODO: make safe, will overflow atm
-	strcpy(dst, str.c_str());
+	strncpy(dst, str.c_str(), dstSizeInChars);
+    // If dst was too short it wasn't null-terminated
+    dst[dstSizeInChars-1] = 0;
 #endif
 }
