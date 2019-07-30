@@ -532,7 +532,7 @@ ImporterOpenFile8(
         fileOpenRec8->privatedata = (void*)localRecH;
 
         // Construct it
-        new (*localRecH) ImporterLocalRec8(to_wstring(fileOpenRec8->fileinfo.filepath));
+        new (*localRecH) ImporterLocalRec8(std::wstring(fileOpenRec8->fileinfo.filepath));
     }
 
     // open the file

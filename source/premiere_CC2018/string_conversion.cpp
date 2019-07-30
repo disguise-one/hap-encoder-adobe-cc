@@ -56,7 +56,7 @@ std::string to_string(const std::wstring& str)
 std::string to_string(const A_UTF16Char *str)
 {
 #ifdef _WIN64
-    return to_string(std::wstring(reinterpret_cast<wchar_t *>(str)));
+    return to_string(std::wstring(reinterpret_cast<const wchar_t *>(str)));
 #else
     CFIndex bytes = aUTF16CharLength(str) * sizeof(A_UTF16Char);
     CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(str), bytes, kCFStringEncodingUTF16, false, kCFAllocatorNull);
