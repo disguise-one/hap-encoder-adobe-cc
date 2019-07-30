@@ -106,22 +106,32 @@ std::string SDKStringConvert::to_string(const uint16_based_type *str)
 #endif
 }
 
+#ifdef _WIN32
+void SDKStringConvert::to_buffer(const std::string& str, wchar_t* dst, size_t dstSizeInChars)
+{
+	to_buffer(to_wstring(str), dst, dstSizeInChars);
+}
+#else
 void SDKStringConvert::to_buffer(const std::string& str, uint16_based_type* dst, size_t dstChars)
 {
 	to_buffer(to_wstring(str), dst, dstChars);
 }
+#endif
 
+#ifdef _WIN32
+void SDKStringConvert::to_buffer(const std::wstring& str, wchar_t* dst, size_t dstChars)
+{
+	wcscpy_s(dst, dstChars, str.c_str());
+}
+#else
 void SDKStringConvert::to_buffer(const std::wstring& str, uint16_based_type* dst, size_t dstChars)
 {
-#ifdef __APPLE__
     CFIndex bytes = str.length() * sizeof(wchar_t);
 	CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
     cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8 *>(dst), dstChars * (sizeof(uint16_based_type)));
 	CFRelease(input);
-#elif defined _WIN32
-	wcscpy_s(dst, dstChars, str.c_str());
-#endif
 }
+#endif
 
 void SDKStringConvert::to_buffer(const std::string& str, char* dst, size_t dstSizeInChars)
 {
