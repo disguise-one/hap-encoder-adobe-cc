@@ -145,7 +145,7 @@ prMALError generateDefaultParams(exportStdParms *stdParms, exGenerateDefaultPara
             exportParamSuite->AddParam(exporterPluginID, mgroupIndex, codec.details().premiereGroupName.c_str(), &chunkCountParam);
         }
 
-        if (CodecRegistry::hasQuality())
+        if (codec.hasQuality(codec.details().defaultSubType))
         {
             exNewParamInfo qualityParam;
             exParamValues qualityValues;
@@ -275,7 +275,7 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
         settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoFPS, &tempFrameRate, tempString);
     }
 
-    if (CodecRegistry::hasQuality()) {
+    if (CodecRegistry::hasQualityForAnySubType()) {
         copyConvertStringLiteralIntoUTF16(STR_QUALITY, tempString);
         settings->exportParamSuite->SetParamName(exID, 0, ADBEVideoQuality, tempString);
         auto qualities = CodecRegistry::qualityDescriptions();
@@ -297,8 +297,21 @@ prMALError postProcessParams(exportStdParms *stdParmsP, exPostProcessParamsRec *
             StringForPr qualityString(to_wstring(quality.second));
             settings->exportParamSuite->AddConstrainedValuePair(exID, 0, ADBEVideoQuality, &tempQuality, qualityString.get());
         }
-    }
 
+        if (codec.details().subtypes.size()) {
+            exParamValues subCodecTypeParam;
+            CodecSubType subType;
+            settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoCodec, &subCodecTypeParam);
+            const auto codecSubtype = reinterpret_cast<CodecSubType&>(subCodecTypeParam.value.intValue);
+
+            exParamValues qualityToValidate;
+            bool enableQuality = codec.hasQuality(subType);
+            settings->exportParamSuite->GetParamValue(exID, 0, ADBEVideoQuality, &qualityToValidate);
+            qualityToValidate.disabled = !enableQuality;
+            settings->exportParamSuite->ChangeParam(exID, 0, ADBEVideoQuality, &qualityToValidate);
+        }
+    }
+    
     if (codec.details().hasExplicitIncludeAlphaChannel)
     {
         copyConvertStringLiteralIntoUTF16(STR_INCLUDE_ALPHA, tempString);

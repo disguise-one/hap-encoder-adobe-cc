@@ -18,10 +18,17 @@
 #define IDC_STATIC              -1
 #endif
 
+#define PLACEHOLDERx
+#ifdef PLACEHOLDER
+#define OPTIONS_CAPTION_NAME "Options"
+#define AEX_FILE_DESCRIPTION "AfterEffects output module"
+#define AEX_INTERNAL_NAME "AfterEffectsPlugin\0"
+#define AEX_ORIGINAL_FILENAME "AEXPlugin.aex\0"
+#define AEX_PRODUCT_NAME "AEXPlugin\0"
+#else
 #define OPTIONS_CAPTION_NAME CODEC_NAME##" Options"
-
-
+#define AEX_FILE_DESCRIPTION "AfterEffects output module to export "##CODEC_NAME##"\0"
 #define AEX_INTERNAL_NAME CODEC_NAME##"AfterEffectsPlugin\0"
 #define AEX_ORIGINAL_FILENAME CODEC_NAME##"AEXPlugin.aex\0"
-#define AEX_PRODUCT_NAME CODEC_NAME CODEC_NAME##"\0"
-
+#define AEX_PRODUCT_NAME CODEC_NAME##"\0"
+#endif

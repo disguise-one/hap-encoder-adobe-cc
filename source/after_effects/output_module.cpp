@@ -25,10 +25,16 @@ static A_Err DeathHook(
 
 struct OutputOptions
 {
-    OutputOptions() : quality(CodecRegistry::defaultQuality()) {}
+    OutputOptions()
+        : subType{ CodecRegistry::codec()->details().defaultSubType },
+          quality(CodecRegistry::defaultQuality()),
+          chunkCount(0)
+    {}
     ~OutputOptions() {}
 
-    int        quality;
+    CodecSubType subType;
+    int          quality;
+    int          chunkCount;
 
     // we're forced to store the entire output module context here, including temporary state
     // appears to be no other per-module supplied spot, and we don't want to use static globals
@@ -36,17 +42,33 @@ struct OutputOptions
 };
 
 void to_json(json& j, const OutputOptions& o) {
-    if (CodecRegistry::codec()->hasQuality()) {
-        j = json{ {"quality", o.quality} };
+    const auto& codec = *CodecRegistry::codec();
+
+    j = json{};
+    bool hasSubTypes = (codec.details().subtypes.size() > 0);
+    if (hasSubTypes) {
+        j["subType"] = o.subType;
     }
-    else {
-        j = json{};
+    if (codec.hasQuality(o.subType)) {
+        j["quality"] = o.quality;
+    };
+    if (codec.details().hasChunkCount) {
+        j["chunkCount"] = o.chunkCount;
     }
 }
 
 void from_json(const json& j, OutputOptions& o) {
-    if (CodecRegistry::codec()->hasQuality()) {
+    const auto& codec = *CodecRegistry::codec();
+
+    if (codec.details().subtypes.size())
+    {
+        j.at("subType").get_to(o.subType);
+    }
+    if (codec.hasQuality(o.subType)) {
         j.at("quality").get_to(o.quality);
+    }
+    if (codec.details().hasChunkCount) {
+        j.at("chunkCount").get_to(o.chunkCount);
     }
 }
 
@@ -327,7 +349,7 @@ AEIO_UserOptionsDialog(
         if (NULL==hwndOwner)
             suites.UtilitySuite6()->AEGP_GetMainHWND((void *)&hwndOwner);
 
-        if (ui_OutDialog(optionsUP->quality, (void *)&hwndOwner))
+        if (ui_OutDialog(optionsUP->subType, optionsUP->quality, optionsUP->chunkCount, (void *)&hwndOwner))
             *user_interacted0 = TRUE;
         else
             *user_interacted0 = FALSE;
@@ -579,14 +601,12 @@ AEIO_StartAdding(
 
             movieFile.onOpenForWrite();  //!!! move to writer
 
-            // !!! 
-            throw std::runtime_error("codec subtype not implemented");
-            bool hasCodecSubType(true);
-            CodecSubType subType; //!!! need to obtain this
-            // !!! 
-            throw std::runtime_error("chunk counts not implemented");
-            bool hasChunkCounts(true);
-            HapChunkCounts chunkCounts{ 0 }; // !!! need to obtain this
+            const auto& codec = *CodecRegistry::codec();
+            bool hasCodecSubType(codec.details().subtypes.size() > 0);
+            CodecSubType subType = optionsUP->subType;
+
+            HapChunkCounts chunkCounts{ optionsUP->chunkCount, optionsUP->chunkCount};
+            bool hasChunkCounts(codec.details().hasChunkCount);
 
             optionsUP->exporter = createExporter(
                 FrameDef(widthL, heightL,

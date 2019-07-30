@@ -310,7 +310,8 @@ public:
     // quality settings
 
     // qualities are ordered integers, not necessarily starting at 0 nor contiguous
-    static bool hasQuality();
+    static bool hasQualityForAnySubType();
+    static bool hasQuality(const CodecSubType& subtype);
     static std::map<int, std::string> qualityDescriptions();
     static int defaultQuality();
 

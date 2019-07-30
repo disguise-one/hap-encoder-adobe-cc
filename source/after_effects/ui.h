@@ -1,3 +1,5 @@
 #pragma once
 
-bool ui_OutDialog(int &quality, void *platformSpecific);
+#include "codec_registration.hpp"
+
+bool ui_OutDialog(CodecSubType& subType, int &quality, int& chunkCount, void *platformSpecific);
