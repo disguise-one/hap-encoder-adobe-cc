@@ -605,7 +605,7 @@ AEIO_StartAdding(
             bool hasCodecSubType(codec.details().subtypes.size() > 0);
             CodecSubType subType = optionsUP->subType;
 
-            HapChunkCounts chunkCounts{ optionsUP->chunkCount, optionsUP->chunkCount};
+            HapChunkCounts chunkCounts{ static_cast<unsigned int>(optionsUP->chunkCount), static_cast<unsigned int>(optionsUP->chunkCount)};
             bool hasChunkCounts(codec.details().hasChunkCount);
 
             optionsUP->exporter = createExporter(
