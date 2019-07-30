@@ -406,7 +406,7 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
 
 static std::pair<std::unique_ptr<MovieReader>, imFileRef> createMovieReader(const std::wstring& filePath)
 {
-    FILE *fileRef = fopen(to_string(filePath).c_str(), "rb");
+    FILE *fileRef = fopen(SDKStringConvert::to_string(filePath).c_str(), "rb");
     
     // Check to see if file is valid
     if (fileRef == nullptr)
@@ -414,7 +414,7 @@ static std::pair<std::unique_ptr<MovieReader>, imFileRef> createMovieReader(cons
         auto error = errno;
 
         throw std::runtime_error(std::string("could not open ")
-                                 + to_string(filePath) + " - error " + std::to_string(error));
+                                 + SDKStringConvert::to_string(filePath) + " - error " + std::to_string(error));
     }
 
     // fileSize is *only* needed by the seek wrapper for ffmpeg
