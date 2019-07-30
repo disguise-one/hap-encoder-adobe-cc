@@ -16,8 +16,7 @@ static bool configureDialog()
 	return true;
 }
 
-bool
-ui_OutDialog(int &quality, void *platformSpecific)
+bool ui_OutDialog(CodecSubType& subType, int &quality, int& chunkCount, void *platformSpecific)
 {
 
 	AEExportSettingsViewController *controller = [[AEExportSettingsViewController alloc] initWithNibName:nil bundle:nil];
