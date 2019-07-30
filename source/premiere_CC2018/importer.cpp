@@ -339,7 +339,7 @@ static std::pair<std::unique_ptr<MovieReader>, HANDLE> createMovieReader(const s
         auto error = GetLastError();
 
         throw std::runtime_error(std::string("could not open ")
-                                 + to_string(filePath) + " - error " + std::to_string(error));
+                                 + SDKStringConvert::to_string(filePath) + " - error " + std::to_string(error));
     }
 
     // fileSize is *only* needed by the seek wrapper for ffmpeg
@@ -532,7 +532,7 @@ ImporterOpenFile8(
         fileOpenRec8->privatedata = (void*)localRecH;
 
         // Construct it
-        new (*localRecH) ImporterLocalRec8(std::wstring(fileOpenRec8->fileinfo.filepath));
+        new (*localRecH) ImporterLocalRec8(SDKStringConvert::to_wstring(fileOpenRec8->fileinfo.filepath));
     }
 
     // open the file
@@ -695,8 +695,7 @@ ImporterGetSubTypeNames(
         (*subTypeDescriptionRec)->subType = videoFormat;
 
         // should use the subtype format here, but we don't break out codec subtypes atm
-        copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::codec()->details().fileFormatShortName).c_str(),
-                                          (*subTypeDescriptionRec)->subTypeName);
+		SDKStringConvert::to_buffer(CodecRegistry::codec()->details().fileFormatShortName, (*subTypeDescriptionRec)->subTypeName);
     }
     else
     {

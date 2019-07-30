@@ -86,9 +86,6 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         // singleton needed from here on
         const auto &codec = *CodecRegistry::codec();
 
-        std::string logName = CodecRegistry::codec()->logName();
-        std::wstring logNameForPr(to_wstring(logName));
-
         infoRec->classID = reinterpret_cast<const uint32_t &>(codec.details().videoFormat);
         infoRec->fileType = reinterpret_cast<const uint32_t&>(codec.details().fileFormat);
         infoRec->hideInUI = kPrFalse;
@@ -102,8 +99,8 @@ prMALError startup(exportStdParms* stdParms, exExporterInfoRec* infoRec)
         infoRec->wantsNoProgressBar = kPrFalse;
         infoRec->doesNotSupportAudioOnly = kPrTrue;
         infoRec->interfaceVersion = EXPORTMOD_VERSION;
-        copyConvertStringLiteralIntoUTF16(logNameForPr.c_str(), infoRec->fileTypeName);
-        copyConvertStringLiteralIntoUTF16(to_wstring(codec.details().videoFileExt).c_str(), infoRec->fileTypeDefaultExtension);
+		SDKStringConvert::to_buffer(codec.logName(), infoRec->fileTypeName);
+		SDKStringConvert::to_buffer(codec.details().videoFileExt, infoRec->fileTypeDefaultExtension);
         return exportReturn_IterateExporter;
     }
 
@@ -149,23 +146,23 @@ prMALError beginInstance(exportStdParms* stdParmsP, exExporterInstanceRec* insta
     auto pluginId = instanceRecP->exporterPluginID;
     settings->reportError = [report, pluginId](const std::string& error) {
 
-        StringForPr title(to_wstring(CodecRegistry::logName() + " - ERROR"));
-        StringForPr detail(to_wstring(error));
+        StringForPr title(CodecRegistry::logName() + " - ERROR");
+        StringForPr detail(error);
 
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
-            title.get(),
-            detail.get());
+            title,
+            detail);
     };
     settings->logMessage = [report, pluginId](const std::string& message) {
 
-        StringForPr title(to_wstring(CodecRegistry::logName()));
-        StringForPr detail(to_wstring(message));
+        StringForPr title(CodecRegistry::logName());
+        StringForPr detail(message);
 
         report(
             pluginId, PrSDKErrorSuite2::kEventTypeError,
-            title.get(),
-            detail.get());
+            title,
+            detail);
     };
 
 	instanceRecP->privateData = reinterpret_cast<void*>(settings);
@@ -294,7 +291,7 @@ prMALError queryOutputSettings(exportStdParms *stdParmsP, exQueryOutputSettingsR
 
 prMALError fileExtension(exportStdParms* stdParmsP, exQueryExportFileExtensionRec* exportFileExtensionRecP)
 {
-	copyConvertStringLiteralIntoUTF16(to_wstring(CodecRegistry::codec()->details().videoFileExt).c_str(), exportFileExtensionRecP->outFileExtension);
+	SDKStringConvert::to_buffer(CodecRegistry::codec()->details().videoFileExt, exportFileExtensionRecP->outFileExtension);
 
 	return malNoError;
 }
@@ -659,8 +656,9 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
 
     // Progress bar init with label
     float progress = 0.f;
+	// Annoyingly SetProgressString takes a non-const string argument, so use a buffer
     prUTF16Char tempStrProgress[256];
-    copyConvertStringLiteralIntoUTF16(L"Preparing Audio...", tempStrProgress);
+    SDKStringConvert::to_buffer(L"Preparing Audio...", tempStrProgress);
     settings->exportProgressSuite->SetProgressString(exID, tempStrProgress);
 
     // GetAudio loop
@@ -709,7 +707,7 @@ static void renderAndWriteAllAudio(exDoExportRec *exportInfoP, prMALError &error
     error = resultS;
 
     // Reset progress bar label
-    copyConvertStringLiteralIntoUTF16(L"", tempStrProgress);
+    SDKStringConvert::to_buffer(L"", tempStrProgress);
     settings->exportProgressSuite->SetProgressString(exID, tempStrProgress);
 
     // Free up
