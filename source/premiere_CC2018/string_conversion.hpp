@@ -13,6 +13,9 @@ namespace SDKStringConvert {
 #endif
 	using ae_char_type = uint16_based_type;
 
+	/*
+	std::wstring from Pr and AE
+	*/
 	std::wstring to_wstring(const std::string& str);
 	std::wstring to_wstring(const uint16_based_type* str);
     // For Windows where wchar_t is 16 bits wide
@@ -20,6 +23,10 @@ namespace SDKStringConvert {
 	std::wstring to_wstring(const T* str) {
         return std::wstring(str);
     }
+
+	/*
+	std::string from Pr and AE
+	*/
 	std::string to_string(const std::wstring& fromUTF16);
 	std::string to_string(const uint16_based_type* str);
     // For Windows where wchar_t is 16 bits wide
@@ -28,7 +35,10 @@ namespace SDKStringConvert {
         return to_string(std::wstring(str));
     }
 
-
+	/*
+	std::string or std::wstring to Pr buffer
+	(not required for AE currently)
+	*/
 	void to_buffer(const std::string& str, pr_char_type* dst, size_t dstSizeInChars);
 	template <size_t size>
 	void to_buffer(const std::string& str, pr_char_type(&dst)[size]) {
@@ -41,6 +51,9 @@ namespace SDKStringConvert {
 		to_buffer(str, dst, size);
 	}
 
+	/*
+	std::string to char buffer
+	*/
 	void to_buffer(const std::string& str, char* dst, size_t dstSizeInChars);
 	template <size_t size>
 	void to_buffer(const std::string& str, char(&dst)[size]) {
