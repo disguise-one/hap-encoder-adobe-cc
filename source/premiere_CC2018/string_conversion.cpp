@@ -28,7 +28,7 @@ std::wstring SDKStringConvert::to_wstring(const std::string& str)
 {
 #ifdef _WIN32
     const int n_chars = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
-    std::wstring buffer(n_chars-1, ' ');
+    std::wstring buffer(static_cast<size_t>(n_chars) - 1, ' ');
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &buffer[0], n_chars);
     return buffer;
 #else
@@ -106,32 +106,22 @@ std::string SDKStringConvert::to_string(const uint16_based_type *str)
 #endif
 }
 
-#ifdef _WIN32
-void SDKStringConvert::to_buffer(const std::string& str, wchar_t* dst, size_t dstSizeInChars)
+void SDKStringConvert::to_buffer(const std::string& str, pr_char_type* dst, size_t dstSizeInChars)
 {
 	to_buffer(to_wstring(str), dst, dstSizeInChars);
 }
-#else
-void SDKStringConvert::to_buffer(const std::string& str, uint16_based_type* dst, size_t dstChars)
-{
-	to_buffer(to_wstring(str), dst, dstChars);
-}
-#endif
 
+void SDKStringConvert::to_buffer(const std::wstring& str, pr_char_type* dst, size_t dstChars)
+{
 #ifdef _WIN32
-void SDKStringConvert::to_buffer(const std::wstring& str, wchar_t* dst, size_t dstChars)
-{
 	wcscpy_s(dst, dstChars, str.c_str());
-}
 #else
-void SDKStringConvert::to_buffer(const std::wstring& str, uint16_based_type* dst, size_t dstChars)
-{
-    CFIndex bytes = str.length() * sizeof(wchar_t);
-	CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
-    cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8 *>(dst), dstChars * (sizeof(uint16_based_type)));
+	CFIndex bytes = str.length() * sizeof(wchar_t);
+	CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
+	cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8*>(dst), dstChars * (sizeof(uint16_based_type)));
 	CFRelease(input);
-}
 #endif
+}
 
 void SDKStringConvert::to_buffer(const std::string& str, char* dst, size_t dstSizeInChars)
 {
