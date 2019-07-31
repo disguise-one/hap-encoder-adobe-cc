@@ -15,7 +15,7 @@ enum {
 	OUT_Cancel = IDCANCEL,
     OUT_SubTypes_Menu = 3,
     OUT_Quality_Menu = 4,
-    OUT_ChunkCount_Field = 5
+    OUT_ChunkCount_Menu = 5
 };
 
 
@@ -86,13 +86,28 @@ static BOOL CALLBACK DialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARA
                 if (codec.details().hasChunkCount)
                 {
                     // set up the menu
-                    //!!! HWND menu = GetDlgItem(hwndDlg, OUT_ChunkCount_Field);
+                    HWND menu = GetDlgItem(hwndDlg, OUT_ChunkCount_Menu);
 
-                    //!!! ChunkCount field setup here
+                    auto descriptions = std::array<std::pair<int, std::string>, 9>{
+                        { {0, "Auto"}, {1, "1"}, {2, "2"}, { 3, "3"}, { 4, "4"},
+                        { 5, "5"}, { 6, "6"}, { 7, "7" }, { 8, "8" }
+                    } };
+                    auto description = descriptions.begin();
+
+                    for (int i = 0; i < descriptions.size(); ++i, ++description)
+                    {
+                        SendMessage(menu, (UINT)CB_ADDSTRING, (WPARAM)wParam, (LPARAM)(LPCTSTR)description->second.c_str());
+                        SendMessage(menu, (UINT)CB_SETITEMDATA, (WPARAM)i, (LPARAM)(DWORD)description->first);
+
+                        if (description->first == g_ChunkCount)
+                            SendMessage(menu, CB_SETCURSEL, (WPARAM)i, (LPARAM)0);
+                    }
+
+                    //!!! TODO enable / disable depending upon selected codec subtype
                 }
                 else
                 {
-                    //!!! TODO do not show qualities item
+                    //!!! TODO do not show chunk count item
                 }
             }while(0);
 
@@ -128,11 +143,13 @@ static BOOL CALLBACK DialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARA
                             g_Quality = SendMessage(menu, (UINT)CB_GETITEMDATA, (WPARAM)cur_sel, (LPARAM)0);
                         }
 
+                        // chunk count
                         if (codec.details().hasChunkCount)
                         {
-                            //!!! chunk count field here
-                            //!!! g_ChunkCount = ?
-                            //!!!
+                            HWND menu = GetDlgItem(hwndDlg, OUT_ChunkCount_Menu);
+
+                            LRESULT cur_sel = SendMessage(menu, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+                            g_ChunkCount = SendMessage(menu, (UINT)CB_GETITEMDATA, (WPARAM)cur_sel, (LPARAM)0);
                         }
 					}while(0);
 

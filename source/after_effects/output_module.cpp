@@ -370,20 +370,39 @@ AEIO_GetOutputInfo(
 { 
     A_Err err			= A_Err_NONE;
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
+    OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
 
-    auto codecName = CodecRegistry::codec()->details().fileFormatName;
-    auto productName = CodecRegistry::codec()->details().productName;
+    const auto& codec = *CodecRegistry::codec();
+    auto hasSubtypes = codec.details().subtypes.size() > 0;
+
+    auto codecName = codec.details().fileFormatName;
+    auto codecTypeName = hasSubtypes ?
+        (std::find_if(codec.details().subtypes.begin(),
+                      codec.details().subtypes.end(),
+                      [&](const CodecNamedSubType& named)->bool {
+                           return named.first == optionsUP->subType;
+                      })->second) 
+        : codec.details().productName;
 
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->name, "filename");
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->type, (std::string("MOV (") + codecName + ")").c_str());
 
-    OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
     if (!optionsUP)
         return A_Err_PARAMETER;
-    std::string qualityAsString = CodecRegistry::codec()->qualityDescriptions()[optionsUP->quality];
+
+    std::string description(codecTypeName);
+    if (codec.hasQualityForAnySubType()) {
+        if (!hasSubtypes || codec.hasQuality(optionsUP->subType))
+            description += std::string("\rQuality setting: ") + CodecRegistry::codec()->qualityDescriptions()[optionsUP->quality];
+    }
+
+    if (codec.details().hasChunkCount)
+    {
+        description += std::string("\rChunk count: ") + ((optionsUP->chunkCount == 0) ? std::string("Auto") : std::to_string(optionsUP->chunkCount));
+    }
 
     suites.ANSICallbacksSuite1()->strcpy(verbiageP->sub_type,
-                                         (productName + std::string("\rQuality setting: ") + qualityAsString).c_str());
+                                          description.c_str());
     return err;
 };
 
