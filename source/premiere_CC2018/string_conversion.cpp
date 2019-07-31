@@ -39,9 +39,9 @@ std::wstring SDKStringConvert::to_wstring(const std::string& str)
 std::wstring SDKStringConvert::to_wstring(const uint16_based_type *str)
 {
 #ifdef _WIN32
-	return std::wstring(reinterpret_cast<const wchar_t*>(str));
+    return std::wstring(reinterpret_cast<const wchar_t*>(str));
 #else
-	return to_wstring(to_string(str));
+    return to_wstring(to_string(str));
 #endif
 }
 
@@ -64,10 +64,10 @@ std::string SDKStringConvert::to_string(const std::wstring& str)
 static bool cf_to_buffer(CFStringRef input, CFStringEncoding encoding, UInt8 *dst, CFIndex maxBuffLen)
 {
     CFRange	range = { 0, 0 };
-	range.length = CFStringGetLength(input);
+    range.length = CFStringGetLength(input);
     CFIndex copied;
-	CFStringGetBytes(input, range, encoding, 0, false, dst, maxBuffLen, &copied);
-	dst[copied] = 0;
+    CFStringGetBytes(input, range, encoding, 0, false, dst, maxBuffLen, &copied);
+    dst[copied] = 0;
     if (copied != 0)
     {
         return true;
@@ -108,27 +108,27 @@ std::string SDKStringConvert::to_string(const uint16_based_type *str)
 
 void SDKStringConvert::to_buffer(const std::string& str, pr_char_type* dst, size_t dstSizeInChars)
 {
-	to_buffer(to_wstring(str), dst, dstSizeInChars);
+    to_buffer(to_wstring(str), dst, dstSizeInChars);
 }
 
 void SDKStringConvert::to_buffer(const std::wstring& str, pr_char_type* dst, size_t dstChars)
 {
 #ifdef _WIN32
-	wcscpy_s(dst, dstChars, str.c_str());
+    wcscpy_s(dst, dstChars, str.c_str());
 #else
-	CFIndex bytes = str.length() * sizeof(wchar_t);
-	CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
-	cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8*>(dst), dstChars * (sizeof(uint16_based_type)));
-	CFRelease(input);
+    CFIndex bytes = str.length() * sizeof(wchar_t);
+    CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(str.c_str()), bytes, kCFStringEncodingUTF32LE, false, kCFAllocatorNull);
+    cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8*>(dst), dstChars * (sizeof(uint16_based_type)));
+    CFRelease(input);
 #endif
 }
 
 void SDKStringConvert::to_buffer(const std::string& str, char* dst, size_t dstSizeInChars)
 {
 #ifdef _WIN32
-	strcpy_s(dst, dstSizeInChars, str.c_str());
+    strcpy_s(dst, dstSizeInChars, str.c_str());
 #else
-	strncpy(dst, str.c_str(), dstSizeInChars);
+    strncpy(dst, str.c_str(), dstSizeInChars);
     // If dst was too short it wasn't null-terminated
     dst[dstSizeInChars-1] = 0;
 #endif
