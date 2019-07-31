@@ -108,7 +108,14 @@ std::string SDKStringConvert::to_string(const uint16_based_type *str)
 
 void SDKStringConvert::to_buffer(const std::string& str, pr_char_type* dst, size_t dstSizeInChars)
 {
+#ifdef _WIN32
     to_buffer(to_wstring(str), dst, dstSizeInChars);
+#else
+    CFIndex bytes = str.length() * sizeof(char);
+    CFStringRef input = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(str.c_str()), bytes, kCFStringEncodingUTF8, false, kCFAllocatorNull);
+    cf_to_buffer(input, kCFStringEncodingUTF16, reinterpret_cast<UInt8*>(dst), dstSizeInChars * (sizeof(uint16_based_type)));
+    CFRelease(input);
+#endif
 }
 
 void SDKStringConvert::to_buffer(const std::wstring& str, pr_char_type* dst, size_t dstChars)
