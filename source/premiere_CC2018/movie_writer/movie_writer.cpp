@@ -1,4 +1,4 @@
-﻿
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,8 +36,6 @@ MovieWriter::MovieWriter(VideoFormat videoFormat, VideoEncoderName encoderName,
     bool writeMoovTagEarly)
     : maxFrames_(maxFrames), reserveMetadataSpace_(reserveMetadataSpace),
       onWrite_(file.onWrite), onSeek_(file.onSeek), onClose_(file.onClose), onError_(onError),
-      audioStream_(nullptr),
-      iFrame_(0), closed_(false), error_(false),
       writeMoovTagEarly_(writeMoovTagEarly)
 {
     /* allocate the output media context */

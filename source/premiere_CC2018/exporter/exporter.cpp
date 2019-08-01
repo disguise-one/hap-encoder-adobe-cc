@@ -43,8 +43,7 @@ ExportJob ExporterJobEncoder::encode()
 
 ExporterJobWriter::ExporterJobWriter(std::unique_ptr<MovieWriter> writer)
   : writer_(std::move(writer)),
-    utilisation_(1.),
-    error_(false)
+    utilisation_(1.)
 {
 }
 
@@ -223,13 +222,12 @@ void ExporterWorker::run()
 Exporter::Exporter(
     UniqueEncoder encoder,
     std::unique_ptr<MovieWriter> movieWriter)
-  : encoder_(std::move(encoder)), jobEncoder_(*encoder_),
+  : encoder_(std::move(encoder)),
     jobFreeList_(std::function<ExportJob ()>([&](){
         return std::make_unique<ExportJob::element_type>(encoder_->create());
     })),
-    closed_(false),
-    jobWriter_(std::move(movieWriter)),
-    error_(false)
+    jobEncoder_(*encoder_),
+    jobWriter_(std::move(movieWriter))
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write
 

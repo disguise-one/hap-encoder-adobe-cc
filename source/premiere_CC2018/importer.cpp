@@ -39,8 +39,7 @@ AdobeImporterAPI::~AdobeImporterAPI()
 
 ImporterJobReader::ImporterJobReader(std::unique_ptr<MovieReader> reader)
     : reader_(std::move(reader)),
-    utilisation_(1.),
-    error_(false)
+    utilisation_(1.)
 {
 }
 
@@ -148,7 +147,7 @@ void ImporterJobReader::close()
 }
 
 ImporterWorker::ImporterWorker(std::atomic<bool>& error, ImporterJobFreeList& freeList, ImporterJobReader& reader, ImporterJobDecoder& decoder)
-    : quit_(false), error_(error), jobFreeList_(freeList), jobReader_(reader), jobDecoder_(decoder)
+    : error_(error), jobFreeList_(freeList), jobDecoder_(decoder), jobReader_(reader)
 {
     worker_ = std::thread(worker_start, std::ref(*this));
 }
@@ -219,13 +218,12 @@ void ImporterWorker::run()
 Importer::Importer(
     std::unique_ptr<MovieReader> movieReader,
     UniqueDecoder decoder)
-    : closed_(false),
-      decoder_(std::move(decoder)), jobDecoder_(*decoder_),
+    : decoder_(std::move(decoder)),
       jobFreeList_(std::function<ImportJob()>([&]() {
         return std::make_unique<ImportJob::element_type>(decoder_->create());
       })),
       jobReader_(std::move(movieReader)),
-      error_(false)
+      jobDecoder_(*decoder_)
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io read
 
@@ -660,7 +658,6 @@ ImporterGetIndPixelFormat(
     imIndPixelFormatRec	*SDKIndPixelFormatRec)
 {
     prMALError	result = malNoError;
-    ImporterLocalRec8H	ldataH = reinterpret_cast<ImporterLocalRec8H>(SDKIndPixelFormatRec->privatedata);
 
     switch (idx)
     {

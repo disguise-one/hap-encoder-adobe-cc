@@ -401,7 +401,6 @@ prMALError paramButton(exportStdParms *stdParmsP, exParamButtonRec *getFilePrefs
 
 prMALError validateParamChanged(exportStdParms *stdParmsP, exParamChangedRec *validateParamChangedRecP)
 {
-    const csSDK_uint32 exID = validateParamChangedRecP->exporterPluginID;
     ExportSettings* settings = reinterpret_cast<ExportSettings*>(validateParamChangedRecP->privateData);
 
     if (settings->exportParamSuite == nullptr)

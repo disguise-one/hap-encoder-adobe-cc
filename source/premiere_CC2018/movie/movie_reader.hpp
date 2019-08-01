@@ -45,14 +45,14 @@ private:
     //CodecContext videoCodecContext_;
     FormatContext formatContext_;
     IOContext ioContext_;
-    int videoStreamIdx_;
-    int audioStreamIdx_;
+    int videoStreamIdx_{-1};
+    int audioStreamIdx_{-1};
 
-    int width_;
-    int height_;
-    int frameRateNumerator_;
-    int frameRateDenominator_;
-    int64_t numFrames_;
+    int width_{0};
+    int height_{0};
+    int frameRateNumerator_{0};
+    int frameRateDenominator_{0};
+    int64_t numFrames_{0};
 
     // audio, valid if audioStreamIdx_>=0
     std::unique_ptr<AudioDef> audioDef_;

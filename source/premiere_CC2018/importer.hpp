@@ -42,7 +42,7 @@ struct AdobeImporterAPI
 typedef struct ImporterLocalRec8
 {
     ImporterLocalRec8(const std::wstring& filePath_)
-        : importerID(-1), filePath(filePath_)
+        : filePath(filePath_)
     {
     }
 
@@ -69,13 +69,13 @@ PREMPLUGENTRY DllExport xImportEntry (csSDK_int32	selector,
 
 struct ImportJobImpl
 {
-    ImportJobImpl(std::unique_ptr<DecoderJob> codecJob_) : codecJob(std::move(codecJob_)), iFrame(-1), failed(false) {}
+    ImportJobImpl(std::unique_ptr<DecoderJob> codecJob_) : codecJob(std::move(codecJob_)) {}
 
     int32_t iFrame{ -1 };
     std::function<void(const DecoderJob&)> onSuccess;
     std::function<void(const DecoderJob&)> onFail;
 
-    bool failed;  // mark as failed; forward through rest of pipeline without processing
+    bool failed{false};  // mark as failed; forward through rest of pipeline without processing
     std::unique_ptr<DecoderJob> codecJob;
     DecodeInput input;
 };
@@ -104,7 +104,7 @@ public:
 private:
 
     std::mutex mutex_;
-    bool error_;
+    bool error_{false};
     ImportJobQueue queue_;
     std::unique_ptr<MovieReader> reader_;
     std::chrono::high_resolution_clock::time_point idleStart_;
@@ -145,7 +145,7 @@ private:
     std::thread worker_;
     void run();
 
-    std::atomic<bool> quit_;
+    std::atomic<bool> quit_{false};
     std::atomic<bool>& error_;
     ImporterJobFreeList& jobFreeList_;
     ImporterJobDecoder& jobDecoder_;
@@ -170,11 +170,11 @@ public:
         std::function<void(const DecoderJob&)> onFail);
 
 private:
-    bool closed_;
+    bool closed_{false};
     bool expandWorkerPoolToCapacity() const;
     int concurrentThreadsSupported_;
 
-    mutable std::atomic<bool> error_;
+    mutable std::atomic<bool> error_{false};
     UniqueDecoder decoder_;
 
     mutable ImporterJobFreeList jobFreeList_;

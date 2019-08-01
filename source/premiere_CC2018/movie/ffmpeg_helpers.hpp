@@ -129,8 +129,6 @@ inline AudioDef getAVCodecParams(
     int bytesPerSample;
     AudioEncoding encoding;
 
-    auto &format = codecpar.format;
-
     numChannels = codecpar.channels;
     sampleRate = codecpar.sample_rate;
 

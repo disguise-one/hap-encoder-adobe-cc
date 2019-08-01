@@ -74,12 +74,11 @@ private:
     FormatContext formatContext_;
     IOContext ioContext_;
     AVStream *videoStream_;
-    AVStream *audioStream_;     // nullptr on audio not present
+    AVStream *audioStream_{nullptr};     // nullptr on audio not present
     AVRational streamTimebase_;
-    int64_t iFrame_;
+    int64_t iFrame_{0};
 
-    bool closed_;
-    bool error_;
+    bool closed_{false};
 };
 
 

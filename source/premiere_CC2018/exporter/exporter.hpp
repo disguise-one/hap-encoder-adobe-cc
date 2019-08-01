@@ -73,7 +73,7 @@ public:
 private:
 
     std::mutex mutex_;
-    bool error_;
+    bool error_{false};
     ExportJobQueue queue_;
     std::unique_ptr<MovieWriter> writer_;
     std::chrono::high_resolution_clock::time_point idleStart_;
@@ -127,13 +127,13 @@ public:
     void dispatch_audio_at_end(const uint8_t *audio, size_t size);
 
 private:
-    bool closed_;
+    bool closed_{false};
     mutable std::unique_ptr<int64_t> currentFrame_;
 
     bool expandWorkerPoolToCapacity() const;
     size_t concurrentThreadsSupported_;
 
-    mutable std::atomic<bool> error_;
+    mutable std::atomic<bool> error_{false};
     UniqueEncoder encoder_;
 
     mutable ExporterJobFreeList jobFreeList_;

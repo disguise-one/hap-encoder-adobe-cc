@@ -270,7 +270,6 @@ AEIO_GetFlatOutputOptions(
     AEIO_Handle        *new_optionsPH)
 {
     A_Err                        err                = A_Err_NONE;
-    AEIO_Handle                    old_optionsH    = NULL;
     OutputOptions *new_optionsP;
     AEGP_SuiteHandler            suites(basic_dataP->pica_basicP);
 
@@ -310,7 +309,7 @@ AEIO_DisposeOutputOptions(
 { 
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
     AEIO_Handle			optionsH	=	reinterpret_cast<AEIO_Handle>(optionsPV);
-    OutputOptions      *optionsP;
+    OutputOptions      *optionsP    =   nullptr;
     A_Err				err			=	A_Err_NONE;
     
     if (optionsH){
@@ -331,8 +330,6 @@ AEIO_UserOptionsDialog(
 { 
     A_Err						err				= A_Err_NONE;
     AEGP_SuiteHandler			suites(basic_dataP->pica_basicP);
-    AEIO_Handle					optionsH		= NULL, 
-                                old_optionsH	= 0;
     {
         OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
         if (!optionsUP)
@@ -479,7 +476,6 @@ AEIO_StartAdding(
     AEIO_SndChannels    num_channels;
     AEIO_SndSampleSize  bytes_per_sample;
     AEIO_SndEncoding    snd_encoding;
-    A_char				name[AEGP_MAX_PATH_SIZE] = {'\0'};
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
 
     AEGP_ProjectH		projH		= 0;
@@ -808,7 +804,7 @@ AEIO_AddSoundChunk(
     A_u_long		num_samplesLu,
     const void		*dataPV)
 { 
-    A_Err err		= A_Err_NONE, err2 = A_Err_NONE;
+    A_Err err		= A_Err_NONE;
     AEGP_SuiteHandler	suites(basic_dataP->pica_basicP);
     OutputOptionsUP optionsUP = OutputOptionsHandleWrapper::wrap(suites, outH);
     if (!optionsUP)

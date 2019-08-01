@@ -35,9 +35,8 @@ MovieReader::MovieReader(
     MovieSeekCallback onSeek,
     MovieErrorCallback onError,
     MovieCloseCallback onClose)
-    : fileSize_(fileSize), videoStreamIdx_(-1), audioStreamIdx_(-1),
-      onRead_(onRead), onSeek_(onSeek), onError_(onError), onClose_(onClose),
-      width_(0), height_(0), numFrames_(0), frameRateNumerator_(0), frameRateDenominator_(0)
+    : fileSize_(fileSize),
+      onRead_(onRead), onSeek_(onSeek), onError_(onError), onClose_(onClose)
 {
     int ret;
 
