@@ -60,7 +60,15 @@ MovieWriter::MovieWriter(VideoFormat videoFormat, VideoEncoderName encoderName,
     }
     videoStream_->id = formatContext_->nb_streams - 1;
     videoStream_->codecpar->codec_tag = MKTAG(videoFormat[0], videoFormat[1], videoFormat[2], videoFormat[3]);
-    videoStream_->codecpar->codec_id = AV_CODEC_ID_WRAPPED_AVFRAME;
+
+    //!!! we want to do this
+    //!!!     videoStream_->codecpar->codec_id = AV_CODEC_ID_WRAPPED_AVFRAME;
+    //!!! but are forced to do this for now
+    videoStream_->codecpar->codec_id = AV_CODEC_ID_HAP;
+    //!!! because libavformat::mux.c insists that the above codec_tag belongs to AV_CODEC_ID_HAP
+    //!!! which we don't want, because we only want to use the muxer
+    //!!! TODO: find a way to remove this so the foundation can be used for codecs other than HAP
+
     videoStream_->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     videoStream_->codecpar->width = width;
     videoStream_->codecpar->height = height;
