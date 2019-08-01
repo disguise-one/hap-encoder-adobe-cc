@@ -684,7 +684,7 @@ ImporterGetSubTypeNames(
 
     csSDK_int32 supportedFileFormat = reinterpret_cast<const csSDK_int32&>(CodecRegistry::codec()->details().fileFormat);
 
-    if (fileType = supportedFileFormat)
+    if (fileType == supportedFileFormat)
     {
         *subTypeDescriptionRec = (imSubTypeDescriptionRec *)stdParms->piSuites->memFuncs->newPtrClear(sizeof(imSubTypeDescriptionRec));
 
