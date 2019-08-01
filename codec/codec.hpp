@@ -60,6 +60,8 @@ public:
     HapEncoder(std::unique_ptr<EncoderParametersBase>& params);
 	~HapEncoder();
 
+    virtual VideoFormat subType() const;   //!!! should have default implementation
+    virtual VideoEncoderName name() const; //!!! should have default implementation
     virtual std::unique_ptr<EncoderJob> create() override;
 
 private:

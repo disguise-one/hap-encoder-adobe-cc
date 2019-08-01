@@ -132,6 +132,34 @@ HapEncoder::~HapEncoder()
 {
 }
 
+VideoFormat HapEncoder::subType() const
+{
+    return parameters().subType;
+};
+
+VideoEncoderName HapEncoder::name() const
+{
+    //!!! simplify
+    std::string name;
+
+    const auto& codec = *CodecRegistry::codec();
+    const auto& subtypes = codec.details().subtypes;
+    bool hasSubTypes = subtypes.size() > 0;
+    if (hasSubTypes)
+    {
+        name = std::find_if(subtypes.cbegin(), subtypes.cend(),
+            [&](const CodecNamedSubType& namedSubType)->bool {
+                return namedSubType.first == parameters().subType;
+            })->second;
+    } else {
+        name = codec.details().fileFormatShortName;
+    }
+
+    VideoEncoderName videoEncoderName;
+    std::copy(name.c_str(), name.c_str() + name.size() + 1, videoEncoderName.data());
+    return videoEncoderName;
+}
+
 std::unique_ptr<EncoderJob> HapEncoder::create()
 {
     std::array<TextureConverter*, 2> converters;
