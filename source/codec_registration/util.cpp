@@ -144,3 +144,49 @@ void convertRGBA_Top_Left_U16_ToHostFrame(const uint16_t* source, uint8_t *data,
         throw std::runtime_error("unhandled host format");
     }
 }
+
+
+void convertHostFrameTo_RGBA_Top_Left_U8(const uint8_t* data, size_t stride, const FrameDef& frameDef, uint8_t* dest)
+{
+    switch (frameDef.format)
+    {
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_U16_32k:
+        copy_flip_scaled<2, 1, 0, 3>((uint16_t*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 255.0 / 32768.0);
+        break;
+    case ChannelLayout_ARGB | FrameOrigin_TopLeft | ChannelFormat_U16_32k:
+        copy_noflip_scaled<1, 2, 3, 0>((uint16_t*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 255.0 / 32768.0);
+        break;
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_F32:
+        copy_flip_scaled<2, 1, 0, 3>((float*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 255.0);
+        break;
+    case ChannelLayout_ARGB | FrameOrigin_TopLeft | ChannelFormat_F32:
+        copy_noflip_scaled<2, 1, 0, 3>((float*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 255.0);
+        break;
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_U8:
+        copy_flip_scaled<2, 1, 0, 3>((uint8_t*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 1.0);
+        break;
+    case ChannelLayout_ARGB | FrameOrigin_TopLeft | ChannelFormat_U8:
+        copy_noflip_scaled<1, 2, 3, 0>((uint8_t*)data, stride, frameDef.width, frameDef.height, dest, frameDef.width * 4, 1.0);
+        break;
+    default:
+        throw std::runtime_error("unhandled host format");
+    }
+}
+
+void convertRGBA_Top_Left_U8_ToHostFrame(const uint8_t* source, uint8_t* data, size_t stride, const FrameDef& frameDef)
+{
+    switch (frameDef.format)
+    {
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_U16_32k:
+        copy_flip_scaled<2, 1, 0, 3>((uint16_t*)source, frameDef.width * 4, frameDef.width, frameDef.height, (uint16_t*)data, stride, 32768.0 / 255.0);
+        break;
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_F32:
+        copy_flip_scaled<2, 1, 0, 3>((uint16_t*)source, frameDef.width * 4, frameDef.width, frameDef.height, (float*)data, stride, 1.0 / 255.0);
+        break;
+    case ChannelLayout_BGRA | FrameOrigin_BottomLeft | ChannelFormat_U8:
+        copy_flip_scaled<2, 1, 0, 3>((uint16_t*)source, frameDef.width * 4, frameDef.width, frameDef.height, (uint8_t*)data, stride, 1.0);
+        break;
+    default:
+        throw std::runtime_error("unhandled host format");
+    }
+}
