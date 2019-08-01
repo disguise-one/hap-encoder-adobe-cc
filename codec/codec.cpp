@@ -113,15 +113,17 @@ int CodecRegistry::defaultQuality()
 
 HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
     : Encoder(std::move(params)),
-      count_((int)textureFormats_.size()),
-      chunkCounts_((params->chunkCounts == HapChunkCounts{ 0, 0 }) ? HapChunkCounts{ 1, 1 } : params->chunkCounts),     // auto represented as 0, 0
-      textureFormats_(getTextureFormats(params->subType)),
+      count_(parameters().subType == kHapYCoCgACodecSubType ? 2 : 1),
+      chunkCounts_((parameters().chunkCounts == HapChunkCounts{ 0, 0 })
+                   ? HapChunkCounts{ 1, 1 }
+                   : parameters().chunkCounts),     // auto represented as 0, 0
+      textureFormats_(getTextureFormats(parameters().subType)),
       compressors_{ HapCompressorSnappy, HapCompressorSnappy }
 {
-    SquishEncoderQuality quality = (SquishEncoderQuality)params->quality;
+    SquishEncoderQuality quality = (SquishEncoderQuality)parameters().quality;
     for (size_t i = 0; i < count_; ++i)
     {
-        converters_[i] = TextureConverter::create(params->frameDef, textureFormats_[i], quality);
+        converters_[i] = TextureConverter::create(parameters().frameDef, textureFormats_[i], quality);
         sizes_[i] = (unsigned long)converters_[i]->size();
     }
 }
