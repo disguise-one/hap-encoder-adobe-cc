@@ -225,6 +225,7 @@ HapEncoderJob::HapEncoderJob(
       chunkCounts_(chunkCounts),
       textureFormats_(textureFormats),
       compressors_(compressors),
+      converters_(converters),
       sizes_(sizes)
 {
 }

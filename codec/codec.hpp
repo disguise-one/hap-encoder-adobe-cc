@@ -41,7 +41,7 @@ private:
     HapChunkCounts chunkCounts_;
     std::array<unsigned int, 2> textureFormats_;
     std::array<unsigned int, 2> compressors_;
-    std::array<std::unique_ptr<TextureConverter>, 2> converters_;
+    std::array<TextureConverter*, 2> converters_;
     std::array<unsigned long, 2> sizes_;
 
     std::vector<uint8_t> rgbaTopLeftOrigin_;       // for squish
