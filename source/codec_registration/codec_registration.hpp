@@ -222,8 +222,8 @@ public:
     {};
     virtual ~Encoder() {};
 
-    virtual VideoFormat subType() const { throw std::runtime_error("not implemented"); }
-    virtual VideoEncoderName name() const { throw std::runtime_error("not implemented"); }
+    virtual VideoFormat subType() const = 0;   //!!! provide default implementation
+    virtual VideoEncoderName name() const = 0; //!!! provide default implementation
     const EncoderParametersBase& parameters() const { return *parameters_; }
     int encodedBitDepth() const { return (parameters_->alpha == withoutAlpha) ? 24 : 32; }
 
