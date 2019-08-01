@@ -18,7 +18,7 @@ target_sources(AdobePremiereSdk
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/PrSDKTypes.h
         ${CMAKE_CURRENT_LIST_DIR}/premiere/Headers/SPBasic.h
 )
-target_include_directories(AdobePremiereSdk INTERFACE premiere/Headers premiere/Utils/)
+target_include_directories(AdobePremiereSdk SYSTEM INTERFACE premiere/Headers premiere/Utils/)
 
 
 add_library(AdobeAfterEffectsSdk INTERFACE)
@@ -68,7 +68,7 @@ target_sources(AdobeAfterEffectsSdk
 )
 
 target_include_directories(AdobeAfterEffectsSdk
-    INTERFACE
+    SYSTEM INTERFACE
         AfterEffectsSDK/Examples/Headers
         AfterEffectsSDK/Examples/Headers/SP
         AfterEffectsSDK/Examples/Util
