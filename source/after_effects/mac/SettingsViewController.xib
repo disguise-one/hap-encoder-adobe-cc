@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="FNDAEXViewController">
+            <connections>
+                <outlet property="stackView" destination="8It-wP-4Bp" id="KCI-Je-JqK"/>
+                <outlet property="view" destination="ris-HE-r1o" id="oR7-jj-yru"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="ris-HE-r1o">
+            <rect key="frame" x="0.0" y="0.0" width="459" height="480"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <stackView distribution="fill" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8It-wP-4Bp">
+                    <rect key="frame" x="20" y="61" width="419" height="399"/>
+                </stackView>
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EMw-Zg-EkP">
+                    <rect key="frame" x="363" y="13" width="82" height="32"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="70" id="647-Wh-9PV"/>
+                    </constraints>
+                    <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nD6-Fa-iko">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                    </buttonCell>
+                    <connections>
+                        <action selector="ok:" target="-2" id="4v4-xq-Qsu"/>
+                    </connections>
+                </button>
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vRT-eZ-E9M">
+                    <rect key="frame" x="281" y="13" width="82" height="32"/>
+                    <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="5ao-zy-aKb">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                    </buttonCell>
+                    <connections>
+                        <action selector="cancel:" target="-2" id="cQc-E6-T1I"/>
+                    </connections>
+                </button>
+            </subviews>
+            <constraints>
+                <constraint firstAttribute="trailing" secondItem="EMw-Zg-EkP" secondAttribute="trailing" constant="20" id="14p-YZ-3Yk"/>
+                <constraint firstItem="8It-wP-4Bp" firstAttribute="leading" secondItem="ris-HE-r1o" secondAttribute="leading" constant="20" id="MxS-7b-UtV"/>
+                <constraint firstAttribute="bottom" secondItem="vRT-eZ-E9M" secondAttribute="bottom" constant="20" id="XRv-zY-hxb"/>
+                <constraint firstItem="EMw-Zg-EkP" firstAttribute="leading" secondItem="vRT-eZ-E9M" secondAttribute="trailing" constant="12" id="Z2u-59-5U9"/>
+                <constraint firstItem="EMw-Zg-EkP" firstAttribute="top" secondItem="8It-wP-4Bp" secondAttribute="bottom" constant="20" id="Zsd-0I-g93"/>
+                <constraint firstItem="8It-wP-4Bp" firstAttribute="top" secondItem="ris-HE-r1o" secondAttribute="top" constant="20" id="j25-7a-gOt"/>
+                <constraint firstAttribute="bottom" secondItem="EMw-Zg-EkP" secondAttribute="bottom" constant="20" id="jiZ-BU-Nmp"/>
+                <constraint firstItem="vRT-eZ-E9M" firstAttribute="top" secondItem="8It-wP-4Bp" secondAttribute="bottom" constant="20" id="yD3-wS-jJV"/>
+                <constraint firstAttribute="trailing" secondItem="8It-wP-4Bp" secondAttribute="trailing" constant="20" id="yJH-W8-IV4"/>
+            </constraints>
+            <point key="canvasLocation" x="-431.5" y="95"/>
+        </customView>
+    </objects>
+</document>

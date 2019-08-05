@@ -81,10 +81,16 @@ if (MSVC)
     )
 endif(MSVC)
 
+if (APPLE)
+if (NOT DEFINED Foundation_IDENTIFIER_PREFIX)
+message(FATAL_ERROR "Parent must define Foundation_IDENTIFIER_PREFIX")
+endif ()
+endif (APPLE)
+
 set_target_properties(CodecPluginFoundation
     PROPERTIES
 	    BUNDLE TRUE
-	    MACOSX_BUNDLE_GUI_IDENTIFIER org.hapcommunity.HapCodecPlugin
+	    MACOSX_BUNDLE_GUI_IDENTIFIER ${Foundation_IDENTIFIER_PREFIX}.pr
 )
 
 install(
