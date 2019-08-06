@@ -27,6 +27,7 @@ target_sources(AEXPlugin
         $<$<PLATFORM_ID:Windows>:after_effects/win/ui.cpp>
         $<$<PLATFORM_ID:Darwin>:after_effects/mac/ui.mm>
         $<$<PLATFORM_ID:Darwin>:after_effects/mac/FNDControlViewController.m>
+        $<$<PLATFORM_ID:Darwin>:after_effects/mac/FNDObjC.h>
         $<$<PLATFORM_ID:Darwin>:after_effects/mac/FNDControlViewController.h>
         $<$<PLATFORM_ID:Darwin>:after_effects/mac/PkgInfo>
         $<$<PLATFORM_ID:Darwin>:${CMAKE_BINARY_DIR}/${PROJECT_NAME}.rsrc>
@@ -38,19 +39,26 @@ endif ()
 if (NOT DEFINED Foundation_CODEC_NAME)
     message(FATAL_ERROR "Parent must define Foundation_CODEC_NAME")
 endif ()
+if (NOT DEFINED Foundation_OBJC_PREFIX)
+string(RANDOM LENGTH 5 ALPHABET ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        Foundation_OBJC_PREFIX)
+endif ()
 
 set(${PROJECT_NAME}_OSX_BUNDLE_IDENTIFIER ${Foundation_IDENTIFIER_PREFIX}.aex)
 
 if (APPLE)
-    set_source_files_properties(after_effects/mac/ui.mm after_effects/mac/FNDControlViewController.m
-                    APPEND_STRING PROPERTIES COMPILE_FLAGS "-fobjc-arc")
-    set_property(SOURCE after_effects/mac/ui.mm
+    set_property(SOURCE after_effects/mac/ui.mm after_effects/mac/FNDControlViewController.m
+                    APPEND_STRING
+                    PROPERTY COMPILE_FLAGS "-fobjc-arc"
+    )
+    set_property(SOURCE after_effects/mac/ui.mm after_effects/mac/FNDControlViewController.m
                     APPEND
-                    PROPERTY COMPILE_DEFINITIONS FOUNDATION_MACOSX_BUNDLE_GUI_IDENTIFIER=@\"${${PROJECT_NAME}_OSX_BUNDLE_IDENTIFIER}\"
-)
+                    PROPERTY COMPILE_DEFINITIONS FOUNDATION_OBJC_PREFIX=${Foundation_OBJC_PREFIX} FOUNDATION_MACOSX_BUNDLE_GUI_IDENTIFIER=@\"${${PROJECT_NAME}_OSX_BUNDLE_IDENTIFIER}\"
+    )
 # Required for AE to load the plugin at all
     set_source_files_properties(after_effects/mac/PkgInfo
-                                PROPERTIES MACOSX_PACKAGE_LOCATION "")
+                                PROPERTIES MACOSX_PACKAGE_LOCATION ""
+    )
 endif (APPLE)
 
 # # make the layout look ok in IDEs
@@ -101,6 +109,10 @@ if (MSVC)
     )
 endif(MSVC)
 
+if (APPLE)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/after_effects/mac/SettingsViewController.xib.in ${CMAKE_BINARY_DIR}/SettingsViewController.xib)
+endif (APPLE)
+
 if (APPLE AND NOT XCODE)
     target_sources(AEXPlugin
         PRIVATE
@@ -109,9 +121,9 @@ if (APPLE AND NOT XCODE)
     find_program(APPLE_IBTOOL ibtool)
     if (APPLE_IBTOOL)
         add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/SettingsViewController.nib
-                            COMMAND ${APPLE_IBTOOL} --errors --warnings --notices --module "${PROJECT_NAME}" --target-device mac --output-format "human-readable-text" --compile "${CMAKE_BINARY_DIR}/SettingsViewController.nib" "${CMAKE_CURRENT_SOURCE_DIR}/after_effects/mac/SettingsViewController.xib"
+                            COMMAND ${APPLE_IBTOOL} --errors --warnings --notices --module "${PROJECT_NAME}" --target-device mac --output-format "human-readable-text" --compile "${CMAKE_BINARY_DIR}/SettingsViewController.nib" "${CMAKE_BINARY_DIR}/SettingsViewController.xib"
                             COMMENT "Creating macOS interface file"
-                            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/after_effects/mac/SettingsViewController.xib
+                            DEPENDS ${CMAKE_BINARY_DIR}/SettingsViewController.xib
                             VERBATIM)
     else ()
         message(FATAL_ERROR "Can't find ibtool to build macOS interface file.")
@@ -119,7 +131,7 @@ if (APPLE AND NOT XCODE)
 else ()
     target_sources(AEXPlugin
         PRIVATE
-            after_effects/mac/SettingsViewController.xib)
+            ${CMAKE_BINARY_DIR}/SettingsViewController.xib)
 endif ()
 
 if (APPLE)
@@ -149,7 +161,7 @@ if (APPLE)
         PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     if (XCODE)
         set_source_files_properties(
-            after_effects/mac/SettingsViewController.xib
+            ${CMAKE_BINARY_DIR}/SettingsViewController.xib
             PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     else (XCODE)
         set_source_files_properties(

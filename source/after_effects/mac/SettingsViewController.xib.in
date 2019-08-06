@@ -5,7 +5,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="FNDAEXViewController">
+        <customObject id="-2" userLabel="File's Owner" customClass="${Foundation_OBJC_PREFIX}AEXViewController">
             <connections>
                 <outlet property="stackView" destination="8It-wP-4Bp" id="KCI-Je-JqK"/>
                 <outlet property="view" destination="ris-HE-r1o" id="oR7-jj-yru"/>

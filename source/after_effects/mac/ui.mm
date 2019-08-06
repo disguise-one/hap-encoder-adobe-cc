@@ -12,6 +12,8 @@
 #error FOUNDATION_MACOSX_BUNDLE_GUI_IDENTIFIER must be defined
 #endif
 
+@class FND_OBJC(AEXViewController);
+@compatibility_alias FNDAEXViewController FND_OBJC(AEXViewController);
 @interface FNDAEXViewController : NSViewController <FNDControlDelegate>
 -(IBAction)ok:(id)sender;
 -(IBAction)cancel:(id)sender;

@@ -3,8 +3,10 @@
 #define _FNDControlViewController_h_
 
 #import <Cocoa/Cocoa.h>
+#import "FNDObjC.h"
 
-@class FNDControlViewController;
+@class FND_OBJC(ControlViewController);
+@compatibility_alias FNDControlViewController FND_OBJC(ControlViewController);
 
 @protocol FNDControlDelegate <NSObject>
 @required
