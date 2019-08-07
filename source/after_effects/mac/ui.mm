@@ -194,7 +194,7 @@ public:
                                                          bundle:[NSBundle bundleWithIdentifier:FOUNDATION_MACOSX_BUNDLE_GUI_IDENTIFIER]])
     {
         controller_.changeHandler = ^(FNDAEXViewController *view, FNDControlViewController *control) {
-            this->validateChange(control);
+            this->validateChange(control.controlIdentifier);
         };
         // Cause the view to actually be loaded so we have our outlets available
         [controller_ view];
@@ -216,21 +216,33 @@ public:
         }
         return nullptr;
     }
+    void validate()
+    {
+        for (auto &next : items_)
+        {
+            validateChange(next.getIdentifier());
+        }
+    }
     NSView *getView() const
     {
         return controller_.view;
     }
-    void validateChange(FNDControlViewController *control)
+    void validateChange(int identifier)
     {
         // TODO: this should be reaching outside the foundation
         // for codec-speficic validation of controls in platform-agnostic code
 
-        if (static_cast<UIItem>(control.controlIdentifier) == UIItem::SubType)
+        if (static_cast<UIItem>(identifier) == UIItem::SubType)
         {
             const auto &codec = CodecRegistry::codec();
-            bool enable = codec->hasQuality(fromTag(control.selectedTag));
+            auto subTypeItem = getItem(identifier);
+            bool enable = codec->hasQuality(fromTag(subTypeItem->getSelectedMenuItemTag()));
 
-            getItem(static_cast<int>(UIItem::Quality))->setEnabled(enable);
+            auto qualityItem = getItem(static_cast<int>(UIItem::Quality));
+            if (qualityItem)
+            {
+                qualityItem->setEnabled(enable);
+            }
         }
     }
 private:
@@ -264,6 +276,9 @@ bool ui_OutDialog(CodecSubType& subType, int &quality, int& chunkCount, void *pl
             // Alternatively auto could be split out into its own parameter
             view.addItem(UIValueItem(static_cast<int>(UIItem::Chunks), "Chunks", 1, 8, chunkCount == 0 ? 1 : chunkCount, true, chunkCount == 0));
         }
+
+        // Cause UI to be aptly enabled/disabled
+        view.validate();
 
         NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0.0, 0.0, 100.0, 100.0)
                                                        styleMask:NSWindowStyleMaskTitled
