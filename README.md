@@ -1,8 +1,10 @@
-# Hap Exporter for Adobe CC 2018
+# Codec Foundation for Adobe CC
 
-This is the community-supplied Hap and Hap Q exporter plugin for Adobe CC 2018.
+This is the community-supplied foundation for creating plugins to Adobe CC 2018 and 2019.
 
-Development of this plugin was sponsored by [disguise](http://disguise.one), makers of the disguise show production software and hardware.
+Development of this plugin was sponsored by
+ - [disguise](http://disguise.one), makers of the disguise show production software and hardware.
+ - [10bitFX](http://notch.one), creators of the Notch VFX software
 
 Principal contributors to this plugin are
 
@@ -15,21 +17,9 @@ Thanks to Tom Butterworth for creating the Hap codec and Vidvox for supporting t
 
 Please see [license.txt](license.txt) for the licenses of this plugin and the components used to create it.
 
-# Download
-
-An installer for the exporter can be downloaded [here](https://github.com/disguise-one/hap-encoder-adobe-cc/releases).
-
-# User Guide
-
-Please consult the User Guide, which can be found [here](doc/user_guide/README.md).
-
-# Support
-
-Users can contact happlugin@disguise.one for support.
-
 # Development
 
-The following information is for developers who wish to contribute to the project, and is not for users of the plugin.
+The following information is for developers who wish to contribute to the project.
 
 ## Prerequisites
 
