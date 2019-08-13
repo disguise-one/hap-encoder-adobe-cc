@@ -13,7 +13,7 @@ extern"C"
 }
 
 // wrappers for libav-* objects
-#include "../movie/ffmpeg_helpers.hpp"
+#include "ffmpeg_helpers.hpp"
 
 class MovieWriterInvalidData : public std::runtime_error
 {
