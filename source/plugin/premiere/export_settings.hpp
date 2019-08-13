@@ -1,6 +1,6 @@
 #pragma once
 
-#include "exporter/exporter.hpp"
+#include "exporter.hpp"
 
 #include <PrSDKTypes.h>
 #include <PrSDKWindowSuite.h>

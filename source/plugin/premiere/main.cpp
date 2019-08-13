@@ -3,7 +3,7 @@
 #include "premiereParams.hpp"
 #include "prstring.hpp"
 #include "export_settings.hpp"
-#include "exporter/exporter.hpp"
+#include "exporter.hpp"
 #include "configure.hpp"
 #include "string_conversion.hpp"
 #include <vector>

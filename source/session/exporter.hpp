@@ -6,9 +6,9 @@
 #include <queue>
 #include <thread>
 
-#include "../movie_writer/movie_writer.hpp"
+#include "movie_writer.hpp"
 #include "codec_registration.hpp"
-#include "../freelist.hpp"
+#include "freelist.hpp"
 
 struct ExportJobImpl
 {

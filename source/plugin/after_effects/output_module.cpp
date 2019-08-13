@@ -5,8 +5,8 @@
 // for convenience
 using json = nlohmann::json;
 
-#include "../premiere_CC2018/exporter/exporter.hpp"
-#include "../premiere_CC2018/string_conversion.hpp"
+#include "exporter.hpp"
+#include "string_conversion.hpp"
 #include "codec_registration.hpp"
 
 #include "output_module.h"

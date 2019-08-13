@@ -6,8 +6,8 @@
 #include <Windows.h>
 #endif
 
-#include "../movie/ffmpeg_helpers.hpp"
-#include "../sample_cache.hpp"
+#include "ffmpeg_helpers.hpp"
+#include "sample_cache.hpp"
 
 
 // ffmpeg libavformat-based file writing
