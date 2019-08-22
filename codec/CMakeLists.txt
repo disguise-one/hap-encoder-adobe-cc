@@ -16,11 +16,6 @@ target_link_libraries(Codec
     snappy
     squish
     ycocg
-    $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
-    $<$<PLATFORM_ID:Darwin>:${CoreVideo}>
-    $<$<PLATFORM_ID:Darwin>:${Accelerate}>
-    $<$<PLATFORM_ID:Darwin>:${GLIB2}>
-    $<$<PLATFORM_ID:Darwin>:${ZLIB}>
 )
 
 target_include_directories(Codec
