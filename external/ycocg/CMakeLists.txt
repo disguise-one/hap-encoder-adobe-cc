@@ -19,3 +19,9 @@ target_include_directories(ycocg
     PUBLIC
         .
 )
+
+find_library(Accelerate Accelerate)
+
+target_link_libraries(ycocg
+    $<$<PLATFORM_ID:Darwin>:${Accelerate}>
+)
