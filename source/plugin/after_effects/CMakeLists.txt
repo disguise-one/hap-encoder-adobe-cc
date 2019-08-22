@@ -53,9 +53,6 @@ if (APPLE)
 endif (APPLE)
 
 find_library(AppKit AppKit)
-find_library(CoreFoundation CoreFoundation)
-find_library(CoreVideo CoreVideo)
-find_library(Accelerate Accelerate)
 
 if (MSVC)
 else (MSVC)
@@ -72,6 +69,7 @@ target_link_libraries(AEXPlugin
         CodecRegistration
         CodecFoundationSession
         nlohmann_json::nlohmann_json
+        $<$<PLATFORM_ID:Darwin>:${AppKit}>
 )
 
 # Include the ffmpeg headers
