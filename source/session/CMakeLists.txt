@@ -20,17 +20,6 @@ target_sources(CodecFoundationSession
         movie_writer.cpp
 )
 
-find_library(CoreFoundation CoreFoundation)
-find_library(CoreVideo CoreVideo)
-find_library(Accelerate Accelerate)
-
-if (MSVC)
-else (MSVC)
-   find_package(PkgConfig REQUIRED)
-   pkg_check_modules (GLIB2   glib-2.0)
-   include(findZLIB)
-endif(MSVC)
-
 target_link_libraries(CodecFoundationSession
     PUBLIC
         ffmpeg::libavformat
@@ -41,11 +30,6 @@ target_link_libraries(CodecFoundationSession
         Codec
 	# need this for ffmpeg on windows; TODO: get rid of it
         $<$<PLATFORM_ID:Windows>:bcrypt>
-        $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
-        $<$<PLATFORM_ID:Darwin>:${CoreVideo}>
-        $<$<PLATFORM_ID:Darwin>:${Accelerate}>
-        $<$<PLATFORM_ID:Darwin>:${GLIB2}>
-        $<$<PLATFORM_ID:Darwin>:${ZLIB}>
 )
 
 # Include the ffmpeg headers

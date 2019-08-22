@@ -25,6 +25,12 @@ set_target_properties(libavutil
         IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/FFmpeg/libavutil/libavutil.a
 )
 
+find_library(CoreVideo CoreVideo)
+
+target_link_libraries(libavutil
+    INTERFACE $<$<PLATFORM_ID:Darwin>:${CoreVideo}>
+)
+
 target_include_directories(libavcodec INTERFACE
     FFmpeg
 )

@@ -18,3 +18,9 @@ target_include_directories(AdobeShared
     INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}
 )
+
+find_library(CoreFoundation CoreFoundation)
+
+target_link_libraries(AdobeShared
+    $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>
+)

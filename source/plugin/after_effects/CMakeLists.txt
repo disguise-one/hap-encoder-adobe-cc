@@ -54,13 +54,6 @@ endif (APPLE)
 
 find_library(AppKit AppKit)
 
-if (MSVC)
-else (MSVC)
-   find_package(PkgConfig REQUIRED)
-   pkg_check_modules (GLIB2   glib-2.0)
-   include(findZLIB)
-endif(MSVC)
-
 target_link_libraries(AEXPlugin
     PRIVATE
         AdobeAfterEffectsSdk
