@@ -227,12 +227,9 @@ Importer::Importer(
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io read
 
-    // assume 4 threads + 1 serialising will not tax the system too much before we figure out its limits
-    int startingThreads = std::min(5, concurrentThreadsSupported_);
-    for (size_t i = 0; i < startingThreads; ++i)
-    {
-        workers_.push_back(std::make_unique<ImporterWorker>(error_, jobFreeList_, jobReader_, jobDecoder_));
-    }
+    // 1 thread decoding and serialising for starters, super-large textures can tax the system even with low numbers
+    // of starting threads
+    workers_.push_back(std::make_unique<ImporterWorker>(error_, jobFreeList_, jobReader_, jobDecoder_));
 }
 
 Importer::~Importer()
@@ -275,7 +272,7 @@ void Importer::requestFrame(int32_t iFrame,
                             std::function<void(const DecoderJob&)> onFail)
 {
     // throttle the caller - if the queue is getting too long we should wait
-    while ((jobDecoder_.nDecodeJobs() >= workers_.size() - 1)
+    while ((jobDecoder_.nDecodeJobs() >= std::max((size_t)1, workers_.size() - 1))
         && !expandWorkerPoolToCapacity()  // if we can, expand the pool
         && !error_)
     {
