@@ -12,7 +12,7 @@ install(
     DESTINATION
         "Presets"
     COMPONENT
-        presets
+        Presets
 )
 
 set(CPACK_PACKAGE_NAME "HapEncoder")
@@ -39,3 +39,7 @@ set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 # set(bitmap_path ${CMAKE_CURRENT_LIST_DIR}/../asset/install_image.bmp)
 # STRING(REPLACE "/" "\\" bitmap_path  ${bitmap_path}) 
 # set(CPACK_NSIS_MUI_WELCOMEFINISHPAGE_BITMAP ${bitmap_path})
+
+# codec specific component install paths
+set(Foundation_CODEC_SPECIFIC_COMPONENTS Presets)
+set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\${Foundation_CODEC_NAME}")

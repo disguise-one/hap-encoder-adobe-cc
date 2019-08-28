@@ -47,12 +47,19 @@ add_subdirectory(external/foundation)
 # # documentation
 # add_subdirectory(doc)
 
-# # plugin
-# add_subdirectory(source/premiere_CC2018)
-
 # installer
 include(installer/CodecInstaller.cmake)
 
 # foundation installer framework
 # *** this must be last according to CPACK usage directions
 add_subdirectory(external/foundation/installer)
+
+# codec-specific components
+# must be added *after* CPACK usage in external/foundation/installer above
+cpack_add_component(Presets
+    DISPLAY_NAME "Presets"
+    DESCRIPTION "Presets"
+    OPTIONAL
+)
+
+

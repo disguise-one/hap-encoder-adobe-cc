@@ -241,10 +241,10 @@ void HapEncoderJob::doCopyExternalToLocal(
         // format was overridden  // !!! find a better way to do this
         FrameDef frameDef(frameDef_);
         frameDef.format = format;
-        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef, (uint8_t*)& rgbaTopLeftOrigin_[0]);
+        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef, (uint8_t*)& rgbaTopLeftOrigin_[0], frameDef_.width * 4);
     }
     else {
-        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef_, (uint8_t*)& rgbaTopLeftOrigin_[0]);
+        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef_, (uint8_t*)& rgbaTopLeftOrigin_[0], frameDef_.width * 4);
     }
 }
 
