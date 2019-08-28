@@ -59,7 +59,5 @@ add_subdirectory(external/foundation/installer)
 cpack_add_component(Presets
     DISPLAY_NAME "Presets"
     DESCRIPTION "Presets"
-    OPTIONAL
 )
-
 
