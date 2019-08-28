@@ -11,6 +11,11 @@
 extern "C" {
 #include <libavutil/channel_layout.h>
 
+// !!! needed for libavformat/internal.h
+#ifdef _WIN32
+#include <io.h>
+#include <direct.h>
+#endif
 // !!! needed to fool 4CC validation
 #include <libavformat/internal.h>
 }
