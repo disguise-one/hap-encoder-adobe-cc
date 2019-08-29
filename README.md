@@ -32,7 +32,7 @@ You'll need a compiler environment appropriate to your operating system. The cur
 
 ### CMake
 
-CMake creates the build system for the supported target platforms. This project requires version 3.12.0 or later.
+CMake creates the build system for the supported target platforms. This project requires version 3.15.0 or later.
 
 [https://cmake.org/install/](https://cmake.org/install/)
 
@@ -95,12 +95,6 @@ Build a local FFmpeg by opening a terminal and moving to external/ffmpeg/FFmpeg.
 
     ./configure --disable-x86asm --disable-network --disable-everything --enable-muxer=mov --enable-demuxer=mov --disable-zlib --disable-iconv
     make
-
-### Pandoc
-
-Pandoc is required to build the documentation, which is bundled by the installer.
-
-<https://pandoc.org/>
 
 #### macOS
 
