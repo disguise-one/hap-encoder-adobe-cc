@@ -25,15 +25,14 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "HapEncoderPlugin")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../license.txt)
 
-set(CPACK_COMPONENTS_ALL presets user_guide plugin)
+set(CPACK_COMPONENTS_ALL presets plugin)
 
 # NSIS specific settings
 set(CPACK_NSIS_URL_INFO_ABOUT "https://hap.video")
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_PACKAGE_NAME "Hap Encoder Plugin for Adobe CC 2018")
-set(CPACK_NSIS_MENU_LINKS "doc\\\\HapExporterPlugin_for_AdobeCC2018.html;User Guide")
-set(CPACK_NSIS_HELP_LINK "https://github.com/GregBakker/hap-adobe-premiere-plugin")
-set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/GregBakker/hap-adobe-premiere-plugin/tree/master/doc/user_guide/")
+set(CPACK_NSIS_HELP_LINK "https://github.com/disguise-one/hap-encoder-adobe-cc")
+set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/disguise-one/hap-encoder-adobe-cc/tree/master/doc/user_guide/")
 set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 
 # set(bitmap_path ${CMAKE_CURRENT_LIST_DIR}/../asset/install_image.bmp)
