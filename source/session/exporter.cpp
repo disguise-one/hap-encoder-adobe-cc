@@ -231,12 +231,8 @@ Exporter::Exporter(
 {
     concurrentThreadsSupported_ = std::thread::hardware_concurrency() + 1;  // we assume at least 1 thread will be blocked by io write
 
-    // assume 4 threads + 1 writing will not tax the system too much before we figure out its limits
-    size_t startingThreads = std::min(std::size_t{ 5 }, concurrentThreadsSupported_);
-    for (size_t i=0; i<startingThreads; ++i)
-    {
-        workers_.push_back(std::make_unique<ExporterWorker>(error_, jobFreeList_, jobEncoder_, jobWriter_));
-    }
+    // 1 thread to start with, super large textures can exhaust memory immediately with multiple jobs
+    workers_.push_back(std::make_unique<ExporterWorker>(error_, jobFreeList_, jobEncoder_, jobWriter_));
 }
 
 Exporter::~Exporter()
@@ -301,7 +297,7 @@ void Exporter::dispatch(int64_t iFrame, const uint8_t* data, size_t stride, Fram
     jobWriter_.enqueueFrameWrite(iFrame);
 
     // throttle the caller - if the queue is getting too long we should wait
-    while ( (jobEncoder_.nEncodeJobs() >= workers_.size()-1)
+    while ((jobEncoder_.nEncodeJobs() >= std::max(size_t{ 1 }, workers_.size() - 1))  // first worker either encodes or writes
             && !expandWorkerPoolToCapacity()  // if we can, expand the pool
             && !error_)
     {

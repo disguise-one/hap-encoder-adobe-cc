@@ -28,12 +28,12 @@ cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 
-set(CPACK_COMPONENTS_ALL presets user_guide plugin)
+set(CPACK_COMPONENTS_ALL plugin ${Foundation_CODEC_SPECIFIC_COMPONENTS})
 
 # NSIS component specific settings
-set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\HAP")
-set(CPACK_NSIS_presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\HAP")
-SET(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS
+set(CPACK_NSIS_plugin_INSTALL_DIRECTORY "$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\${Foundation_CODEC_NAME}")
+
+set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS
   "Delete \\\"$PROGRAMFILES64\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\CodecPluginFoundation.prm\\\""
    )
 
@@ -57,14 +57,4 @@ cpack_add_component(plugin
     DISPLAY_NAME "Plugin"
     DESCRIPTION "plugin module"
     REQUIRED
-)
-cpack_add_component(presets
-    DISPLAY_NAME "Presets"
-    DESCRIPTION "presets"
-    OPTIONAL
-)
-cpack_add_component(user_guide
-    DISPLAY_NAME "User Guide"
-    DESCRIPTION "user guide"
-    OPTIONAL
 )

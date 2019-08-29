@@ -10,8 +10,15 @@
 
 extern "C" {
 #include <libavutil/channel_layout.h>
-}
 
+// !!! needed for libavformat/internal.h
+#ifdef _WIN32
+#include <io.h>
+#include <direct.h>
+#endif
+// !!! needed to fool 4CC validation
+#include <libavformat/internal.h>
+}
 
 #include "movie_writer.hpp"
 
@@ -59,13 +66,24 @@ MovieWriter::MovieWriter(VideoFormat videoFormat, VideoEncoderName encoderName,
     videoStream_->id = formatContext_->nb_streams - 1;
     videoStream_->codecpar->codec_tag = MKTAG(videoFormat[0], videoFormat[1], videoFormat[2], videoFormat[3]);
 
-    //!!! we want to do this
+    //!!! we want to do this alone
     //!!!     videoStream_->codecpar->codec_id = AV_CODEC_ID_WRAPPED_AVFRAME;
-    //!!! but are forced to do this for now
-    videoStream_->codecpar->codec_id = AV_CODEC_ID_HAP;
-    //!!! because libavformat::mux.c insists that the above codec_tag belongs to AV_CODEC_ID_HAP
-    //!!! which we don't want, because we only want to use the muxer
-    //!!! TODO: find a way to remove this so the foundation can be used for codecs other than HAP
+    //!!! but libavformat::mux.c verifies 4CCs against known codecs, which we aren't using, as
+    //!!! we only want to use the muxer itself. Known codecs are those already (maybe incompletely)
+    //!!! implemented by ffmpeg, which the foundation user is actively trying to replace.
+
+    //!!! so we look up their codec, which we aren't going to use, and pretend briefly
+    //!!! to use it
+    videoStream_->codecpar->codec_id = AV_CODEC_ID_WRAPPED_AVFRAME;
+    const AVCodecTag* dummy_to_keep_validator_happy = avformat_get_mov_video_tags();
+    while (dummy_to_keep_validator_happy->id != AV_CODEC_ID_NONE)
+    {
+        if (dummy_to_keep_validator_happy->tag == videoStream_->codecpar->codec_tag) {
+            videoStream_->codecpar->codec_id = dummy_to_keep_validator_happy->id;
+            break;
+        }
+        ++dummy_to_keep_validator_happy;
+    }
 
     videoStream_->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     videoStream_->codecpar->width = width;
