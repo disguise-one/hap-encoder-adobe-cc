@@ -28,9 +28,6 @@ add_subdirectory(external/ycocg)
 # codec in its own library
 add_subdirectory(codec)
 
-# documentation
-add_subdirectory(doc)
-
 # !!! TODO: Determine convention for naming variables required by foundation
 set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
 set(Foundation_CODEC_NAME HAP)
@@ -44,15 +41,17 @@ add_definitions(-DCODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")   
 # foundation
 add_subdirectory(external/foundation)
 
-# # documentation
-# add_subdirectory(doc)
-
-# # plugin
-# add_subdirectory(source/premiere_CC2018)
-
 # installer
 include(installer/CodecInstaller.cmake)
 
 # foundation installer framework
 # *** this must be last according to CPACK usage directions
 add_subdirectory(external/foundation/installer)
+
+# codec-specific components
+# must be added *after* CPACK usage in external/foundation/installer above
+cpack_add_component(Presets
+    DISPLAY_NAME "Presets"
+    DESCRIPTION "Presets"
+)
+
