@@ -34,7 +34,6 @@ ExportJob ExporterJobEncoder::encode()
 
     if (job)
     {
-        job->codecJob->convert();
         job->codecJob->encode(job->output);
     }
 

@@ -146,15 +146,7 @@ public:
             format);
     }
 
-    // encoding steps
-
-    // prepare for CPU-side compression, performed in a job-thread
-    void convert()
-    {
-        doConvert();
-    }
-
-    // CPU-side compression, performed in a job-thread
+    // encode operation, performed in a job-thread
     void encode(EncodeOutput& out)
     {
         doEncode(out);
@@ -167,7 +159,6 @@ private:
         size_t stride,
         FrameFormat format) = 0;
 
-    virtual void doConvert() = 0;
     virtual void doEncode(EncodeOutput& out) = 0;
 
     EncoderJob(const EncoderJob& rhs) = delete;
@@ -187,12 +178,6 @@ public:
         doDecode(in);
     }
 
-    // convert to texture ready for delivery
-    void convert()
-    {
-        doConvert();
-    }
-
     // deliver the texture
     void copyLocalToExternal(
         uint8_t *data,
@@ -205,7 +190,6 @@ public:
 
 private:
     virtual void doDecode(std::vector<uint8_t>& in) = 0;
-    virtual void doConvert() = 0;
     // derived EncoderJob classes  must implement these
     virtual void doCopyLocalToExternal(
         uint8_t *data,

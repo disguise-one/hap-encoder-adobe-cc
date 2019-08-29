@@ -103,7 +103,6 @@ ImportJob ImporterJobDecoder::decode()
     {
         try {
             job->codecJob->decode(job->input.buffer);
-            job->codecJob->convert();
         }
         catch (...)
         {

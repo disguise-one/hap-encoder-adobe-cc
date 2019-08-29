@@ -130,7 +130,6 @@ ImportJob ImporterJobDecoder::decode()
     {
         try {
             job->codecJob->decode(job->input.buffer);
-            job->codecJob->convert();
         }
         catch (...)
         {
@@ -974,7 +973,6 @@ ImporterGetSourceVideo(
 
         (*ldataH)->movieReader->readVideoFrame(iFrame, (*ldataH)->readBuffer);
         (*ldataH)->decoderJob->decode((*ldataH)->readBuffer);
-        (*ldataH)->decoderJob->convert();
 
         uint8_t *bgraBottomLeftOrigin = (uint8_t *)frameBuffer;
         int32_t stride;
