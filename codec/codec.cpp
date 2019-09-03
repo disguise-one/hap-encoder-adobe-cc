@@ -36,8 +36,19 @@ const CodecDetails& CodecRegistry::details()
         VideoFormat{'H', 'A', 'P', 'Y'}, // videoFormat
         hapCodecSubtypes, // codecSubTypes
         kHapAlphaCodecSubType, // defaultSubType
-        false, // hasExplicitIncludeAlphaChannel
-        true, // hasChunkCount
+        false,  // isHighBitDepth
+        false,  // hasExplicitIncludeAlphaChannel
+        true,   // hasChunkCount
+        QualityCodecDetails{
+            true,
+            { { kHapCodecSubType, true },
+              { kHapAlphaCodecSubType, true },
+              { kHapYCoCgCodecSubType, false },
+              { kHapYCoCgACodecSubType, false },
+              { kHapAOnlyCodecSubType, false } },  // presentForSubtype
+            { { kSquishEncoderFastQuality, "Fast" },
+              {kSquishEncoderNormalQuality, "Normal" } }, // descriptions
+            kSquishEncoderNormalQuality},  // defaultQuality
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
@@ -77,38 +88,10 @@ int CodecRegistry::getPixelFormatSize(bool hasSubType, CodecSubType subType)
     return 4; // !!! not correct, for bitrate estimation; should be moved to encoder
 }
 
-bool CodecRegistry::isHighBitDepth()
-{
-    return true;
-}
-
 std::string CodecRegistry::logName_;
 std::string CodecRegistry::logName()
 {
     return logName_;
-}
-
-bool CodecRegistry::hasQualityForAnySubType()
-{
-    return true;
-}
-
-bool CodecRegistry::hasQuality(const CodecSubType& subtype)
-{
-    return (subtype == kHapCodecSubType || subtype == kHapAlphaCodecSubType);
-}
-
-std::map<int, std::string> CodecRegistry::qualityDescriptions()
-{
-    return std::map<int, std::string>{
-        { kSquishEncoderFastQuality, "Fast" },
-        { kSquishEncoderNormalQuality, "Normal" }
-    };
-}
-
-int CodecRegistry::defaultQuality()
-{
-    return kSquishEncoderNormalQuality;
 }
 
 HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
@@ -130,34 +113,6 @@ HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
 
 HapEncoder::~HapEncoder()
 {
-}
-
-VideoFormat HapEncoder::subType() const
-{
-    return parameters().subType;
-};
-
-VideoEncoderName HapEncoder::name() const
-{
-    //!!! simplify
-    std::string name;
-
-    const auto& codec = *CodecRegistry::codec();
-    const auto& subtypes = codec.details().subtypes;
-    bool hasSubTypes = subtypes.size() > 0;
-    if (hasSubTypes)
-    {
-        name = std::find_if(subtypes.cbegin(), subtypes.cend(),
-            [&](const CodecNamedSubType& namedSubType)->bool {
-                return namedSubType.first == parameters().subType;
-            })->second;
-    } else {
-        name = codec.details().fileFormatShortName;
-    }
-
-    VideoEncoderName videoEncoderName;
-    std::copy(name.c_str(), name.c_str() + name.size() + 1, videoEncoderName.data());
-    return videoEncoderName;
 }
 
 std::unique_ptr<EncoderJob> HapEncoder::create()
@@ -248,7 +203,7 @@ void HapEncoderJob::doCopyExternalToLocal(
     }
 }
 
-void HapEncoderJob::doConvert()
+void HapEncoderJob::doEncode(EncodeOutput& out)
 {
     // convert input texture from rgba to <subcodec defined> dxt [+ dxt]
     for (unsigned int i = 0; i < count_; ++i)
@@ -258,10 +213,7 @@ void HapEncoderJob::doConvert()
             ycocg_,
             buffers_[i]);
     }
-}
 
-void HapEncoderJob::doEncode(EncodeOutput& out)
-{
     // encode textures for output stream
     std::array<void*, 2> bufferPtrs;              // for hap_encode
     std::array<unsigned long, 2> buffersBytes;    // for hap_encode

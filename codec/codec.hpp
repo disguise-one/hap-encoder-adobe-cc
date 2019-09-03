@@ -31,7 +31,6 @@ private:
         const uint8_t* data,
         size_t stride,
         FrameFormat format) override;
-    virtual void doConvert() override;
     virtual void doEncode(EncodeOutput& out) override;
 
     size_t getMaxEncodedSize() const;
@@ -60,8 +59,6 @@ public:
     HapEncoder(std::unique_ptr<EncoderParametersBase>& params);
 	~HapEncoder();
 
-    virtual VideoFormat subType() const;   //!!! should have default implementation
-    virtual VideoEncoderName name() const; //!!! should have default implementation
     virtual std::unique_ptr<EncoderJob> create() override;
 
 private:
