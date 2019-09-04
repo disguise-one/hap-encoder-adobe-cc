@@ -12,11 +12,11 @@ int roundUpToMultipleOf4(int n)
     return (n + 3) & ~3;
 }
 
-const CodecSubType kHapCodecSubType{ 'H' , 'a', 'p', '1' };
-const CodecSubType kHapAlphaCodecSubType{ 'H', 'a', 'p', '5' };
-const CodecSubType kHapYCoCgCodecSubType{ 'H', 'a', 'p', 'Y' };
-const CodecSubType kHapYCoCgACodecSubType{ 'H', 'a', 'p', 'M' };
-const CodecSubType kHapAOnlyCodecSubType{ 'H', 'a', 'p', 'A' };
+const Codec4CC kHapCodecSubType{ 'H' , 'a', 'p', '1' };
+const Codec4CC kHapAlphaCodecSubType{ 'H', 'a', 'p', '5' };
+const Codec4CC kHapYCoCgCodecSubType{ 'H', 'a', 'p', 'Y' };
+const Codec4CC kHapYCoCgACodecSubType{ 'H', 'a', 'p', 'M' };
+const Codec4CC kHapAOnlyCodecSubType{ 'H', 'a', 'p', 'A' };
 
 const CodecDetails& CodecRegistry::details()
 {
@@ -49,6 +49,7 @@ const CodecDetails& CodecRegistry::details()
             { { kSquishEncoderFastQuality, "Fast" },
               {kSquishEncoderNormalQuality, "Normal" } }, // descriptions
             kSquishEncoderNormalQuality},  // defaultQuality
+        3,                        // premiereParamVersion
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
@@ -83,7 +84,7 @@ std::shared_ptr<CodecRegistry>& CodecRegistry::codec()
     return codecRegistry;
 }
 
-int CodecRegistry::getPixelFormatSize(bool hasSubType, CodecSubType subType)
+int CodecRegistry::getPixelFormatSize(bool hasSubType, Codec4CC subType)
 {
     return 4; // !!! not correct, for bitrate estimation; should be moved to encoder
 }
@@ -96,11 +97,11 @@ std::string CodecRegistry::logName()
 
 HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
     : Encoder(std::move(params)),
-      count_(parameters().subType == kHapYCoCgACodecSubType ? 2 : 1),
+      count_(parameters().codec4CC == kHapYCoCgACodecSubType ? 2 : 1),
       chunkCounts_((parameters().chunkCounts == HapChunkCounts{ 0, 0 })
                    ? HapChunkCounts{ 1, 1 }
                    : parameters().chunkCounts),     // auto represented as 0, 0
-      textureFormats_(getTextureFormats(parameters().subType)),
+      textureFormats_(getTextureFormats(parameters().codec4CC)),
       compressors_{ HapCompressorSnappy, HapCompressorSnappy }
 {
     SquishEncoderQuality quality = (SquishEncoderQuality)parameters().quality;
@@ -132,21 +133,7 @@ std::unique_ptr<EncoderJob> HapEncoder::create()
         );
 }
 
-//!!!CodecCapabilities HapEncoder::getCapabilities(CodecSubType codecType)
-//!!!{
-//!!!    if (codecType == kHapCodecSubType || codecType == kHapAlphaCodecSubType) {
-//!!!        return CodecCapabilities{
-//!!!            true  // hasQuality
-//!!!        };
-//!!!    }
-//!!!    else {
-//!!!        return CodecCapabilities{
-//!!!            false // hasQuality
-//!!!        };
-//!!!    }
-//!!!}
-
-std::array<unsigned int, 2> HapEncoder::getTextureFormats(CodecSubType subType)
+std::array<unsigned int, 2> HapEncoder::getTextureFormats(Codec4CC subType)
 {
     if (subType == kHapCodecSubType) {
         return { HapTextureFormat_RGB_DXT1 };

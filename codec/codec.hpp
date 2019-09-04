@@ -62,7 +62,7 @@ public:
     virtual std::unique_ptr<EncoderJob> create() override;
 
 private:
-    static std::array<unsigned int, 2> getTextureFormats(CodecSubType subType);
+    static std::array<unsigned int, 2> getTextureFormats(Codec4CC subType);
 
 	unsigned int count_;
 	HapChunkCounts chunkCounts_;
