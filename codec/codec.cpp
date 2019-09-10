@@ -32,8 +32,8 @@ const CodecDetails& CodecRegistry::details()
         "Quicktime HAP Format", // fileFormatName;
         "HAP", // fileFormatShortName;
         "mov",  // videoFileExt
-        FileFormat{'h', 'a', 'p', '\0'}, // fileFormat
-        VideoFormat{'H', 'A', 'P', 'Y'}, // videoFormat
+        FileFormat{'p', 'a', 'h', '\0'}, // fileFormat
+        VideoFormat{'Y', 'P', 'A', 'H'}, // videoFormat
         hapCodecSubtypes, // codecSubTypes
         kHapAlphaCodecSubType, // defaultSubType
         false,  // isHighBitDepth
@@ -49,7 +49,7 @@ const CodecDetails& CodecRegistry::details()
             { { kSquishEncoderFastQuality, "Fast" },
               {kSquishEncoderNormalQuality, "Normal" } }, // descriptions
             kSquishEncoderNormalQuality},  // defaultQuality
-        3,                        // premiereParamVersion
+        5,                        // premiereParamsVersion
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
