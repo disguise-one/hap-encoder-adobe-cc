@@ -12,11 +12,11 @@ int roundUpToMultipleOf4(int n)
     return (n + 3) & ~3;
 }
 
-const CodecSubType kHapCodecSubType{ 'H' , 'a', 'p', '1' };
-const CodecSubType kHapAlphaCodecSubType{ 'H', 'a', 'p', '5' };
-const CodecSubType kHapYCoCgCodecSubType{ 'H', 'a', 'p', 'Y' };
-const CodecSubType kHapYCoCgACodecSubType{ 'H', 'a', 'p', 'M' };
-const CodecSubType kHapAOnlyCodecSubType{ 'H', 'a', 'p', 'A' };
+const Codec4CC kHapCodecSubType{ 'H' , 'a', 'p', '1' };
+const Codec4CC kHapAlphaCodecSubType{ 'H', 'a', 'p', '5' };
+const Codec4CC kHapYCoCgCodecSubType{ 'H', 'a', 'p', 'Y' };
+const Codec4CC kHapYCoCgACodecSubType{ 'H', 'a', 'p', 'M' };
+const Codec4CC kHapAOnlyCodecSubType{ 'H', 'a', 'p', 'A' };
 
 const CodecDetails& CodecRegistry::details()
 {
@@ -32,12 +32,24 @@ const CodecDetails& CodecRegistry::details()
         "Quicktime HAP Format", // fileFormatName;
         "HAP", // fileFormatShortName;
         "mov",  // videoFileExt
-        FileFormat{'h', 'a', 'p', '\0'}, // fileFormat
-        VideoFormat{'H', 'A', 'P', 'Y'}, // videoFormat
+        FileFormat{'p', 'a', 'h', '\0'}, // fileFormat
+        VideoFormat{'Y', 'P', 'A', 'H'}, // videoFormat
         hapCodecSubtypes, // codecSubTypes
         kHapAlphaCodecSubType, // defaultSubType
-        false, // hasExplicitIncludeAlphaChannel
-        true, // hasChunkCount
+        false,  // isHighBitDepth
+        false,  // hasExplicitIncludeAlphaChannel
+        true,   // hasChunkCount
+        QualityCodecDetails{
+            true,
+            { { kHapCodecSubType, true },
+              { kHapAlphaCodecSubType, true },
+              { kHapYCoCgCodecSubType, false },
+              { kHapYCoCgACodecSubType, false },
+              { kHapAOnlyCodecSubType, false } },  // presentForSubtype
+            { { kSquishEncoderFastQuality, "Fast" },
+              {kSquishEncoderNormalQuality, "Normal" } }, // descriptions
+            kSquishEncoderNormalQuality},  // defaultQuality
+        5,                        // premiereParamsVersion
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
@@ -72,14 +84,9 @@ std::shared_ptr<CodecRegistry>& CodecRegistry::codec()
     return codecRegistry;
 }
 
-int CodecRegistry::getPixelFormatSize(bool hasSubType, CodecSubType subType)
+int CodecRegistry::getPixelFormatSize(bool hasSubType, Codec4CC subType)
 {
     return 4; // !!! not correct, for bitrate estimation; should be moved to encoder
-}
-
-bool CodecRegistry::isHighBitDepth()
-{
-    return true;
 }
 
 std::string CodecRegistry::logName_;
@@ -88,36 +95,13 @@ std::string CodecRegistry::logName()
     return logName_;
 }
 
-bool CodecRegistry::hasQualityForAnySubType()
-{
-    return true;
-}
-
-bool CodecRegistry::hasQuality(const CodecSubType& subtype)
-{
-    return (subtype == kHapCodecSubType || subtype == kHapAlphaCodecSubType);
-}
-
-std::map<int, std::string> CodecRegistry::qualityDescriptions()
-{
-    return std::map<int, std::string>{
-        { kSquishEncoderFastQuality, "Fast" },
-        { kSquishEncoderNormalQuality, "Normal" }
-    };
-}
-
-int CodecRegistry::defaultQuality()
-{
-    return kSquishEncoderNormalQuality;
-}
-
 HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
     : Encoder(std::move(params)),
-      count_(parameters().subType == kHapYCoCgACodecSubType ? 2 : 1),
+      count_(parameters().codec4CC == kHapYCoCgACodecSubType ? 2 : 1),
       chunkCounts_((parameters().chunkCounts == HapChunkCounts{ 0, 0 })
                    ? HapChunkCounts{ 1, 1 }
                    : parameters().chunkCounts),     // auto represented as 0, 0
-      textureFormats_(getTextureFormats(parameters().subType)),
+      textureFormats_(getTextureFormats(parameters().codec4CC)),
       compressors_{ HapCompressorSnappy, HapCompressorSnappy }
 {
     SquishEncoderQuality quality = (SquishEncoderQuality)parameters().quality;
@@ -130,34 +114,6 @@ HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
 
 HapEncoder::~HapEncoder()
 {
-}
-
-VideoFormat HapEncoder::subType() const
-{
-    return parameters().subType;
-};
-
-VideoEncoderName HapEncoder::name() const
-{
-    //!!! simplify
-    std::string name;
-
-    const auto& codec = *CodecRegistry::codec();
-    const auto& subtypes = codec.details().subtypes;
-    bool hasSubTypes = subtypes.size() > 0;
-    if (hasSubTypes)
-    {
-        name = std::find_if(subtypes.cbegin(), subtypes.cend(),
-            [&](const CodecNamedSubType& namedSubType)->bool {
-                return namedSubType.first == parameters().subType;
-            })->second;
-    } else {
-        name = codec.details().fileFormatShortName;
-    }
-
-    VideoEncoderName videoEncoderName;
-    std::copy(name.c_str(), name.c_str() + name.size() + 1, videoEncoderName.data());
-    return videoEncoderName;
 }
 
 std::unique_ptr<EncoderJob> HapEncoder::create()
@@ -177,21 +133,7 @@ std::unique_ptr<EncoderJob> HapEncoder::create()
         );
 }
 
-//!!!CodecCapabilities HapEncoder::getCapabilities(CodecSubType codecType)
-//!!!{
-//!!!    if (codecType == kHapCodecSubType || codecType == kHapAlphaCodecSubType) {
-//!!!        return CodecCapabilities{
-//!!!            true  // hasQuality
-//!!!        };
-//!!!    }
-//!!!    else {
-//!!!        return CodecCapabilities{
-//!!!            false // hasQuality
-//!!!        };
-//!!!    }
-//!!!}
-
-std::array<unsigned int, 2> HapEncoder::getTextureFormats(CodecSubType subType)
+std::array<unsigned int, 2> HapEncoder::getTextureFormats(Codec4CC subType)
 {
     if (subType == kHapCodecSubType) {
         return { HapTextureFormat_RGB_DXT1 };
@@ -248,7 +190,7 @@ void HapEncoderJob::doCopyExternalToLocal(
     }
 }
 
-void HapEncoderJob::doConvert()
+void HapEncoderJob::doEncode(EncodeOutput& out)
 {
     // convert input texture from rgba to <subcodec defined> dxt [+ dxt]
     for (unsigned int i = 0; i < count_; ++i)
@@ -258,10 +200,7 @@ void HapEncoderJob::doConvert()
             ycocg_,
             buffers_[i]);
     }
-}
 
-void HapEncoderJob::doEncode(EncodeOutput& out)
-{
     // encode textures for output stream
     std::array<void*, 2> bufferPtrs;              // for hap_encode
     std::array<unsigned long, 2> buffersBytes;    // for hap_encode
