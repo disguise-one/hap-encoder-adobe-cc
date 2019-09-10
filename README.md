@@ -157,9 +157,18 @@ This will create a plugin at
 
     Release/source/premiere_CC2018/HapEncoderPlugin.bundle
 
+Alternatively to create an Xcode project
+
+    cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 -G Xcode ..
+
+Then open the generated Xcode project.
+
 To create an installer (requires Apple Developer Program membership for signing)
 
-    cd installer
-    ./make_mac_installer.sh
+    cpack
+
+To create an unsigned installer for development testing (do not distribute unsigned installers)
+
+    cpack -D CPACK_PRODUCTBUILD_IDENTITY_NAME=
 
 The installer is created in the Release directory.
