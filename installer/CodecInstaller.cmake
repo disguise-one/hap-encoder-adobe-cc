@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 
 install(
     FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Alpha-Only.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Q\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Q.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap\ Alpha-Only.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap\ Q\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap\ Q.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap.epr
     DESTINATION
         "$<IF:$<PLATFORM_ID:Darwin>,Library/Application Support/Hap for Adobe CC/Presets,Presets>"
     COMPONENT
