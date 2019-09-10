@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.12.0 FATAL_ERROR)
 
 install(
     FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/Hap\ Alpha-Only.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/Hap\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/Hap\ Q\ Alpha.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/Hap\ Q.epr
-        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/Hap.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Alpha-Only.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Q\ Alpha.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Q.epr
+        ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap.epr
     DESTINATION
         "Presets"
     COMPONENT
@@ -41,4 +41,4 @@ set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 
 # codec specific component install paths
 set(Foundation_CODEC_SPECIFIC_COMPONENTS Presets)
-set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\12.0\\\\${Foundation_CODEC_NAME}")
+set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\13.0\\\\${Foundation_CODEC_NAME}")
