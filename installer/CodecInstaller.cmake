@@ -10,7 +10,7 @@ install(
         ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap\ Q.epr
         ${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-13.0/Hap.epr
     DESTINATION
-        "Presets"
+        "$<IF:$<PLATFORM_ID:Darwin>,Library/Application Support/Hap for Adobe CC/Presets,Presets>"
     COMPONENT
         Presets
 )
@@ -23,6 +23,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "HapEncoderPlugin")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../license.txt)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/ReadMe.txt)
 
 set(CPACK_COMPONENTS_ALL presets plugin)
 
@@ -41,3 +42,8 @@ set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 # codec specific component install paths
 set(Foundation_CODEC_SPECIFIC_COMPONENTS Presets)
 set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\13.0\\\\${Foundation_CODEC_NAME}")
+
+# macOS presets install script
+if (APPLE)
+    set(CPACK_POSTFLIGHT_PRESETS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/installer/postinstall)
+endif (APPLE)
