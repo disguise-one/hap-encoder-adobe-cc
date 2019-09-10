@@ -3,3 +3,5 @@
 build/
 external/adobe/premiere/
 Release/
+Debug/
+Xcode/
