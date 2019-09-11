@@ -41,7 +41,7 @@ set(CPACK_NSIS_CONTACT "happlugin@disguise.one")
 
 # codec specific component install paths
 set(Foundation_CODEC_SPECIFIC_COMPONENTS Presets)
-set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\13.0\\\\${Foundation_CODEC_NAME}")
+set(CPACK_NSIS_Presets_INSTALL_DIRECTORY "$PROFILE\\\\Documents\\\\Adobe\\\\Adobe\ Media\ Encoder\\\\13.0")
 
 # macOS presets install script
 if (APPLE)
