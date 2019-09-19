@@ -20,6 +20,10 @@
   Var INSTALL_DESKTOP
   Var IS_DEFAULT_INSTALLDIR
 
+;--------------------------------
+; TEMPORARY HACK - dependent installer needs this and has no way of emplacing it atm
+  Var DirectXSetupError
+;--------------------------------
 
 ;--------------------------------
 ;Include Modern UI
