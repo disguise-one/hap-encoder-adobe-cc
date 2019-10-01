@@ -31,6 +31,7 @@ add_subdirectory(codec)
 # !!! TODO: Determine convention for naming variables required by foundation
 set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
 set(Foundation_CODEC_NAME HAP)
+set(Foundation_PRESETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/")
 
 # codec declarations that need to be compiled in
 # !!! TODO: make these into variables that are used in build steps
@@ -50,8 +51,3 @@ add_subdirectory(external/foundation/installer)
 
 # codec-specific components
 # must be added *after* CPACK usage in external/foundation/installer above
-cpack_add_component(Presets
-    DISPLAY_NAME "Presets"
-    DESCRIPTION "Presets"
-)
-
