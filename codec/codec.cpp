@@ -29,7 +29,7 @@ const CodecDetails& CodecRegistry::details()
     
     static CodecDetails details{
         "HAP", // productName
-        "Quicktime HAP Format", // fileFormatName;
+        "HAP Movie", // fileFormatName;
         "HAP", // fileFormatShortName;
         "mov",  // videoFileExt
         FileFormat{'p', 'a', 'h', '\0'}, // fileFormat
