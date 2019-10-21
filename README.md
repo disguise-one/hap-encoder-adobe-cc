@@ -172,3 +172,7 @@ To create an unsigned installer for development testing (do not distribute unsig
     cpack -D CPACK_PRODUCTBUILD_IDENTITY_NAME=
 
 The installer is created in the Release directory.
+
+#### Notarizing macOS Installers
+
+Installers for macOS **must** be notarized by Apple. If you skip this step, users will not be able to install the plugins. Because it requires prior setup it is not automated. Follow the instructions under "Upload Your App to the Notarization Service" in Apple's [Customizing the Notarization Workflow](https://developer.apple.com/documentation/xcode/notarizing_your_app_before_distribution/customizing_the_notarization_workflow?language=objc) guide.
