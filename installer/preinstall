@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+INSTALL_LOCATION="/Library/Application Support/Adobe/Common/Plug-ins/7.0/MediaCore"
+
+# Delete previous versions which used different names
+for PLUGIN in HapEncoderPlugin.bundle CodecPluginFoundation.bundle; do
+    if [ -d "$INSTALL_LOCATION/$PLUGIN" ]; then
+        rm -r "$INSTALL_LOCATION/$PLUGIN"
+    fi
+done
+
+exit 0
