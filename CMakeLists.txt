@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 # modules
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
 
-# foundation includes - defines codec registration interface
+# foundation includes
+# - externals needed by codec registration interface
+add_subdirectory(external/foundation/external)
+# - defines codec registration interface
 add_subdirectory(external/foundation/source/codec_registration)
 
 # project

@@ -53,7 +53,8 @@ const CodecDetails& CodecRegistry::details()
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
-        'HAP_',                   // afterEffectsSig
+        'HAPP',                   // premiereSig [for afterEffects, must differ from afterEffectsSig]
+        'HAPA',                   // afterEffectsSig
         'DTEK',                   // afterEffectsCreator
         'HAP_',                   // afterEffectsType
         'HAP_'                    // afterEffectsMacType
