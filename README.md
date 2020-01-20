@@ -157,9 +157,22 @@ This will create a plugin at
 
     Release/source/premiere_CC2018/HapEncoderPlugin.bundle
 
+Alternatively to create an Xcode project
+
+    cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 -G Xcode ..
+
+Then open the generated Xcode project.
+
 To create an installer (requires Apple Developer Program membership for signing)
 
-    cd installer
-    ./make_mac_installer.sh
+    cpack
+
+To create an unsigned installer for development testing (do not distribute unsigned installers)
+
+    cpack -D CPACK_PRODUCTBUILD_IDENTITY_NAME=
 
 The installer is created in the Release directory.
+
+#### Notarizing macOS Installers
+
+Installers for macOS **must** be notarized by Apple. If you skip this step, users will not be able to install the plugins. Because it requires prior setup it is not automated. Follow the instructions under "Upload Your App to the Notarization Service" in Apple's [Customizing the Notarization Workflow](https://developer.apple.com/documentation/xcode/notarizing_your_app_before_distribution/customizing_the_notarization_workflow?language=objc) guide.
