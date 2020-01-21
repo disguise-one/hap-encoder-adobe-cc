@@ -3,6 +3,17 @@ cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 # modules
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
 
+# !!! TODO: Determine convention for naming variables required by foundation
+set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
+set(Foundation_CODEC_NAME HAP)
+set(Foundation_PRESETS
+    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap.epr"
+    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Alpha.epr"
+    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Alpha-Only.epr"
+    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q.epr"
+    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q Alpha.epr"
+)
+
 # foundation includes
 # - externals needed by codec registration interface
 add_subdirectory(external/foundation/external)
@@ -30,17 +41,6 @@ add_subdirectory(external/ycocg)
 
 # codec in its own library
 add_subdirectory(codec)
-
-# !!! TODO: Determine convention for naming variables required by foundation
-set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
-set(Foundation_CODEC_NAME HAP)
-set(Foundation_PRESETS
-    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap.epr"
-    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Alpha.epr"
-    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Alpha-Only.epr"
-    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q.epr"
-    "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q Alpha.epr"
-)
 
 # codec declarations that need to be compiled in
 # !!! TODO: make these into variables that are used in build steps
