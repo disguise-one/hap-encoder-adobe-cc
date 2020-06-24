@@ -48,7 +48,11 @@ add_subdirectory(external/foundation/source/codec_registration)
 
 
 # codec-specific external libs
+# ------------------------
+
+set(SNAPPY_BUILD_TESTS FALSE)
 add_subdirectory(external/snappy)
+
 add_subdirectory(external/squish/squish-source)
 add_subdirectory(external/hap)
 add_subdirectory(external/ycocg)
