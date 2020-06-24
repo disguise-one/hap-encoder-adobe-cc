@@ -19,15 +19,15 @@ static int roundUpToMultipleOf4(int n)
 class SquishTextureConverter : public TextureConverter
 {
 public:
-	SquishTextureConverter(const FrameDef& frameDef, int squishFlags)
-		: TextureConverter(frameDef), squishFlags_(squishFlags)
+	SquishTextureConverter(const FrameSize& frameSize, int squishFlags)
+		: TextureConverter(frameSize), squishFlags_(squishFlags)
 	{}
 	virtual ~SquishTextureConverter() {};
 
 private:
     size_t size() const override
     {
-        return squish::GetStorageRequirements(frameDef().width, frameDef().height, squishFlags_);
+        return squish::GetStorageRequirements(frameSize().width, frameSize().height, squishFlags_);
     }
 
 	virtual void doConvert(
@@ -39,7 +39,7 @@ private:
 
 		void *blocks = &(outputBuffer[0]);
 		float *metric = nullptr;
-		squish::CompressImage(in_rgba, frameDef().width, frameDef().height, blocks, squishFlags_, metric);
+		squish::CompressImage(in_rgba, frameSize().width, frameSize().height, blocks, squishFlags_, metric);
 	}
 
 	int squishFlags_;
@@ -49,12 +49,12 @@ private:
 class TextureConverterToYCoCg_Dxt5 : public TextureConverter
 {
 public:
-	TextureConverterToYCoCg_Dxt5(const FrameDef& frameDef) : TextureConverter(frameDef) {}
+	TextureConverterToYCoCg_Dxt5(const FrameSize& frameSize) : TextureConverter(frameSize) {}
 	~TextureConverterToYCoCg_Dxt5() {}
 
     size_t size() const override
     {
-        return roundUpToMultipleOf4(frameDef().width) * roundUpToMultipleOf4(frameDef().height);
+        return roundUpToMultipleOf4(frameSize().width) * roundUpToMultipleOf4(frameSize().height);
     }
 
     void doConvert(
@@ -62,14 +62,14 @@ public:
 		std::vector<uint8_t> &ycocg,
 		std::vector<uint8_t> &outputBuffer) override
 	{
-		int rowbytes = frameDef().width * 4;
-		ycocg.resize(rowbytes * frameDef().height);
+		int rowbytes = frameSize().width * 4;
+		ycocg.resize(rowbytes * frameSize().height);
 
 		ConvertRGB_ToCoCg_Y8888(
 			in_rgba,                // const uint8_t *src,
 			&ycocg[0],              // uint8_t *dst
-			frameDef().width,       // unsigned long width,
-			frameDef().height,      // unsigned long height,
+			frameSize().width,       // unsigned long width,
+			frameSize().height,      // unsigned long height,
 			rowbytes,               // size_t src_rowbytes
 			rowbytes,               // size_t dst_rowbytes,
 			false                   // int allow_tile
@@ -80,8 +80,8 @@ public:
 		CompressYCoCgDXT5(
 			&(ycocg[0]),
 			&(outputBuffer[0]),
-			frameDef().width, frameDef().height,
-			frameDef().width * 4  // stride
+			frameSize().width, frameSize().height,
+			frameSize().width * 4  // stride
 		);
 	}
 };
@@ -97,7 +97,7 @@ size_t TextureConverter::size() const
 }
 
 
-std::unique_ptr<TextureConverter> TextureConverter::create(const FrameDef& frameDef, unsigned int destFormat, SquishEncoderQuality quality)
+std::unique_ptr<TextureConverter> TextureConverter::create(const FrameSize& frameSize, unsigned int destFormat, SquishEncoderQuality quality)
 {
 	int flag_quality;
 	switch (quality)
@@ -116,13 +116,13 @@ std::unique_ptr<TextureConverter> TextureConverter::create(const FrameDef& frame
 	switch (destFormat)
 	{
 	case HapTextureFormat_RGB_DXT1:
-		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt1 | flag_quality);
+		return std::make_unique<SquishTextureConverter>(frameSize, squish::kDxt1 | flag_quality);
 	case HapTextureFormat_RGBA_DXT5:
-		return std::make_unique<SquishTextureConverter>(frameDef, squish::kDxt5 | flag_quality);
+		return std::make_unique<SquishTextureConverter>(frameSize, squish::kDxt5 | flag_quality);
 	case HapTextureFormat_YCoCg_DXT5:
-		return std::make_unique<TextureConverterToYCoCg_Dxt5>(frameDef);
+		return std::make_unique<TextureConverterToYCoCg_Dxt5>(frameSize);
 	case HapTextureFormat_A_RGTC1:
-		return std::make_unique<SquishTextureConverter>(frameDef, squish::kRgtc1A);
+		return std::make_unique<SquishTextureConverter>(frameSize, squish::kRgtc1A);
 	default:
 		throw std::runtime_error("unknown conversion");
 	}

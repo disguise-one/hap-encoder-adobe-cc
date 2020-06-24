@@ -85,7 +85,10 @@ std::shared_ptr<CodecRegistry>& CodecRegistry::codec()
     return codecRegistry;
 }
 
-int CodecRegistry::getPixelFormatSize(bool hasSubType, Codec4CC subType)
+double CodecRegistry::getPixelFormatSize(
+        CodecAlpha alpha,
+        Codec4CC subType,
+        int quality)
 {
     return 4; // !!! not correct, for bitrate estimation; should be moved to encoder
 }
@@ -108,7 +111,7 @@ HapEncoder::HapEncoder(std::unique_ptr<EncoderParametersBase>& params)
     SquishEncoderQuality quality = (SquishEncoderQuality)parameters().quality;
     for (size_t i = 0; i < count_; ++i)
     {
-        converters_[i] = TextureConverter::create(parameters().frameDef, textureFormats_[i], quality);
+        converters_[i] = TextureConverter::create(parameters().frameSize, textureFormats_[i], quality);
         sizes_[i] = (unsigned long)converters_[i]->size();
     }
 }
@@ -124,7 +127,7 @@ std::unique_ptr<EncoderJob> HapEncoder::create()
         converters[i] = converters_[i].get();   //!!! should probably move things like this back on HapEncoder
 
     return std::make_unique<HapEncoderJob>(
-            parameters().frameDef,
+            parameters().frameSize,
             count_,
             chunkCounts_,
             textureFormats_,
@@ -156,14 +159,14 @@ std::array<unsigned int, 2> HapEncoder::getTextureFormats(Codec4CC subType)
 }
 
 HapEncoderJob::HapEncoderJob(
-    const FrameDef& frameDef,
+    FrameSize frameSize,
     unsigned int count,
     HapChunkCounts chunkCounts,
     std::array<unsigned int, 2> textureFormats,
     std::array<unsigned int, 2> compressors,
     std::array<TextureConverter*, 2> converters,
     std::array<unsigned long, 2> sizes)
-    : frameDef_(frameDef),
+    : frameSize_(frameSize),
       count_(count),
       chunkCounts_(chunkCounts),
       textureFormats_(textureFormats),
@@ -176,19 +179,11 @@ HapEncoderJob::HapEncoderJob(
 void HapEncoderJob::doCopyExternalToLocal(
     const uint8_t *data, size_t stride, FrameFormat format)
 {
-    rgbaTopLeftOrigin_.resize(frameDef_.width * frameDef_.height * 4);
+    rgbaTopLeftOrigin_.resize(frameSize_.width * frameSize_.height * 4);
 
     // convert host format to rgba top left origin
-    if (format)
-    {
-        // format was overridden  // !!! find a better way to do this
-        FrameDef frameDef(frameDef_);
-        frameDef.format = format;
-        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef, (uint8_t*)& rgbaTopLeftOrigin_[0], frameDef_.width * 4);
-    }
-    else {
-        convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef_, (uint8_t*)& rgbaTopLeftOrigin_[0], frameDef_.width * 4);
-    }
+    FrameDef frameDef(frameSize_, format);
+    convertHostFrameTo_RGBA_Top_Left_U8(data, stride, frameDef, (uint8_t*)& rgbaTopLeftOrigin_[0], frameSize_.width * 4);
 }
 
 void HapEncoderJob::doEncode(EncodeOutput& out)

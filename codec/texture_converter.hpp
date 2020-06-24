@@ -19,14 +19,14 @@ enum SquishEncoderQuality {
 class TextureConverter
 {
 public:
-	TextureConverter(const FrameDef& frameDef)
-		: frameDef_(frameDef)
+	TextureConverter(const FrameSize& frameSize)
+		: frameSize_(frameSize)
 	{}
 	virtual ~TextureConverter();
 
-	static std::unique_ptr<TextureConverter> create(const FrameDef& frameDef, unsigned int destFormat, SquishEncoderQuality quality);
+	static std::unique_ptr<TextureConverter> create(const FrameSize& frameSize, unsigned int destFormat, SquishEncoderQuality quality);
 
-	const FrameDef& frameDef() const { return frameDef_; }
+	const FrameSize& frameSize() const { return frameSize_; }
 
     virtual size_t size() const;   // storage required
 
@@ -40,5 +40,5 @@ private:
 		std::vector<uint8_t> &intermediate_ycocg,
 		std::vector<uint8_t> &outputBuffer)=0;
 
-	FrameDef frameDef_;
+	FrameSize frameSize_;
 };

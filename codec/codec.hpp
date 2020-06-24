@@ -16,7 +16,7 @@ class HapEncoderJob : public EncoderJob
 {
 public:
     HapEncoderJob(
-        const FrameDef& frameDef,
+        FrameSize frameSize,
         unsigned int count,
         HapChunkCounts chunkCounts,
         std::array<unsigned int, 2> textureFormats,
@@ -35,7 +35,7 @@ private:
 
     size_t getMaxEncodedSize() const;
 
-    FrameDef frameDef_;
+    FrameSize frameSize_;
     unsigned int count_;
     HapChunkCounts chunkCounts_;
     std::array<unsigned int, 2> textureFormats_;
