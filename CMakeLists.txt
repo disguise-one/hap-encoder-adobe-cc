@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 
-# modules
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/cmake-pandocology")
+project(CodecPlugin)
 
-# !!! TODO: Determine convention for naming variables required by foundation
+# foundation variables
+# ------------------------
+
 set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
 set(Foundation_CODEC_NAME HAP)
 set(Foundation_PRESETS
@@ -13,18 +14,20 @@ set(Foundation_PRESETS
     "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q.epr"
     "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q Alpha.epr"
 )
+set(Foundation_FILE_IMPORT_FOUR_CC=0x48415000L)    # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
+set(Foundation_CODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")    # !!! hack - size must be 0x7 atm, and padded to 7-bytes- we're not using the recommended resource builder step that compiles the correct sizes around this
 
-# foundation includes
-# - externals needed by codec registration interface
-add_subdirectory(external/foundation/external)
-# - defines codec registration interface
-add_subdirectory(external/foundation/source/codec_registration)
+# project-wide build settings
+# ----------------------------
 
-# project
+# all platforms: group targets in IDEs
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(CodecPlugin)
-
-set (CMAKE_CXX_STANDARD 17)
+# macosx: release on Mojave and Catalina
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
+endif(APPLE)
 
 if(MSVC)
     # add_compile_options(/arch:AVX2)
@@ -33,25 +36,33 @@ else()
     add_compile_options(-msse4.1)
 endif()
 
+set (CMAKE_CXX_STANDARD 17)
+
+# foundation interface to be populated
+# ------------------------
+
+# - externals needed by codec registration interface
+add_subdirectory(external/foundation/external)
+# - defines codec registration interface
+add_subdirectory(external/foundation/source/codec_registration)
+
+
 # codec-specific external libs
 add_subdirectory(external/snappy)
 add_subdirectory(external/squish/squish-source)
 add_subdirectory(external/hap)
 add_subdirectory(external/ycocg)
 
-# codec in its own library
+# codec implementation in its own library
+# ------------------------
 add_subdirectory(codec)
 
-# codec declarations that need to be compiled in
-# !!! TODO: make these into variables that are used in build steps
-add_definitions(-DFOUNDATION_FILE_IMPORT_FOUR_CC=0x48415000L)  # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
-add_definitions(-DCODEC_NAME="${Foundation_CODEC_NAME}")
-add_definitions(-DCODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")   # !!! hack - size must be 0x7 atm, and padded to 7-bytes- we're not using the recommended resource builder step that compiles the correct sizes around this
-
-# foundation
+# foundation plugins
+# ------------------------
 add_subdirectory(external/foundation)
 
-# installer
+# codec installer information for foundation
+# ------------------------
 include(installer/CodecInstaller.cmake)
 
 # foundation installer framework
