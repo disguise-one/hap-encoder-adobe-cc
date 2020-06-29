@@ -1,9 +1,21 @@
 cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 
+
+# project-wide build settings that MUST BE SET PRIOR TO FIRST 'project'
+# ----------------------------
+
+# macosx: release on Mojave and Catalina
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
+endif(APPLE)
+
+
+# project
+# ----------------------------
 project(CodecPlugin)
 
 # foundation variables
-# ------------------------
+# ----------------------------
 
 set(Foundation_IDENTIFIER_PREFIX org.hapcommunity.HapCodecPlugin)
 set(Foundation_CODEC_NAME HAP)
@@ -23,12 +35,6 @@ set(Foundation_CODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")    # 
 # all platforms: group targets in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# macosx: release on Mojave and Catalina
-if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
-endif(APPLE)
-
 if(MSVC)
     # add_compile_options(/arch:AVX2)
     # may want to use this for specific source files
@@ -39,7 +45,7 @@ endif()
 set (CMAKE_CXX_STANDARD 17)
 
 # foundation interface to be populated
-# ------------------------
+# ----------------------------
 
 # - externals needed by codec registration interface
 add_subdirectory(external/foundation/external)
@@ -48,7 +54,7 @@ add_subdirectory(external/foundation/source/codec_registration)
 
 
 # codec-specific external libs
-# ------------------------
+# ----------------------------
 
 set(SNAPPY_BUILD_TESTS FALSE)
 add_subdirectory(external/snappy)
@@ -58,15 +64,15 @@ add_subdirectory(external/hap)
 add_subdirectory(external/ycocg)
 
 # codec implementation in its own library
-# ------------------------
+# ----------------------------
 add_subdirectory(codec)
 
 # foundation plugins
-# ------------------------
+# ----------------------------
 add_subdirectory(external/foundation)
 
 # codec installer information for foundation
-# ------------------------
+# ----------------------------
 include(installer/CodecInstaller.cmake)
 
 # foundation installer framework
