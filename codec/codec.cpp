@@ -49,7 +49,7 @@ const CodecDetails& CodecRegistry::details()
             { { kSquishEncoderFastQuality, "Fast" },
               {kSquishEncoderNormalQuality, "Normal" } }, // descriptions
             kSquishEncoderNormalQuality},  // defaultQuality
-        5,                        // premiereParamsVersion
+        6,                        // premiereParamsVersion
         "HAPSpecificCodecGroup",  // premiereGroupName
         std::string(),            // premiereIncludeAlphaChannelNmae
         "HAPChunkCount",          // premiereChunkCountName
