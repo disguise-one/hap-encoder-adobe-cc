@@ -26,8 +26,8 @@ set(Foundation_PRESETS
     "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q.epr"
     "${CMAKE_CURRENT_SOURCE_DIR}/asset/encoder_preset/ame-12.0/Hap Q Alpha.epr"
 )
-set(Foundation_FILE_IMPORT_FOUR_CC=0x48415000L)    # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
-set(Foundation_CODEC_NAME_WITH_HEX_SIZE_PREFIX="\\x07HAP\\x0\\x0\\x0\\x0")    # !!! hack - size must be 0x7 atm, and padded to 7-bytes- we're not using the recommended resource builder step that compiles the correct sizes around this
+set(Foundation_FILE_IMPORT_FOUR_CC 0x48415000L)    # hex for HAP\0, needed as unique importer id so After Effects picks it up as an importer
+set(Foundation_CODEC_NAME_WITH_HEX_SIZE_PREFIX "\"\\x07HAP\\0\\0\\0\\0\"")    # !!! hack - size must be 0x7 atm, and padded to 7-bytes- we're not using the recommended resource builder step that compiles the correct sizes around this
 
 # project-wide build settings
 # ----------------------------
