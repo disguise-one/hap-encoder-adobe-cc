@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 
 # macosx: release on Mojave and Catalina
 if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
 endif(APPLE)
 
 
