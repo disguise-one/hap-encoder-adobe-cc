@@ -36,9 +36,17 @@ const CodecDetails& CodecRegistry::details()
         VideoFormat{'Y', 'P', 'A', 'H'}, // videoFormat
         hapCodecSubtypes, // codecSubTypes
         kHapAlphaCodecSubType, // defaultSubType
-        false,  // isHighBitDepth
+        false,   // isHighBitDepth
         false,  // hasExplicitIncludeAlphaChannel
         true,   // hasChunkCount
+        AlphaCodecDetails{
+            true,
+            { { kHapCodecSubType, withoutAlpha },
+              { kHapAlphaCodecSubType, withAlpha },
+              { kHapYCoCgCodecSubType, withoutAlpha },
+              { kHapYCoCgACodecSubType, withAlpha },
+              { kHapAOnlyCodecSubType, withAlpha } },
+        },
         QualityCodecDetails{
             true,
             { { kHapCodecSubType, true },
