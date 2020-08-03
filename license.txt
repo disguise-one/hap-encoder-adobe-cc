@@ -1,4 +1,4 @@
-HAP ENCODER PLUGIN FOR ADOBE CC 2018:
+HAP ENCODER PLUGIN FOR ADOBE CC:
 
 Copyright (c) 2018, Greg Bakker and disguise technologies limited. All
 rights reserved.
