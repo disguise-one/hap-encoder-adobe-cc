@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 # project-wide build settings that MUST BE SET PRIOR TO FIRST 'project'
 # ----------------------------
 
-# macosx: release on Mojave and Catalina
+# macosx: 11.0 - first release with arm64, and well under what Adobe CC 2026 itself needs
 if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
 endif(APPLE)
 
 
@@ -39,7 +39,8 @@ if(MSVC)
     # add_compile_options(/arch:AVX2)
     # may want to use this for specific source files
 else()
-    add_compile_options(-msse4.1)
+    # x86 slices only - lets a universal (arm64 + x86_64) macOS build compile
+    add_compile_options("SHELL:-Xarch_x86_64 -msse4.1")
 endif()
 
 set (CMAKE_CXX_STANDARD 17)

@@ -21,7 +21,6 @@ OPTION(BUILD_SQUISH_EXTRA "Build extra source code." OFF)
 IF (CMAKE_GENERATOR STREQUAL "Xcode")
     #!!! ----BEGIN----
     #!!! SET(CMAKE_OSX_ARCHITECTURES "i386;ppc")
-    SET(CMAKE_OSX_ARCHITECTURES "x86_64")
     #!!! ----END----
 ELSE (CMAKE_GENERATOR STREQUAL "Xcode")
     #!!! ----BEGIN----
@@ -30,10 +29,15 @@ ELSE (CMAKE_GENERATOR STREQUAL "Xcode")
     #!!!     ADD_DEFINITIONS(-DSQUISH_USE_SSE=2 -msse2)
     #!!! ENDIF (BUILD_SQUISH_WITH_SSE2 AND NOT WIN32)
     IF (BUILD_SQUISH_WITH_SSE2)
-        ADD_DEFINITIONS(-DSQUISH_USE_SSE=2)
-        IF (NOT WIN32)
-            ADD_DEFINITIONS(-msse2)
-        ENDIF (NOT WIN32)
+        IF (APPLE)
+            # per-slice so a universal build's arm64 half falls back to scalar code
+            ADD_COMPILE_OPTIONS("SHELL:-Xarch_x86_64 -DSQUISH_USE_SSE=2" "SHELL:-Xarch_x86_64 -msse2")
+        ELSE (APPLE)
+            ADD_DEFINITIONS(-DSQUISH_USE_SSE=2)
+            IF (NOT WIN32)
+                ADD_DEFINITIONS(-msse2)
+            ENDIF (NOT WIN32)
+        ENDIF (APPLE)
     ENDIF (BUILD_SQUISH_WITH_SSE2)
     #!!! ----END----
     IF (BUILD_SQUISH_WITH_ALTIVEC AND NOT WIN32)

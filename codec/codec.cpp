@@ -1,6 +1,5 @@
 #include <stdexcept>
 #include <string>
-#include <tmmintrin.h>
 
 #include "hap.h"
 
